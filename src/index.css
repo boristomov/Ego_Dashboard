@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #08090c;
+    color: #e2e8f0;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #08090c;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #1c1f2a;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #2a2f3d;
+  }
+}
+
+@layer components {
+  .brand-grad {
+    @apply bg-brand-gradient bg-clip-text text-transparent;
+  }
+
+  .panel {
+    @apply rounded-xl border border-border bg-panel;
+  }
+
+  .panel-soft {
+    @apply rounded-xl border border-border/60 bg-panel/60;
+  }
+
+  .pill {
+    @apply inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.65rem] font-semibold uppercase tracking-wider;
+  }
+
+  .input-base {
+    @apply w-full rounded-md border border-border bg-input px-3 py-2 text-sm text-text placeholder:text-text-dim outline-none transition focus:border-accent;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-panel px-3 py-2 text-sm font-medium text-text transition hover:border-accent/50 hover:bg-panel-hover;
+  }
+
+  .btn-accent {
+    @apply inline-flex items-center justify-center gap-1.5 rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-sm font-medium text-accent-hover transition hover:bg-accent/20;
+  }
+
+  .glow-border {
+    box-shadow:
+      0 0 0 1px rgba(168, 85, 247, 0.25),
+      0 0 24px rgba(168, 85, 247, 0.15);
+  }
+}

@@ -1,0 +1,84 @@
+name: Deploy to GitHub Pages
+
+on:
+  # Redeploy whenever main changes.
+  push:
+    branches: [main]
+  # Allow ad-hoc redeploys (e.g. to refresh the snapshot after a new upload).
+  workflow_dispatch:
+    inputs:
+      include_thumbs:
+        description: "Download thumbnails into the bundle"
+        type: boolean
+        required: false
+        default: true
+  # Keep the snapshot fresh hourly so new uploads show up without a code change.
+  schedule:
+    - cron: "17 * * * *"
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Snapshot S3 → public/
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
+          S3_RAW_BUCKET: ${{ vars.S3_RAW_BUCKET || 'ego-raw-prod-886989006633-ap-southeast-1-an' }}
+          S3_PROCESSED_BUCKET: ${{ vars.S3_PROCESSED_BUCKET || 'ego-processed-prod-886989006633-ap-southeast-1-an' }}
+        run: |
+          if [ -z "${AWS_ACCESS_KEY_ID:-}" ]; then
+            echo "::warning::AWS_ACCESS_KEY_ID secret is not set; skipping snapshot (UI will show 'Snapshot missing')."
+            mkdir -p public
+            echo '{"sessions":[],"count":0}' > public/catalogue.json
+            echo '{"generatedAt":"'"$(date -u +%FT%TZ)"'","sessionCount":0,"taskCount":0,"thumbs":{"included":false},"note":"AWS secrets not configured"}' > public/snapshot-meta.json
+          else
+            INCLUDE_THUMBS_FLAG=""
+            if [ "${{ github.event.inputs.include_thumbs }}" = "false" ]; then
+              INCLUDE_THUMBS_FLAG="--no-thumbs"
+            fi
+            node scripts/snapshot.mjs $INCLUDE_THUMBS_FLAG
+          fi
+
+      - name: Build site
+        env:
+          VITE_DATA_SOURCE: static
+          VITE_BASE: /${{ github.event.repository.name }}/
+        run: npm run build
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

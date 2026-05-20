@@ -1,0 +1,38 @@
+{
+  "name": "ego-dashboard",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Operations dashboard for the Egocentric data production pipeline (collection, postprocessing, annotation).",
+  "scripts": {
+    "dev": "concurrently -k -n proxy,web -c cyan,magenta \"npm:dev:proxy\" \"npm:dev:web\"",
+    "dev:web": "vite",
+    "dev:proxy": "node server/index.mjs",
+    "snapshot": "node scripts/snapshot.mjs",
+    "snapshot:no-thumbs": "node scripts/snapshot.mjs --no-thumbs",
+    "build": "tsc -b && vite build",
+    "build:pages": "VITE_DATA_SOURCE=static VITE_BASE=/Ego_Dashboard/ vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.658.1",
+    "@aws-sdk/s3-request-presigner": "^3.658.1",
+    "lucide-react": "^0.460.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "autoprefixer": "^10.4.20",
+    "concurrently": "^9.0.1",
+    "cors": "^2.8.5",
+    "express": "^4.21.1",
+    "postcss": "^8.4.47",
+    "tailwindcss": "^3.4.14",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}

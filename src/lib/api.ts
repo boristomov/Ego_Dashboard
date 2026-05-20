@@ -1,0 +1,182 @@
+// Data access layer.
+//
+// Two modes are supported:
+//
+//   - "proxy"    (dev) — talks to the local Express proxy in server/index.mjs.
+//                        Live signed URLs are available so quick-open buttons work.
+//   - "static"   (prod) — reads a pre-generated catalogue.json + thumbnails baked
+//                         into the bundle by scripts/snapshot.mjs. No AWS calls.
+//
+// Mode is picked automatically: production builds default to "static"; dev defaults
+// to "proxy". Both can be overridden with VITE_DATA_SOURCE=static|proxy at build time.
+
+type ViteEnv = {
+  env?: {
+    VITE_API_BASE?: string;
+    VITE_DATA_SOURCE?: "static" | "proxy";
+    PROD?: boolean;
+    BASE_URL?: string;
+  };
+};
+
+const VITE_ENV = (import.meta as unknown as ViteEnv).env || {};
+const BASE_URL = (VITE_ENV.BASE_URL || "/").replace(/\/?$/, "/");
+
+export const DATA_SOURCE: "static" | "proxy" =
+  VITE_ENV.VITE_DATA_SOURCE || (VITE_ENV.PROD ? "static" : "proxy");
+
+const API_BASE = VITE_ENV.VITE_API_BASE || "/api";
+
+export type SessionFile = {
+  key: string;
+  rel: string;
+  size: number;
+  lastModified: string | null;
+};
+
+export type SessionBucketInfo = {
+  files: SessionFile[];
+  totalBytes: number;
+  lastModified?: string | null;
+};
+
+export type CatalogueSession = {
+  taskName: string;
+  sessionId: string;
+  raw: SessionBucketInfo;
+  processed: SessionBucketInfo;
+};
+
+export type CatalogueResponse = {
+  sessions: CatalogueSession[];
+  count: number;
+};
+
+export type HealthResponse = {
+  ok: boolean;
+  region: string;
+  raw_bucket: string;
+  processed_bucket: string;
+  /** Set when running off a pre-built static snapshot. */
+  generated_at?: string;
+  /** Identifies which backing data source the UI is using. */
+  source: "static" | "proxy";
+};
+
+async function http<T>(p: string): Promise<T> {
+  const res = await fetch(`${API_BASE}${p}`);
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} ${res.statusText} — ${text}`);
+  }
+  return (await res.json()) as T;
+}
+
+let thumbManifestCache: Promise<Record<string, string>> | null = null;
+async function loadThumbManifest(): Promise<Record<string, string>> {
+  if (!thumbManifestCache) {
+    thumbManifestCache = fetch(`${BASE_URL}thumbs-manifest.json`)
+      .then((r) => (r.ok ? r.json() : {}))
+      .catch(() => ({}));
+  }
+  return thumbManifestCache;
+}
+
+let snapshotMetaCache: Promise<{
+  generatedAt?: string;
+  region?: string;
+  rawBucket?: string;
+  processedBucket?: string;
+} | null> | null = null;
+async function loadSnapshotMeta() {
+  if (!snapshotMetaCache) {
+    snapshotMetaCache = fetch(`${BASE_URL}snapshot-meta.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .catch(() => null);
+  }
+  return snapshotMetaCache;
+}
+
+export const api = {
+  health: async (): Promise<HealthResponse> => {
+    if (DATA_SOURCE === "static") {
+      const meta = await loadSnapshotMeta();
+      return {
+        ok: !!meta,
+        region: meta?.region || "—",
+        raw_bucket: meta?.rawBucket || "—",
+        processed_bucket: meta?.processedBucket || "—",
+        generated_at: meta?.generatedAt,
+        source: "static",
+      };
+    }
+    const r = await http<Omit<HealthResponse, "source">>("/health");
+    return { ...r, source: "proxy" };
+  },
+
+  catalogue: async (task?: string): Promise<CatalogueResponse> => {
+    if (DATA_SOURCE === "static") {
+      const res = await fetch(`${BASE_URL}catalogue.json`);
+      if (!res.ok) {
+        throw new Error(
+          `Static catalogue not found (HTTP ${res.status}). Run npm run snapshot before building.`,
+        );
+      }
+      const data = (await res.json()) as CatalogueResponse;
+      if (!task) return data;
+      const filtered = data.sessions.filter((s) => s.taskName === task);
+      return { sessions: filtered, count: filtered.length };
+    }
+    return http<CatalogueResponse>(
+      task ? `/catalogue?task=${encodeURIComponent(task)}` : "/catalogue",
+    );
+  },
+
+  /**
+   * Returns a URL to open the artifact in a new tab. Only available in proxy
+   * mode (signed URLs are short-lived so can't be baked in). In static mode
+   * returns null, and the UI should hide the quick-open buttons.
+   */
+  signedUrl: async (
+    key: string,
+    bucket: "raw" | "processed" = "raw",
+  ): Promise<string | null> => {
+    if (DATA_SOURCE === "static") return null;
+    const r = await http<{ url: string }>(
+      `/sign?bucket=${bucket}&key=${encodeURIComponent(key)}`,
+    );
+    return r.url;
+  },
+
+  getObjectText: (key: string, bucket: "raw" | "processed" = "raw") =>
+    fetch(
+      `${API_BASE}/object?bucket=${bucket}&key=${encodeURIComponent(key)}`,
+    ).then((r) =>
+      r.ok ? r.text() : Promise.reject(new Error(`HTTP ${r.status}`)),
+    ),
+};
+
+/**
+ * Returns a thumbnail URL appropriate for the current data source.
+ *
+ * In "proxy" mode this points at the live S3 object via the dev proxy.
+ * In "static" mode it points at the file under public/thumbs/, falling back to
+ * a deterministic path if the manifest hasn't loaded yet.
+ */
+export function thumbUrl(taskName: string, sessionId: string): string {
+  if (DATA_SOURCE === "proxy") {
+    const key = `${taskName}/${sessionId}/thumb.jpg`;
+    return `${API_BASE}/object?bucket=raw&key=${encodeURIComponent(key)}`;
+  }
+  const safe = taskName.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/^_+|_+$/g, "");
+  return `${BASE_URL}thumbs/${safe}/${sessionId}.jpg`;
+}
+
+// Async variant that consults the manifest when available (handles edge cases
+// where the safePath transform doesn't perfectly match).
+export async function thumbUrlPrecise(taskName: string, sessionId: string) {
+  if (DATA_SOURCE === "proxy") return thumbUrl(taskName, sessionId);
+  const m = await loadThumbManifest();
+  const rel = m[`${taskName}/${sessionId}`];
+  return rel ? `${BASE_URL}thumbs/${rel}` : thumbUrl(taskName, sessionId);
+}
