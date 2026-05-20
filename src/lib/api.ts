@@ -14,6 +14,7 @@ type ViteEnv = {
   env?: {
     VITE_API_BASE?: string;
     VITE_DATA_SOURCE?: "static" | "proxy";
+    VITE_BUILD_ID?: string;
     PROD?: boolean;
     BASE_URL?: string;
   };
@@ -26,6 +27,13 @@ export const DATA_SOURCE: "static" | "proxy" =
   VITE_ENV.VITE_DATA_SOURCE || (VITE_ENV.PROD ? "static" : "proxy");
 
 const API_BASE = VITE_ENV.VITE_API_BASE || "/api";
+
+// Cache buster for static-snapshot fetches. The workflow injects a fresh
+// VITE_BUILD_ID on every deploy so a new build immediately invalidates the
+// browser's cached catalogue.json (GitHub Pages serves it with max-age=600).
+const BUILD_ID = VITE_ENV.VITE_BUILD_ID || "dev";
+const bust = (path: string) =>
+  `${path}${path.includes("?") ? "&" : "?"}v=${encodeURIComponent(BUILD_ID)}`;
 
 export type SessionFile = {
   key: string;
@@ -72,10 +80,18 @@ async function http<T>(p: string): Promise<T> {
   return (await res.json()) as T;
 }
 
+// `no-cache` forces the browser to revalidate via ETag instead of trusting
+// max-age; combined with the BUILD_ID query string this guarantees that a new
+// CI deploy replaces the in-browser catalogue on the next load.
+const STATIC_FETCH_OPTS: RequestInit = { cache: "no-cache" };
+
 let thumbManifestCache: Promise<Record<string, string>> | null = null;
 async function loadThumbManifest(): Promise<Record<string, string>> {
   if (!thumbManifestCache) {
-    thumbManifestCache = fetch(`${BASE_URL}thumbs-manifest.json`)
+    thumbManifestCache = fetch(
+      bust(`${BASE_URL}thumbs-manifest.json`),
+      STATIC_FETCH_OPTS,
+    )
       .then((r) => (r.ok ? r.json() : {}))
       .catch(() => ({}));
   }
@@ -90,7 +106,10 @@ let snapshotMetaCache: Promise<{
 } | null> | null = null;
 async function loadSnapshotMeta() {
   if (!snapshotMetaCache) {
-    snapshotMetaCache = fetch(`${BASE_URL}snapshot-meta.json`)
+    snapshotMetaCache = fetch(
+      bust(`${BASE_URL}snapshot-meta.json`),
+      STATIC_FETCH_OPTS,
+    )
       .then((r) => (r.ok ? r.json() : null))
       .catch(() => null);
   }
@@ -116,7 +135,10 @@ export const api = {
 
   catalogue: async (task?: string): Promise<CatalogueResponse> => {
     if (DATA_SOURCE === "static") {
-      const res = await fetch(`${BASE_URL}catalogue.json`);
+      const res = await fetch(
+        bust(`${BASE_URL}catalogue.json`),
+        STATIC_FETCH_OPTS,
+      );
       if (!res.ok) {
         throw new Error(
           `Static catalogue not found (HTTP ${res.status}). Run npm run snapshot before building.`,

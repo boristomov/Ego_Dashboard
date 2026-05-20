@@ -69,6 +69,10 @@ jobs:
         env:
           VITE_DATA_SOURCE: static
           VITE_BASE: /${{ github.event.repository.name }}/
+          # Unique per workflow run — used as a cache-buster query string on
+          # the static snapshot fetches so a new deploy invalidates the
+          # browser-cached catalogue immediately.
+          VITE_BUILD_ID: ${{ github.run_id }}-${{ github.run_attempt }}
         run: npm run build
 
       - name: Setup Pages
