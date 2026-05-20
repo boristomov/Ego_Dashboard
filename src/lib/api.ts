@@ -116,7 +116,26 @@ async function loadSnapshotMeta() {
   return snapshotMetaCache;
 }
 
+// ---------- Postprocessing instance status ----------
+
+import type { InstancesSnapshot } from "./instances";
+
 export const api = {
+  instances: async (): Promise<InstancesSnapshot | null> => {
+    // Both modes read the same file path; the dev proxy serves it from the
+    // local public/ folder so you can preview the page during development.
+    try {
+      const res = await fetch(
+        bust(`${BASE_URL}instances.json`),
+        STATIC_FETCH_OPTS,
+      );
+      if (!res.ok) return null;
+      return (await res.json()) as InstancesSnapshot;
+    } catch {
+      return null;
+    }
+  },
+
   health: async (): Promise<HealthResponse> => {
     if (DATA_SOURCE === "static") {
       const meta = await loadSnapshotMeta();

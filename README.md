@@ -4,15 +4,30 @@ Operations dashboard for the **Egocentric data production pipeline** — tracks 
 
 - **Collection** — recording sessions captured by operators and uploaded to the raw bucket
 - **Postprocessing** — SVO → MCAP + MP4 pipeline (ThothAI Postprocessing Node)
-- **Annotation** — MP4 → CVAT preannotations (`<sid>_CVAT.xml`)
+- **Annotation & delivery** — MP4 → CVAT preannotations (`<sid>_CVAT.xml`), then ZIP for client delivery
 
 The current build ships:
 
 - A skeleton layout (header + sidebar + routed pages)
-- A **Dashboard** stub with live counts for each stage
+- A **Dashboard** with per-stage live counts
 - A **Catalogue** page with thumbnails, artifact-availability badges, filters and search
+- A **Live postprocessing** page that polls the Vast.ai fleet over SSH (from GitHub Actions, no device or instance-side changes required)
 
-The frontend is React + Vite + TypeScript + Tailwind. A tiny Express proxy (`server/`) signs S3 requests during development; for GitHub Pages deployment you can either keep that proxy running on a host of your choice, or enable CORS on the buckets and call them directly from the browser.
+The frontend is React + Vite + TypeScript + Tailwind. A tiny Express proxy (`server/`) signs S3 requests during development; production reads a pre-generated static snapshot, so no creds ever ship to the browser.
+
+## Pipeline stages
+
+Each session falls into exactly one stage by priority (first matching rule wins):
+
+| stage | artifacts | color | meaning |
+|---|---|---|---|
+| **delivered** | `mp4 ∧ mcap ∧ zip` | purple | fully shipped |
+| **annotation-ready** | `mp4 ∧ xml` (and not delivered) | cyan | can be injected into CVAT |
+| **raw** | only `svo` (nothing processed at all) | green | recently uploaded |
+| **unpostprocessed** | has `svo`, missing `mcap`, not in any of the above | red | postprocessing work queue |
+| in progress | everything else | gray | partial state |
+
+The rules live in `src/lib/session.ts` (`deriveSession`).
 
 ## Buckets
 
@@ -47,8 +62,9 @@ Strategy: **bake a static snapshot at build time**, so the browser never needs A
 ### One-time setup on the GitHub repo
 
 1. **Add repository secrets** (Settings → Secrets and variables → Actions → New repository secret):
-   - `AWS_ACCESS_KEY_ID`
-   - `AWS_SECRET_ACCESS_KEY`
+   - `AWS_ACCESS_KEY_ID` — required for the catalogue snapshot
+   - `AWS_SECRET_ACCESS_KEY` — required for the catalogue snapshot
+   - `VAST_SSH_PRIVATE_KEY` — *optional, required for the live postprocessing page*. Paste the **entire contents** of `~/.ssh/vast_instance_1` (PEM, including BEGIN/END lines). The instance list lives in `src/lib/instances.ts`; edit there to add/remove boxes.
 
 2. (Optional) Override defaults via **repository variables**:
    - `AWS_REGION` (default `ap-southeast-1`)
@@ -62,9 +78,19 @@ The first push to `main` (or a manual run of the workflow) will publish the site
 
 `.github/workflows/deploy.yml`:
 
-- Triggers: `push` to `main`, manual `workflow_dispatch`, and a `cron` every hour at minute 17.
-- Steps: install deps → run `scripts/snapshot.mjs` → `npm run build:pages` → upload artifact → deploy via `actions/deploy-pages@v4`.
-- Result: every code change auto-deploys, and the catalogue stays fresh even without commits.
+- Triggers: `push` to `main`, manual `workflow_dispatch`, and a `cron` every 5 min (GitHub Actions minimum).
+- Steps: install deps → restore the thumbnail cache → `scripts/snapshot.mjs --use-existing-thumbs` (only re-downloads new ones) → `scripts/poll-instances.mjs` (if `VAST_SSH_PRIVATE_KEY` is set) → `npm run build` with `VITE_DATA_SOURCE=static` → upload artifact → deploy via `actions/deploy-pages@v4`.
+- Result: every code change auto-deploys, and both the catalogue and the live-instance snapshot stay fresh ~every 5 min even without commits.
+
+### How the "Live postprocessing" page works without your device
+
+`scripts/poll-instances.mjs` runs *inside* the GitHub Actions runner. For each box listed in `src/lib/instances.ts` it:
+
+1. SSHes in using the key written from `VAST_SSH_PRIVATE_KEY`.
+2. Runs the same inspection bash you have in `monitor_handtrack_instance*.sh` — `pgrep -af '[p]ython.*vast_worker|…'`, plus `grep -E 'priority_tasks=|claimed session=|success session=|failure session='` on `/workspace/logs/vast_worker.log`, plus the latest progress line.
+3. Parses the output into structured events (claimed / success / failure / progress) and writes `public/instances.json`.
+
+The dashboard reads that file like it reads `catalogue.json`. No code changes on the postprocessing boxes are required. The polling cadence (~5 min) matches the Actions cron minimum; tighter "live" feel will need the boxes to push status to S3 or a webhook directly — easy follow-up once you're ready.
 
 ### Manual local build (for testing the static path)
 
@@ -88,16 +114,17 @@ The buckets don't expose a CORS rule for any external origin, and we don't have 
 ```
 src/
   components/        Layout, SessionCard, ArtifactBadge, CatalogueFilters
-  hooks/             useHealth, useCatalogue
-  lib/               api client + session derivation logic
-  pages/             DashboardPage, CataloguePage
+  hooks/             useHealth, useCatalogue, useInstances
+  lib/               api client + session derivation + instances config
+  pages/             DashboardPage, CataloguePage, PostprocessingPage
   App.tsx, main.tsx, index.css
 server/
   index.mjs          Express dev proxy (read-only S3)
 scripts/
-  snapshot.mjs       CI script: dumps catalogue.json + thumbnails into public/
+  snapshot.mjs        CI: catalogue.json + thumbnails into public/
+  poll-instances.mjs  CI: SSH each Vast box, write instances.json
 .github/workflows/
-  deploy.yml         GitHub Pages deploy (push + cron + manual)
+  deploy.yml          GitHub Pages deploy (push + 5-min cron + manual)
 ```
 
 ## Roadmap

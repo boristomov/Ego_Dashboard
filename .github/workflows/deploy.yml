@@ -1,10 +1,8 @@
 name: Deploy to GitHub Pages
 
 on:
-  # Redeploy whenever main changes.
   push:
     branches: [main]
-  # Allow ad-hoc redeploys (e.g. to refresh the snapshot after a new upload).
   workflow_dispatch:
     inputs:
       include_thumbs:
@@ -12,9 +10,15 @@ on:
         type: boolean
         required: false
         default: true
-  # Keep the snapshot fresh hourly so new uploads show up without a code change.
+      force_full_snapshot:
+        description: "Ignore the thumb cache and re-download every thumbnail"
+        type: boolean
+        required: false
+        default: false
   schedule:
-    - cron: "17 * * * *"
+    # Every 5 minutes — minimum cron granularity on GitHub Actions. Cheap on
+    # public repos (unlimited minutes) thanks to the thumbnail cache.
+    - cron: "*/5 * * * *"
 
 concurrency:
   group: pages
@@ -44,6 +48,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Cache thumbnails between runs so the 5-min cadence is cheap. The key
+      # changes daily so we still refresh anything that drifted out of sync.
+      - name: Restore thumb cache
+        if: ${{ github.event.inputs.force_full_snapshot != 'true' }}
+        uses: actions/cache@v4
+        with:
+          path: public/thumbs
+          key: ego-thumbs-v1-${{ github.run_id }}
+          restore-keys: |
+            ego-thumbs-v1-
+
       - name: Snapshot S3 → public/
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
@@ -53,25 +68,43 @@ jobs:
           S3_PROCESSED_BUCKET: ${{ vars.S3_PROCESSED_BUCKET || 'ego-processed-prod-886989006633-ap-southeast-1-an' }}
         run: |
           if [ -z "${AWS_ACCESS_KEY_ID:-}" ]; then
-            echo "::warning::AWS_ACCESS_KEY_ID secret is not set; skipping snapshot (UI will show 'Snapshot missing')."
+            echo "::warning::AWS_ACCESS_KEY_ID secret is not set; skipping snapshot."
             mkdir -p public
             echo '{"sessions":[],"count":0}' > public/catalogue.json
             echo '{"generatedAt":"'"$(date -u +%FT%TZ)"'","sessionCount":0,"taskCount":0,"thumbs":{"included":false},"note":"AWS secrets not configured"}' > public/snapshot-meta.json
           else
-            INCLUDE_THUMBS_FLAG=""
+            FLAGS=""
             if [ "${{ github.event.inputs.include_thumbs }}" = "false" ]; then
-              INCLUDE_THUMBS_FLAG="--no-thumbs"
+              FLAGS="$FLAGS --no-thumbs"
             fi
-            node scripts/snapshot.mjs $INCLUDE_THUMBS_FLAG
+            if [ "${{ github.event.inputs.force_full_snapshot }}" != "true" ]; then
+              FLAGS="$FLAGS --use-existing-thumbs"
+            fi
+            node scripts/snapshot.mjs $FLAGS
+          fi
+
+      # Poll the Vast.ai postprocessing fleet over SSH so the dashboard knows
+      # what each box is doing. Only runs if VAST_SSH_PRIVATE_KEY is set.
+      - name: Poll Vast.ai instances over SSH
+        env:
+          VAST_SSH_PRIVATE_KEY: ${{ secrets.VAST_SSH_PRIVATE_KEY }}
+        run: |
+          if [ -z "${VAST_SSH_PRIVATE_KEY:-}" ]; then
+            echo "::warning::VAST_SSH_PRIVATE_KEY secret is not set; writing empty instances.json."
+            mkdir -p public
+            echo '{"generatedAt":"'"$(date -u +%FT%TZ)"'","instances":[]}' > public/instances.json
+          else
+            mkdir -p ~/.ssh
+            printf '%s\n' "$VAST_SSH_PRIVATE_KEY" > ~/.ssh/vast_instance_1
+            chmod 600 ~/.ssh/vast_instance_1
+            SSH_KEY=~/.ssh/vast_instance_1 node scripts/poll-instances.mjs
+            shred -u ~/.ssh/vast_instance_1 || rm -f ~/.ssh/vast_instance_1
           fi
 
       - name: Build site
         env:
           VITE_DATA_SOURCE: static
           VITE_BASE: /${{ github.event.repository.name }}/
-          # Unique per workflow run — used as a cache-buster query string on
-          # the static snapshot fetches so a new deploy invalidates the
-          # browser-cached catalogue immediately.
           VITE_BUILD_ID: ${{ github.run_id }}-${{ github.run_attempt }}
         run: npm run build
 

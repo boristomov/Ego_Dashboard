@@ -3,29 +3,41 @@ import { ImageOff, ExternalLink, Clock, HardDrive } from "lucide-react";
 import {
   formatBytes,
   formatDateTime,
+  STAGE_LABEL,
   type DerivedSession,
+  type PipelineStage,
 } from "../lib/session";
 import { thumbUrl, api, DATA_SOURCE } from "../lib/api";
 import { ArtifactBadge } from "./ArtifactBadge";
 
-const STAGE_STYLES: Record<
-  DerivedSession["pipelineStage"],
-  { ring: string; label: string; chip: string }
+export const STAGE_STYLES: Record<
+  PipelineStage,
+  { ring: string; chip: string; bar: string }
 > = {
-  raw_only: {
-    ring: "border-warn/40 hover:border-warn/70",
-    label: "Raw only",
-    chip: "border-warn/40 bg-warn/10 text-amber-300",
+  delivered: {
+    ring: "border-accent/50 hover:border-accent/80",
+    chip: "border-accent/50 bg-accent/15 text-accent-hover",
+    bar: "bg-accent",
   },
-  postprocessed: {
-    ring: "border-accent-cyan/40 hover:border-accent-cyan/70",
-    label: "Postprocessed",
-    chip: "border-cyan-500/40 bg-cyan-500/10 text-cyan-300",
+  annotation: {
+    ring: "border-cyan-500/50 hover:border-cyan-500/80",
+    chip: "border-cyan-500/40 bg-cyan-500/15 text-cyan-300",
+    bar: "bg-cyan-400",
   },
-  annotated: {
-    ring: "border-ok/40 hover:border-ok/70",
-    label: "Annotated",
-    chip: "border-ok/40 bg-ok/10 text-emerald-300",
+  raw: {
+    ring: "border-ok/50 hover:border-ok/80",
+    chip: "border-ok/40 bg-ok/15 text-emerald-300",
+    bar: "bg-emerald-500",
+  },
+  unpostprocessed: {
+    ring: "border-err/50 hover:border-err/80",
+    chip: "border-err/40 bg-err/15 text-red-300",
+    bar: "bg-red-500",
+  },
+  in_progress: {
+    ring: "border-border hover:border-text-muted",
+    chip: "border-border bg-input text-text-muted",
+    bar: "bg-text-muted",
   },
 };
 
@@ -79,14 +91,14 @@ export function SessionCard({ s }: { s: DerivedSession }) {
           <span
             className={`rounded-md border px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider backdrop-blur ${stage.chip}`}
           >
-            {stage.label}
+            {STAGE_LABEL[s.pipelineStage]}
           </span>
         </div>
 
         {/* Completeness bar */}
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/60">
           <div
-            className="h-full bg-brand-gradient transition-[width]"
+            className={`h-full transition-[width] ${stage.bar}`}
             style={{ width: `${Math.round(s.completeness * 100)}%` }}
           />
         </div>

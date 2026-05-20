@@ -34,6 +34,7 @@ const REGION = process.env.AWS_REGION || "ap-southeast-1";
 
 const args = parseArgs(process.argv.slice(2));
 const INCLUDE_THUMBS = !args.flags.has("--no-thumbs");
+const USE_EXISTING_THUMBS = args.flags.has("--use-existing-thumbs");
 const LIMIT = args.opts["--limit"] ? Number(args.opts["--limit"]) : 5000;
 const CONCURRENCY = args.opts["--concurrency"]
   ? Number(args.opts["--concurrency"])
@@ -235,26 +236,35 @@ async function main() {
 
   if (INCLUDE_THUMBS) {
     const thumbsDir = path.join(publicDir, "thumbs");
-    await fsp.rm(thumbsDir, { recursive: true, force: true });
+    if (!USE_EXISTING_THUMBS) {
+      await fsp.rm(thumbsDir, { recursive: true, force: true });
+    }
     await fsp.mkdir(thumbsDir, { recursive: true });
     const jobs = [];
+    let reused = 0;
     for (const s of sessions) {
       const thumb = s.raw.files.find(
         (f) => f.rel === "thumb.jpg" || f.rel === "thumbnail.jpg",
       );
       if (!thumb) continue;
       const rel = path.posix.join(safePath(s.taskName), `${s.sessionId}.jpg`);
-      jobs.push({ session: s, key: thumb.key, rel });
+      const dest = path.join(thumbsDir, rel);
+      thumbManifest[`${s.taskName}/${s.sessionId}`] = rel;
+      if (USE_EXISTING_THUMBS && fs.existsSync(dest)) {
+        reused += 1;
+        continue;
+      }
+      jobs.push({ session: s, key: thumb.key, rel, dest });
     }
-    console.log(`[snapshot] downloading ${jobs.length} thumbnails (concurrency=${CONCURRENCY})…`);
+    console.log(
+      `[snapshot] thumbnails: download=${jobs.length} reused=${reused} concurrency=${CONCURRENCY}`,
+    );
 
     let done = 0;
     await mapWithConcurrency(jobs, CONCURRENCY, async (job) => {
-      const dest = path.join(thumbsDir, job.rel);
       try {
-        await downloadObject(RAW_BUCKET, job.key, dest);
+        await downloadObject(RAW_BUCKET, job.key, job.dest);
         thumbsDownloaded += 1;
-        thumbManifest[`${job.session.taskName}/${job.session.sessionId}`] = job.rel;
       } catch (err) {
         thumbsFailed += 1;
         console.warn(`[snapshot]   thumb fail ${job.key}: ${err.message}`);
@@ -265,6 +275,7 @@ async function main() {
         }
       }
     });
+    thumbsDownloaded += reused; // reflect total available in meta
     await fsp.writeFile(
       path.join(publicDir, "thumbs-manifest.json"),
       JSON.stringify(thumbManifest),

@@ -2,8 +2,21 @@ import { useMemo } from "react";
 import { Search, X, Filter } from "lucide-react";
 import type { DerivedSession } from "../lib/session";
 
-export type Completeness = "all" | "raw_only" | "postprocessed" | "annotated";
-export type MissingArtifact = "none" | "svo" | "mcap" | "mp4" | "xml" | "meta";
+export type Completeness =
+  | "all"
+  | "delivered"
+  | "annotation"
+  | "raw"
+  | "unpostprocessed"
+  | "in_progress";
+export type MissingArtifact =
+  | "none"
+  | "svo"
+  | "mcap"
+  | "mp4"
+  | "xml"
+  | "zip"
+  | "meta";
 
 export type FilterState = {
   search: string;
@@ -23,9 +36,11 @@ export const EMPTY_FILTERS: FilterState = {
 
 const STAGE_OPTIONS: { value: Completeness; label: string }[] = [
   { value: "all", label: "All stages" },
-  { value: "raw_only", label: "Raw only" },
-  { value: "postprocessed", label: "Postprocessed" },
-  { value: "annotated", label: "Annotated" },
+  { value: "delivered", label: "Delivered" },
+  { value: "annotation", label: "Annotation-ready" },
+  { value: "raw", label: "Raw" },
+  { value: "unpostprocessed", label: "Unpostprocessed" },
+  { value: "in_progress", label: "In progress" },
 ];
 
 const MISSING_OPTIONS: { value: MissingArtifact; label: string }[] = [
@@ -34,6 +49,7 @@ const MISSING_OPTIONS: { value: MissingArtifact; label: string }[] = [
   { value: "mcap", label: "Missing MCAP" },
   { value: "mp4", label: "Missing MP4" },
   { value: "xml", label: "Missing XML" },
+  { value: "zip", label: "Missing ZIP" },
   { value: "meta", label: "Missing META" },
 ];
 

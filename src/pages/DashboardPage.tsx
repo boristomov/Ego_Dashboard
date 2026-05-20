@@ -30,40 +30,40 @@ export function DashboardPage() {
       <div className="grid gap-4 lg:grid-cols-3">
         <StageCard
           title="Collection"
-          subtitle="Recording & cloud upload"
+          subtitle="Operators recording & uploading to raw"
           icon={Camera}
-          accent="warn"
+          accent="ok"
           metrics={[
+            { label: "Raw (fresh)", value: counts.raw.toLocaleString() },
             { label: "Total sessions", value: counts.total.toLocaleString() },
             { label: "Raw bytes", value: formatBytes(counts.rawBytes) },
             { label: "With SVO", value: counts.withSvo.toLocaleString() },
-            { label: "With thumbnail", value: counts.withThumb.toLocaleString() },
           ]}
           loading={loading}
         />
         <StageCard
           title="Postprocessing"
-          subtitle="SVO → MCAP + MP4"
+          subtitle="SVO → MCAP + MP4 (needs MCAP to ship)"
           icon={Cpu}
-          accent="cyan"
+          accent="err"
           metrics={[
-            { label: "Completed (mp4)", value: counts.withMp4.toLocaleString() },
-            { label: "Completed (mcap)", value: counts.withMcap.toLocaleString() },
-            { label: "Awaiting MP4", value: counts.missingMp4.toLocaleString() },
-            { label: "Awaiting MCAP", value: counts.missingMcap.toLocaleString() },
+            { label: "Unpostprocessed", value: counts.unpostprocessed.toLocaleString() },
+            { label: "MCAPs done", value: counts.withMcap.toLocaleString() },
+            { label: "MCAP coverage", value: pct(counts.withMcap, counts.total) },
+            { label: "Processed bytes", value: formatBytes(counts.processedBytes) },
           ]}
           loading={loading}
         />
         <StageCard
-          title="Annotation"
-          subtitle="MP4 → CVAT preannotations (XML)"
+          title="Annotation & delivery"
+          subtitle="MP4 + XML → CVAT, then ZIP for delivery"
           icon={Tag}
-          accent="ok"
+          accent="cyan"
           metrics={[
-            { label: "Preannotated", value: counts.withXml.toLocaleString() },
-            { label: "Awaiting XML", value: counts.missingXml.toLocaleString() },
-            { label: "Annotated %", value: pct(counts.withXml, counts.total) },
-            { label: "Processed bytes", value: formatBytes(counts.processedBytes) },
+            { label: "Annotation-ready", value: counts.annotation.toLocaleString() },
+            { label: "Delivered", value: counts.delivered.toLocaleString() },
+            { label: "Delivered %", value: pct(counts.delivered, counts.total) },
+            { label: "In progress", value: counts.inProgress.toLocaleString() },
           ]}
           loading={loading}
         />
@@ -86,33 +86,56 @@ export function DashboardPage() {
 
 function summarize(sessions: DerivedSession[]) {
   let withSvo = 0,
-    withThumb = 0,
     withMp4 = 0,
     withMcap = 0,
     withXml = 0,
+    withZip = 0,
     rawBytes = 0,
-    processedBytes = 0;
+    processedBytes = 0,
+    delivered = 0,
+    annotation = 0,
+    raw = 0,
+    unpostprocessed = 0,
+    inProgress = 0;
   for (const s of sessions) {
     if (s.artifacts.svo.present) withSvo++;
-    if (s.artifacts.thumb.present) withThumb++;
     if (s.artifacts.mp4.present) withMp4++;
     if (s.artifacts.mcap.present) withMcap++;
     if (s.artifacts.xml.present) withXml++;
+    if (s.artifacts.zip.present) withZip++;
     rawBytes += s.raw.totalBytes;
     processedBytes += s.processed.totalBytes;
+    switch (s.pipelineStage) {
+      case "delivered":
+        delivered++;
+        break;
+      case "annotation":
+        annotation++;
+        break;
+      case "raw":
+        raw++;
+        break;
+      case "unpostprocessed":
+        unpostprocessed++;
+        break;
+      default:
+        inProgress++;
+    }
   }
   return {
     total: sessions.length,
     withSvo,
-    withThumb,
     withMp4,
     withMcap,
     withXml,
-    missingMp4: sessions.length - withMp4,
-    missingMcap: sessions.length - withMcap,
-    missingXml: sessions.length - withXml,
+    withZip,
     rawBytes,
     processedBytes,
+    delivered,
+    annotation,
+    raw,
+    unpostprocessed,
+    inProgress,
   };
 }
 
@@ -121,7 +144,7 @@ function pct(part: number, total: number): string {
   return `${Math.round((part / total) * 100)}%`;
 }
 
-type Accent = "warn" | "cyan" | "ok";
+type Accent = "warn" | "cyan" | "ok" | "err" | "brand";
 function StageCard({
   title,
   subtitle,
@@ -137,18 +160,24 @@ function StageCard({
   metrics: { label: string; value: string }[];
   loading: boolean;
 }) {
-  const grad =
-    accent === "warn"
-      ? "from-warn/10"
-      : accent === "cyan"
-        ? "from-cyan-500/10"
-        : "from-ok/10";
-  const iconBg =
-    accent === "warn"
-      ? "border-warn/40 bg-warn/10 text-amber-300"
-      : accent === "cyan"
-        ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
-        : "border-ok/40 bg-ok/10 text-emerald-300";
+  const grad = (
+    {
+      warn: "from-warn/10",
+      cyan: "from-cyan-500/10",
+      ok: "from-ok/10",
+      err: "from-err/10",
+      brand: "from-accent/10",
+    } as const
+  )[accent];
+  const iconBg = (
+    {
+      warn: "border-warn/40 bg-warn/10 text-amber-300",
+      cyan: "border-cyan-500/40 bg-cyan-500/10 text-cyan-300",
+      ok: "border-ok/40 bg-ok/10 text-emerald-300",
+      err: "border-err/40 bg-err/10 text-red-300",
+      brand: "border-accent/40 bg-accent/10 text-accent-hover",
+    } as const
+  )[accent];
 
   return (
     <div

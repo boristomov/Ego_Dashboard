@@ -1,20 +1,27 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   FolderOpen,
   Radio,
   Settings as SettingsIcon,
+  Activity,
 } from "lucide-react";
 import { useHealth } from "../hooks/useHealth";
 import { DATA_SOURCE } from "../lib/api";
+import { useInstances } from "../hooks/useInstances";
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/catalogue", label: "Catalogue", icon: FolderOpen },
+  { to: "/postprocessing", label: "Live postprocessing", icon: Activity },
 ];
 
 export function Layout() {
   const { health, ok } = useHealth();
+  const { snapshot: instSnap, instances } = useInstances();
+  const navigate = useNavigate();
+  const working = instances.filter((i) => i.live?.status === "working").length;
+  const reachable = instances.filter((i) => i.live).length;
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-bg text-text">
@@ -53,8 +60,8 @@ export function Layout() {
             Stages (soon)
           </div>
           <DisabledNav label="Collection" />
-          <DisabledNav label="Postprocessing" />
-          <DisabledNav label="Annotation" />
+          <DisabledNav label="Annotation review" />
+          <DisabledNav label="Delivery" />
         </nav>
 
         <div className="mt-auto border-t border-border px-4 py-3 text-[0.7rem] text-text-dim">
@@ -114,6 +121,46 @@ export function Layout() {
                   ? "Live"
                   : "Disconnected"}
             </div>
+
+            <button
+              onClick={() => navigate("/postprocessing")}
+              className={`group flex items-center gap-2 rounded-md border px-2.5 py-1 text-[0.72rem] font-medium transition ${
+                working > 0
+                  ? "border-ok/40 bg-ok/10 text-emerald-300 hover:bg-ok/20"
+                  : reachable > 0
+                    ? "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 hover:bg-cyan-500/20"
+                    : "border-border bg-panel text-text-muted hover:border-accent/40 hover:bg-panel-hover"
+              }`}
+              title={
+                instSnap
+                  ? `${working} working · ${reachable}/${instances.length} reachable`
+                  : "Open live postprocessing page"
+              }
+            >
+              <span
+                className={`relative inline-flex h-2 w-2 ${
+                  working > 0 ? "" : reachable > 0 ? "" : "opacity-40"
+                }`}
+              >
+                {working > 0 && (
+                  <span className="absolute inset-0 inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                )}
+                <span
+                  className={`relative inline-flex h-2 w-2 rounded-full ${
+                    working > 0
+                      ? "bg-emerald-400"
+                      : reachable > 0
+                        ? "bg-cyan-400"
+                        : "bg-text-dim"
+                  }`}
+                />
+              </span>
+              <Activity size={12} />
+              <span>
+                {working}/{instances.length} working
+              </span>
+            </button>
+
             <button className="btn" title="Settings (placeholder)">
               <SettingsIcon size={14} />
             </button>

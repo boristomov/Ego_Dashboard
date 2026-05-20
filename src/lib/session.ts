@@ -14,13 +14,20 @@ export type Artifact = {
   lastModified?: string | null;
 };
 
+export type PipelineStage =
+  | "delivered" // mp4 ∧ mcap ∧ zip — fully shipped
+  | "annotation" // mp4 ∧ xml (and not yet delivered) — ready for CVAT
+  | "raw" // svo only, no processed artifacts at all — freshly uploaded
+  | "unpostprocessed" // has svo, missing mcap, not in any of the above — work queue
+  | "in_progress"; // partial state that doesn't fit cleanly elsewhere
+
 export type DerivedSession = {
   taskName: string;
   sessionId: string;
   timestamp: Date | null;
   totalBytes: number;
   artifacts: Record<ArtifactKind, Artifact>;
-  pipelineStage: "raw_only" | "postprocessed" | "annotated";
+  pipelineStage: PipelineStage;
   completeness: number; // 0..1
   raw: SessionBucketInfo;
   processed: SessionBucketInfo;
@@ -76,14 +83,30 @@ export function deriveSession(s: CatalogueSession): DerivedSession {
   };
 
   const has = (k: ArtifactKind) => artifacts[k].present;
-  const isPostprocessed = has("mcap") && has("mp4");
-  const isAnnotated = isPostprocessed && has("xml");
 
-  let stage: DerivedSession["pipelineStage"] = "raw_only";
-  if (isAnnotated) stage = "annotated";
-  else if (isPostprocessed) stage = "postprocessed";
+  // Priority cascade — first match wins.
+  //   1. delivered       : mp4 + mcap + zip                            (purple)
+  //   2. annotation      : mp4 + xml  (not yet delivered)              (cyan)
+  //   3. raw             : svo only, no processed artifacts at all     (green)
+  //   4. unpostprocessed : has svo, missing mcap                       (red)
+  //   5. in_progress     : everything else                             (gray)
+  const hasAnyProcessed =
+    has("mp4") || has("mcap") || has("xml") || has("zip");
 
-  const checks: ArtifactKind[] = ["svo", "mcap", "mp4", "xml", "meta"];
+  let stage: PipelineStage;
+  if (has("mp4") && has("mcap") && has("zip")) {
+    stage = "delivered";
+  } else if (has("mp4") && has("xml")) {
+    stage = "annotation";
+  } else if (has("svo") && !hasAnyProcessed) {
+    stage = "raw";
+  } else if (has("svo") && !has("mcap")) {
+    stage = "unpostprocessed";
+  } else {
+    stage = "in_progress";
+  }
+
+  const checks: ArtifactKind[] = ["svo", "mcap", "mp4", "xml", "zip"];
   const completeness =
     checks.filter((k) => has(k)).length / checks.length;
 
@@ -142,3 +165,12 @@ export function formatDateTime(d: Date | null): string {
     minute: "2-digit",
   });
 }
+
+export const STAGE_LABEL: Record<PipelineStage, string> = {
+  delivered: "Delivered",
+  annotation: "Annotation-ready",
+  raw: "Raw",
+  unpostprocessed: "Unpostprocessed",
+  in_progress: "In progress",
+};
+

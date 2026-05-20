@@ -38,10 +38,13 @@ export function CataloguePage() {
 
   const stats = useMemo(() => {
     const totalBytes = filtered.reduce((acc, s) => acc + s.totalBytes, 0);
-    const annotated = filtered.filter((s) => s.pipelineStage === "annotated").length;
-    const postprocessed = filtered.filter((s) => s.pipelineStage === "postprocessed").length;
-    const raw = filtered.filter((s) => s.pipelineStage === "raw_only").length;
-    return { totalBytes, annotated, postprocessed, raw };
+    const delivered = filtered.filter((s) => s.pipelineStage === "delivered").length;
+    const annotation = filtered.filter((s) => s.pipelineStage === "annotation").length;
+    const raw = filtered.filter((s) => s.pipelineStage === "raw").length;
+    const unpostprocessed = filtered.filter(
+      (s) => s.pipelineStage === "unpostprocessed",
+    ).length;
+    return { totalBytes, delivered, annotation, raw, unpostprocessed };
   }, [filtered]);
 
   return (
@@ -67,11 +70,12 @@ export function CataloguePage() {
       </div>
 
       {/* Stat row */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatCard label="Sessions" value={filtered.length.toLocaleString()} accent="brand" />
-        <StatCard label="Annotated" value={stats.annotated.toLocaleString()} accent="ok" />
-        <StatCard label="Postprocessed" value={stats.postprocessed.toLocaleString()} accent="cyan" />
-        <StatCard label="Raw only" value={stats.raw.toLocaleString()} accent="warn" />
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+        <StatCard label="Sessions" value={filtered.length.toLocaleString()} accent="slate" />
+        <StatCard label="Delivered" value={stats.delivered.toLocaleString()} accent="brand" />
+        <StatCard label="Annotation-ready" value={stats.annotation.toLocaleString()} accent="cyan" />
+        <StatCard label="Raw" value={stats.raw.toLocaleString()} accent="ok" />
+        <StatCard label="Unpostprocessed" value={stats.unpostprocessed.toLocaleString()} accent="err" />
       </div>
 
       {/* Filters */}
@@ -117,6 +121,8 @@ export function CataloguePage() {
   );
 }
 
+type Accent = "brand" | "ok" | "cyan" | "warn" | "err" | "slate";
+
 function StatCard({
   label,
   value,
@@ -124,24 +130,28 @@ function StatCard({
 }: {
   label: string;
   value: string;
-  accent: "brand" | "ok" | "cyan" | "warn";
+  accent: Accent;
 }) {
-  const tint =
-    accent === "ok"
-      ? "from-ok/15"
-      : accent === "cyan"
-        ? "from-cyan-500/15"
-        : accent === "warn"
-          ? "from-warn/15"
-          : "from-accent/15";
-  const text =
-    accent === "ok"
-      ? "text-emerald-300"
-      : accent === "cyan"
-        ? "text-cyan-300"
-        : accent === "warn"
-          ? "text-amber-300"
-          : "text-accent-hover";
+  const tint = (
+    {
+      ok: "from-ok/15",
+      cyan: "from-cyan-500/15",
+      warn: "from-warn/15",
+      err: "from-err/15",
+      brand: "from-accent/15",
+      slate: "from-text-muted/15",
+    } as const
+  )[accent];
+  const text = (
+    {
+      ok: "text-emerald-300",
+      cyan: "text-cyan-300",
+      warn: "text-amber-300",
+      err: "text-red-300",
+      brand: "text-accent-hover",
+      slate: "text-text",
+    } as const
+  )[accent];
   return (
     <div
       className={`panel relative overflow-hidden bg-gradient-to-br ${tint} to-transparent px-4 py-3`}
