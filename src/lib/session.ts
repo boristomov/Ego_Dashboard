@@ -103,17 +103,19 @@ export function deriveSession(s: CatalogueSession): DerivedSession {
   const has = (k: ArtifactKind) => artifacts[k].present;
 
   // Priority cascade — first match wins.
-  //   1. delivered       : mp4 + mcap + zip                            (purple)
-  //   2. annotation      : mp4 + xml  (not yet delivered)              (cyan)
-  //   3. raw             : svo only, no processed artifacts at all     (green)
-  //   4. unpostprocessed : has svo, missing mcap                       (red)
-  //   5. in_progress     : everything else                             (gray)
+  //   - A ZIP indicates annotation already happened, so the session is either
+  //     delivered (postprocessing complete: mp4 + mcap also present) or
+  //     unpostprocessed (annotated but missing mp4/mcap — has to be re-run).
+  //   - annotation      : mp4 + xml, no zip yet → ready for CVAT       (cyan)
+  //   - raw             : svo only, no processed artifacts at all      (green)
+  //   - unpostprocessed : has svo, missing mcap                        (red)
+  //   - in_progress     : everything else                              (gray)
   const hasAnyProcessed =
     has("mp4") || has("mcap") || has("xml") || has("zip");
 
   let stage: PipelineStage;
-  if (has("mp4") && has("mcap") && has("zip")) {
-    stage = "delivered";
+  if (has("zip")) {
+    stage = has("mp4") && has("mcap") ? "delivered" : "unpostprocessed";
   } else if (has("mp4") && has("xml")) {
     stage = "annotation";
   } else if (has("svo") && !hasAnyProcessed) {
