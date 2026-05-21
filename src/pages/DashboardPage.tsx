@@ -1,8 +1,25 @@
 import { useMemo } from "react";
-import { Camera, Cpu, Tag, ArrowRight, Loader2, type LucideIcon } from "lucide-react";
+import {
+  Camera,
+  Cpu,
+  Tag,
+  Package,
+  ArrowRight,
+  Loader2,
+  Timer,
+  Database,
+  Layers,
+  CheckCircle2,
+  type LucideIcon,
+} from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCatalogue } from "../hooks/useCatalogue";
-import { formatBytes, type DerivedSession } from "../lib/session";
+import {
+  formatBytes,
+  formatDuration,
+  formatHours,
+  type DerivedSession,
+} from "../lib/session";
 
 export function DashboardPage() {
   const { loading, sessions, error } = useCatalogue();
@@ -27,7 +44,47 @@ export function DashboardPage() {
         </div>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-3">
+      {/* Top hero stats — totals across the whole pipeline. */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <HeroStat
+          label="Sessions"
+          value={counts.total.toLocaleString()}
+          sub={`${counts.withMeta.toLocaleString()} with metadata`}
+          icon={Layers}
+          accent="slate"
+          loading={loading}
+        />
+        <HeroStat
+          label="Recorded"
+          value={formatHours(counts.totalDurationSec)}
+          sub={
+            counts.avgDurationSec
+              ? `${formatDuration(counts.avgDurationSec)} avg per session`
+              : "—"
+          }
+          icon={Timer}
+          accent="brand"
+          loading={loading}
+        />
+        <HeroStat
+          label="Raw bytes"
+          value={formatBytes(counts.rawBytes)}
+          sub={`${formatBytes(counts.processedBytes)} processed`}
+          icon={Database}
+          accent="slate"
+          loading={loading}
+        />
+        <HeroStat
+          label="Delivered"
+          value={counts.delivered.toLocaleString()}
+          sub={`${pct(counts.delivered, counts.total)} of total`}
+          icon={CheckCircle2}
+          accent="brand"
+          loading={loading}
+        />
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StageCard
           title="Collection"
           subtitle="Operators recording & uploading to raw"
@@ -36,7 +93,7 @@ export function DashboardPage() {
           metrics={[
             { label: "Raw (fresh)", value: counts.raw.toLocaleString() },
             { label: "Total sessions", value: counts.total.toLocaleString() },
-            { label: "Raw bytes", value: formatBytes(counts.rawBytes) },
+            { label: "Recorded", value: formatHours(counts.totalDurationSec) },
             { label: "With SVO", value: counts.withSvo.toLocaleString() },
           ]}
           loading={loading}
@@ -55,15 +112,31 @@ export function DashboardPage() {
           loading={loading}
         />
         <StageCard
-          title="Annotation & delivery"
-          subtitle="MP4 + XML → CVAT, then ZIP for delivery"
+          title="Annotation"
+          subtitle="MP4 + XML → CVAT preannotations"
           icon={Tag}
           accent="cyan"
           metrics={[
             { label: "Annotation-ready", value: counts.annotation.toLocaleString() },
+            { label: "With XML", value: counts.withXml.toLocaleString() },
+            { label: "XML coverage", value: pct(counts.withXml, counts.total) },
+            { label: "In progress", value: counts.inProgress.toLocaleString() },
+          ]}
+          loading={loading}
+        />
+        <StageCard
+          title="Delivered"
+          subtitle="MP4 + MCAP + ZIP — fully shipped"
+          icon={Package}
+          accent="brand"
+          metrics={[
             { label: "Delivered", value: counts.delivered.toLocaleString() },
             { label: "Delivered %", value: pct(counts.delivered, counts.total) },
-            { label: "In progress", value: counts.inProgress.toLocaleString() },
+            { label: "ZIPs built", value: counts.withZip.toLocaleString() },
+            {
+              label: "Hours shipped",
+              value: formatHours(counts.deliveredDurationSec),
+            },
           ]}
           loading={loading}
         />
@@ -90,21 +163,31 @@ function summarize(sessions: DerivedSession[]) {
     withMcap = 0,
     withXml = 0,
     withZip = 0,
+    withMeta = 0,
     rawBytes = 0,
     processedBytes = 0,
     delivered = 0,
     annotation = 0,
     raw = 0,
     unpostprocessed = 0,
-    inProgress = 0;
+    inProgress = 0,
+    totalDurationSec = 0,
+    deliveredDurationSec = 0,
+    durationCount = 0;
   for (const s of sessions) {
     if (s.artifacts.svo.present) withSvo++;
     if (s.artifacts.mp4.present) withMp4++;
     if (s.artifacts.mcap.present) withMcap++;
     if (s.artifacts.xml.present) withXml++;
     if (s.artifacts.zip.present) withZip++;
+    if (s.metadata) withMeta++;
     rawBytes += s.raw.totalBytes;
     processedBytes += s.processed.totalBytes;
+    if (s.durationSec != null && s.durationSec > 0) {
+      totalDurationSec += s.durationSec;
+      durationCount++;
+      if (s.pipelineStage === "delivered") deliveredDurationSec += s.durationSec;
+    }
     switch (s.pipelineStage) {
       case "delivered":
         delivered++;
@@ -129,6 +212,7 @@ function summarize(sessions: DerivedSession[]) {
     withMcap,
     withXml,
     withZip,
+    withMeta,
     rawBytes,
     processedBytes,
     delivered,
@@ -136,6 +220,9 @@ function summarize(sessions: DerivedSession[]) {
     raw,
     unpostprocessed,
     inProgress,
+    totalDurationSec,
+    deliveredDurationSec,
+    avgDurationSec: durationCount ? totalDurationSec / durationCount : 0,
   };
 }
 
@@ -144,7 +231,56 @@ function pct(part: number, total: number): string {
   return `${Math.round((part / total) * 100)}%`;
 }
 
-type Accent = "warn" | "cyan" | "ok" | "err" | "brand";
+type Accent = "warn" | "cyan" | "ok" | "err" | "brand" | "slate";
+
+function HeroStat({
+  label,
+  value,
+  sub,
+  icon: Icon,
+  accent,
+  loading,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  icon: LucideIcon;
+  accent: "brand" | "slate";
+  loading?: boolean;
+}) {
+  const grad =
+    accent === "brand"
+      ? "from-accent/15"
+      : "from-text-muted/10";
+  const iconBg =
+    accent === "brand"
+      ? "border-accent/40 bg-accent/10 text-accent-hover"
+      : "border-border bg-input text-text-muted";
+  return (
+    <div
+      className={`panel relative overflow-hidden bg-gradient-to-br ${grad} to-transparent px-4 py-3`}
+    >
+      <div className="flex items-start gap-3">
+        <div className={`grid h-9 w-9 place-items-center rounded-lg border ${iconBg}`}>
+          <Icon size={15} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="text-[0.6rem] font-semibold uppercase tracking-widest text-text-muted">
+            {label}
+          </div>
+          <div className="mt-0.5 text-xl font-bold tabular-nums">{value}</div>
+          {sub && (
+            <div className="mt-0.5 truncate text-[0.65rem] text-text-dim">
+              {sub}
+            </div>
+          )}
+        </div>
+        {loading && <Loader2 size={12} className="animate-spin text-text-dim" />}
+      </div>
+    </div>
+  );
+}
+
 function StageCard({
   title,
   subtitle,
@@ -167,6 +303,7 @@ function StageCard({
       ok: "from-ok/10",
       err: "from-err/10",
       brand: "from-accent/10",
+      slate: "from-text-muted/10",
     } as const
   )[accent];
   const iconBg = (
@@ -176,6 +313,7 @@ function StageCard({
       ok: "border-ok/40 bg-ok/10 text-emerald-300",
       err: "border-err/40 bg-err/10 text-red-300",
       brand: "border-accent/40 bg-accent/10 text-accent-hover",
+      slate: "border-border bg-input text-text-muted",
     } as const
   )[accent];
 

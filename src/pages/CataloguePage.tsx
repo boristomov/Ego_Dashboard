@@ -7,7 +7,7 @@ import {
   type FilterState,
 } from "../components/CatalogueFilters";
 import { SessionCard } from "../components/SessionCard";
-import { formatBytes } from "../lib/session";
+import { formatBytes, formatHours } from "../lib/session";
 
 export function CataloguePage() {
   const { loading, error, sessions, refetch } = useCatalogue();
@@ -37,14 +37,28 @@ export function CataloguePage() {
   }, [sessions, filters]);
 
   const stats = useMemo(() => {
-    const totalBytes = filtered.reduce((acc, s) => acc + s.totalBytes, 0);
-    const delivered = filtered.filter((s) => s.pipelineStage === "delivered").length;
-    const annotation = filtered.filter((s) => s.pipelineStage === "annotation").length;
-    const raw = filtered.filter((s) => s.pipelineStage === "raw").length;
-    const unpostprocessed = filtered.filter(
-      (s) => s.pipelineStage === "unpostprocessed",
-    ).length;
-    return { totalBytes, delivered, annotation, raw, unpostprocessed };
+    let totalBytes = 0;
+    let totalDurationSec = 0;
+    let delivered = 0;
+    let annotation = 0;
+    let raw = 0;
+    let unpostprocessed = 0;
+    for (const s of filtered) {
+      totalBytes += s.totalBytes;
+      if (s.durationSec && s.durationSec > 0) totalDurationSec += s.durationSec;
+      if (s.pipelineStage === "delivered") delivered++;
+      else if (s.pipelineStage === "annotation") annotation++;
+      else if (s.pipelineStage === "raw") raw++;
+      else if (s.pipelineStage === "unpostprocessed") unpostprocessed++;
+    }
+    return {
+      totalBytes,
+      totalDurationSec,
+      delivered,
+      annotation,
+      raw,
+      unpostprocessed,
+    };
   }, [filtered]);
 
   return (
@@ -70,8 +84,9 @@ export function CataloguePage() {
       </div>
 
       {/* Stat row */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
         <StatCard label="Sessions" value={filtered.length.toLocaleString()} accent="slate" />
+        <StatCard label="Recorded" value={formatHours(stats.totalDurationSec)} accent="brand" />
         <StatCard label="Delivered" value={stats.delivered.toLocaleString()} accent="brand" />
         <StatCard label="Annotation-ready" value={stats.annotation.toLocaleString()} accent="cyan" />
         <StatCard label="Raw" value={stats.raw.toLocaleString()} accent="ok" />
@@ -87,8 +102,10 @@ export function CataloguePage() {
           total={sessions.length}
           visible={filtered.length}
         />
-        <div className="mt-2 flex items-center gap-3 px-1 text-[0.7rem] text-text-dim">
-          <span>{formatBytes(stats.totalBytes)} total across visible sessions</span>
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 px-1 text-[0.7rem] text-text-dim">
+          <span>{formatBytes(stats.totalBytes)} total</span>
+          <span className="text-text-dim">·</span>
+          <span>{formatHours(stats.totalDurationSec)} of recording</span>
         </div>
       </div>
 

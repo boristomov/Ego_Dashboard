@@ -1,14 +1,17 @@
 import { useState } from "react";
-import { ImageOff, ExternalLink, Clock, HardDrive } from "lucide-react";
+import { ImageOff, Clock, HardDrive, Timer, Play } from "lucide-react";
 import {
   formatBytes,
   formatDateTime,
+  formatDuration,
   STAGE_LABEL,
+  type ArtifactKind,
   type DerivedSession,
   type PipelineStage,
 } from "../lib/session";
 import { thumbUrl, api, DATA_SOURCE } from "../lib/api";
 import { ArtifactBadge } from "./ArtifactBadge";
+import { VideoPlayerModal } from "./VideoPlayerModal";
 
 export const STAGE_STYLES: Record<
   PipelineStage,
@@ -44,34 +47,57 @@ export const STAGE_STYLES: Record<
 export function SessionCard({ s }: { s: DerivedSession }) {
   const stage = STAGE_STYLES[s.pipelineStage];
   const [thumbBroken, setThumbBroken] = useState(false);
+  const [playing, setPlaying] = useState(false);
   const hasThumb = s.artifacts.thumb.present && !thumbBroken;
 
-  const openProcessed = async (key: string) => {
-    try {
-      const url = await api.signedUrl(key, "processed");
-      if (url) window.open(url, "_blank", "noopener");
-    } catch {
-      /* ignore */
-    }
+  // Resolve a click on an artifact to a URL. In static (GitHub Pages) mode the
+  // URL is baked into the snapshot; in proxy/dev we fall back to the live
+  // sign endpoint.
+  const resolveUrl = async (kind: ArtifactKind): Promise<string | null> => {
+    const a = s.artifacts[kind];
+    if (!a.present) return null;
+    if (a.url) return a.url;
+    if (DATA_SOURCE !== "proxy" || !a.key) return null;
+    return api.signedUrl(a.key, a.bucket);
   };
 
-  const openRaw = async (key: string) => {
-    try {
-      const url = await api.signedUrl(key, "raw");
-      if (url) window.open(url, "_blank", "noopener");
-    } catch {
-      /* ignore */
+  const handleBadgeClick = async (kind: ArtifactKind) => {
+    if (kind === "mp4") {
+      const url = await resolveUrl("mp4");
+      if (url) setPlaying(true);
+      return;
     }
+    const url = await resolveUrl(kind);
+    if (!url) return;
+    // For non-video files the snapshot sets Content-Disposition=attachment so
+    // navigating triggers a download in S3. Open in a new tab so we don't lose
+    // page state.
+    window.open(url, "_blank", "noopener");
   };
 
-  const canOpen = DATA_SOURCE === "proxy";
+  const canClick = (kind: ArtifactKind): boolean => {
+    const a = s.artifacts[kind];
+    if (!a.present) return false;
+    return !!a.url || DATA_SOURCE === "proxy";
+  };
+
+  const mp4Url = s.artifacts.mp4.url;
 
   return (
     <div
       className={`group relative flex flex-col overflow-hidden rounded-xl border-2 bg-panel transition ${stage.ring}`}
     >
       {/* Thumbnail */}
-      <div className="relative aspect-square w-full overflow-hidden bg-black">
+      <div
+        className={`relative aspect-square w-full overflow-hidden bg-black ${
+          mp4Url || canClick("mp4") ? "cursor-pointer" : ""
+        }`}
+        onClick={() => {
+          if (canClick("mp4")) handleBadgeClick("mp4");
+        }}
+        role={canClick("mp4") ? "button" : undefined}
+        aria-label={canClick("mp4") ? `Play ${s.sessionId}` : undefined}
+      >
         {hasThumb ? (
           <img
             src={thumbUrl(s.taskName, s.sessionId)}
@@ -86,6 +112,15 @@ export function SessionCard({ s }: { s: DerivedSession }) {
           </div>
         )}
 
+        {/* Play overlay (only when MP4 is openable) */}
+        {canClick("mp4") && (
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/30">
+            <div className="grid h-12 w-12 place-items-center rounded-full border-2 border-white/70 bg-black/40 text-white opacity-0 transition group-hover:opacity-100">
+              <Play size={20} className="ml-0.5" strokeWidth={2} />
+            </div>
+          </div>
+        )}
+
         {/* Stage chip overlaid on the thumbnail */}
         <div className="absolute left-2 top-2">
           <span
@@ -94,6 +129,15 @@ export function SessionCard({ s }: { s: DerivedSession }) {
             {STAGE_LABEL[s.pipelineStage]}
           </span>
         </div>
+
+        {/* Duration chip overlaid bottom-right */}
+        {s.durationSec != null && s.durationSec > 0 && (
+          <div className="absolute bottom-2 right-2">
+            <span className="rounded-md border border-white/15 bg-black/55 px-1.5 py-0.5 font-mono text-[0.62rem] text-white/90 backdrop-blur">
+              {formatDuration(s.durationSec)}
+            </span>
+          </div>
+        )}
 
         {/* Completeness bar */}
         <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/60">
@@ -120,9 +164,19 @@ export function SessionCard({ s }: { s: DerivedSession }) {
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 text-[0.65rem] text-text-dim">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.65rem] text-text-dim">
           <span className="inline-flex items-center gap-1">
             <Clock size={10} /> {formatDateTime(s.timestamp)}
+          </span>
+          <span
+            className="inline-flex items-center gap-1"
+            title={
+              s.metadata?.frameCount
+                ? `${s.metadata.frameCount} frames`
+                : undefined
+            }
+          >
+            <Timer size={10} /> {formatDuration(s.durationSec)}
           </span>
           <span className="inline-flex items-center gap-1">
             <HardDrive size={10} /> {formatBytes(s.totalBytes)}
@@ -130,55 +184,53 @@ export function SessionCard({ s }: { s: DerivedSession }) {
         </div>
 
         <div className="flex flex-wrap gap-1">
-          <ArtifactBadge kind="svo" present={s.artifacts.svo.present} />
-          <ArtifactBadge kind="mcap" present={s.artifacts.mcap.present} />
-          <ArtifactBadge kind="mp4" present={s.artifacts.mp4.present} />
-          <ArtifactBadge kind="xml" present={s.artifacts.xml.present} />
-          <ArtifactBadge kind="meta" present={s.artifacts.meta.present} />
+          <ArtifactBadge
+            kind="svo"
+            present={s.artifacts.svo.present}
+            onClick={canClick("svo") ? () => handleBadgeClick("svo") : undefined}
+            action="download"
+          />
+          <ArtifactBadge
+            kind="mcap"
+            present={s.artifacts.mcap.present}
+            onClick={canClick("mcap") ? () => handleBadgeClick("mcap") : undefined}
+            action="download"
+          />
+          <ArtifactBadge
+            kind="mp4"
+            present={s.artifacts.mp4.present}
+            onClick={canClick("mp4") ? () => handleBadgeClick("mp4") : undefined}
+            action="play"
+          />
+          <ArtifactBadge
+            kind="xml"
+            present={s.artifacts.xml.present}
+            onClick={canClick("xml") ? () => handleBadgeClick("xml") : undefined}
+            action="download"
+          />
+          <ArtifactBadge
+            kind="zip"
+            present={s.artifacts.zip.present}
+            onClick={canClick("zip") ? () => handleBadgeClick("zip") : undefined}
+            action="download"
+          />
+          <ArtifactBadge
+            kind="meta"
+            present={s.artifacts.meta.present}
+            onClick={canClick("meta") ? () => handleBadgeClick("meta") : undefined}
+            action="download"
+          />
         </div>
-
-        {/* Quick-open links (proxy/dev only — signed URLs can't be baked in) */}
-        {canOpen && (
-        <div className="mt-1 flex flex-wrap gap-1.5">
-          {s.artifacts.mp4.present && s.artifacts.mp4.key && (
-            <button
-              className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2 py-1 text-[0.65rem] font-medium text-emerald-300 transition hover:bg-emerald-500/20"
-              onClick={() => openProcessed(s.artifacts.mp4.key!)}
-            >
-              <ExternalLink size={10} /> MP4
-            </button>
-          )}
-          {s.artifacts.mcap.present && s.artifacts.mcap.key && (
-            <button
-              className="inline-flex items-center gap-1 rounded-md border border-accent/30 bg-accent/10 px-2 py-1 text-[0.65rem] font-medium text-accent-hover transition hover:bg-accent/20"
-              onClick={() => openProcessed(s.artifacts.mcap.key!)}
-            >
-              <ExternalLink size={10} /> MCAP
-            </button>
-          )}
-          {s.artifacts.xml.present && s.artifacts.xml.key && (
-            <button
-              className="inline-flex items-center gap-1 rounded-md border border-warn/40 bg-warn/10 px-2 py-1 text-[0.65rem] font-medium text-amber-300 transition hover:bg-warn/20"
-              onClick={() => openProcessed(s.artifacts.xml.key!)}
-            >
-              <ExternalLink size={10} /> XML
-            </button>
-          )}
-          {s.artifacts.meta.present && s.artifacts.meta.key && (
-            <button
-              className="inline-flex items-center gap-1 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-2 py-1 text-[0.65rem] font-medium text-cyan-300 transition hover:bg-cyan-500/20"
-              onClick={() =>
-                s.artifacts.meta.bucket === "processed"
-                  ? openProcessed(s.artifacts.meta.key!)
-                  : openRaw(s.artifacts.meta.key!)
-              }
-            >
-              <ExternalLink size={10} /> JSON
-            </button>
-          )}
-        </div>
-        )}
       </div>
+
+      {playing && mp4Url && (
+        <VideoPlayerModal
+          src={mp4Url}
+          title={s.taskName}
+          subtitle={`${s.sessionId}  ·  ${formatDuration(s.durationSec)}`}
+          onClose={() => setPlaying(false)}
+        />
+      )}
     </div>
   );
 }

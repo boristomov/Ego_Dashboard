@@ -48,11 +48,32 @@ export type SessionBucketInfo = {
   lastModified?: string | null;
 };
 
+export type SessionMetadata = {
+  durationSec: number | null;
+  frameCount: number | null;
+  fpsNominal: number | null;
+  timestamp: string | null;
+  taskCategory: string | null;
+  environment: string | null;
+  lighting: string | null;
+  handUsage: string | null;
+  resolution: string | null;
+  operator: string | null;
+  qualityStatus: string | null;
+};
+
+/** Pre-signed download URLs baked into the snapshot, keyed by artifact kind. */
+export type SignedUrlMap = Partial<
+  Record<"mp4" | "mcap" | "xml" | "zip" | "svo" | "meta_raw" | "meta_proc", string>
+>;
+
 export type CatalogueSession = {
   taskName: string;
   sessionId: string;
   raw: SessionBucketInfo;
   processed: SessionBucketInfo;
+  metadata?: SessionMetadata | null;
+  urls?: SignedUrlMap;
 };
 
 export type CatalogueResponse = {

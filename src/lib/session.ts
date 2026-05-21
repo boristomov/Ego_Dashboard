@@ -1,7 +1,12 @@
 // Pure logic for deriving session state from raw/processed file listings.
 // Kept separate from React so it's easy to test and reuse on the dashboard.
 
-import type { CatalogueSession, SessionBucketInfo, SessionFile } from "./api";
+import type {
+  CatalogueSession,
+  SessionBucketInfo,
+  SessionFile,
+  SessionMetadata,
+} from "./api";
 
 export type ArtifactKind = "svo" | "mcap" | "mp4" | "xml" | "meta" | "thumb" | "zip";
 
@@ -12,6 +17,8 @@ export type Artifact = {
   key?: string;
   size?: number;
   lastModified?: string | null;
+  /** Pre-signed download URL baked into the snapshot, if available. */
+  url?: string;
 };
 
 export type PipelineStage =
@@ -26,6 +33,9 @@ export type DerivedSession = {
   sessionId: string;
   timestamp: Date | null;
   totalBytes: number;
+  /** Recording duration in seconds, from raw metadata.json (null if missing). */
+  durationSec: number | null;
+  metadata: SessionMetadata | null;
   artifacts: Record<ArtifactKind, Artifact>;
   pipelineStage: PipelineStage;
   completeness: number; // 0..1
@@ -61,6 +71,7 @@ function findFile(
 
 export function deriveSession(s: CatalogueSession): DerivedSession {
   const { taskName, sessionId, raw, processed } = s;
+  const urls = s.urls || {};
 
   const svoFile = findFile(raw.files, (r) => r === "recording.svo2" || r === "recording.svo");
   const thumbFile = findFile(raw.files, (r) => r === "thumb.jpg" || r === "thumbnail.jpg");
@@ -71,15 +82,22 @@ export function deriveSession(s: CatalogueSession): DerivedSession {
   const xmlFile = findFile(processed.files, (r) => r.endsWith("_cvat.xml") || r.endsWith(".xml"));
   const zipFile = findFile(processed.files, (r) => r.endsWith(".zip"));
   const procMetaFile = findFile(processed.files, (r) => r === "metadata.json");
+  // Prefer the raw metadata URL when both exist (older sessions only have raw).
+  const metaUrl = rawMetaFile ? urls.meta_raw : urls.meta_proc;
 
   const artifacts: Record<ArtifactKind, Artifact> = {
-    svo: mkArtifact("svo", "raw", svoFile),
+    svo: mkArtifact("svo", "raw", svoFile, urls.svo),
     thumb: mkArtifact("thumb", "raw", thumbFile),
-    meta: mkArtifact("meta", "raw", rawMetaFile || procMetaFile),
-    mcap: mkArtifact("mcap", "processed", mcapFile),
-    mp4: mkArtifact("mp4", "processed", mp4File),
-    xml: mkArtifact("xml", "processed", xmlFile),
-    zip: mkArtifact("zip", "processed", zipFile),
+    meta: mkArtifact(
+      "meta",
+      rawMetaFile ? "raw" : "processed",
+      rawMetaFile || procMetaFile,
+      metaUrl,
+    ),
+    mcap: mkArtifact("mcap", "processed", mcapFile, urls.mcap),
+    mp4: mkArtifact("mp4", "processed", mp4File, urls.mp4),
+    xml: mkArtifact("xml", "processed", xmlFile, urls.xml),
+    zip: mkArtifact("zip", "processed", zipFile, urls.zip),
   };
 
   const has = (k: ArtifactKind) => artifacts[k].present;
@@ -110,11 +128,21 @@ export function deriveSession(s: CatalogueSession): DerivedSession {
   const completeness =
     checks.filter((k) => has(k)).length / checks.length;
 
+  // Prefer the metadata.json timestamp (real recording time) over the parsed
+  // sessionId timestamp (only granular to seconds, sometimes off).
+  const metadata = s.metadata || null;
+  const metaTimestamp = metadata?.timestamp ? new Date(metadata.timestamp) : null;
+
   return {
     taskName,
     sessionId,
-    timestamp: parseSessionTimestamp(sessionId),
+    timestamp:
+      metaTimestamp && !Number.isNaN(metaTimestamp.getTime())
+        ? metaTimestamp
+        : parseSessionTimestamp(sessionId),
     totalBytes: raw.totalBytes + processed.totalBytes,
+    durationSec: metadata?.durationSec ?? null,
+    metadata,
     artifacts,
     pipelineStage: stage,
     completeness,
@@ -127,6 +155,7 @@ function mkArtifact(
   kind: ArtifactKind,
   bucket: "raw" | "processed",
   file?: SessionFile,
+  url?: string,
 ): Artifact {
   if (!file) return { kind, present: false, bucket };
   return {
@@ -136,7 +165,27 @@ function mkArtifact(
     key: file.key,
     size: file.size,
     lastModified: file.lastModified,
+    url,
   };
+}
+
+export function formatDuration(sec: number | null | undefined): string {
+  if (sec == null || !Number.isFinite(sec) || sec <= 0) return "—";
+  const total = Math.round(sec);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  if (h > 0) return `${h}h ${String(m).padStart(2, "0")}m`;
+  if (m > 0) return `${m}m ${String(s).padStart(2, "0")}s`;
+  return `${s}s`;
+}
+
+export function formatHours(sec: number): string {
+  if (!Number.isFinite(sec) || sec <= 0) return "—";
+  const h = sec / 3600;
+  if (h < 1) return `${Math.round(sec / 60)} min`;
+  if (h < 10) return `${h.toFixed(1)} h`;
+  return `${Math.round(h)} h`;
 }
 
 export function formatBytes(n: number): string {

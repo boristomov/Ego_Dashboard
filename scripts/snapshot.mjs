@@ -20,6 +20,7 @@ import {
   ListObjectsV2Command,
   GetObjectCommand,
 } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,10 +36,16 @@ const REGION = process.env.AWS_REGION || "ap-southeast-1";
 const args = parseArgs(process.argv.slice(2));
 const INCLUDE_THUMBS = !args.flags.has("--no-thumbs");
 const USE_EXISTING_THUMBS = args.flags.has("--use-existing-thumbs");
+const INCLUDE_METADATA = !args.flags.has("--no-metadata");
+const INCLUDE_SIGNED_URLS = !args.flags.has("--no-signed-urls");
 const LIMIT = args.opts["--limit"] ? Number(args.opts["--limit"]) : 5000;
 const CONCURRENCY = args.opts["--concurrency"]
   ? Number(args.opts["--concurrency"])
   : 16;
+// Presigned URLs use SigV4, max validity is 7 days (604800s). The workflow
+// runs every ~5 min so links are always fresh — pick the max so manual
+// catalogue exports remain usable for a week.
+const SIGNED_URL_TTL = Number(args.opts["--signed-ttl"] || 7 * 24 * 60 * 60);
 
 function parseArgs(argv) {
   const flags = new Set();
@@ -162,6 +169,28 @@ async function downloadObject(bucket, key, destFile) {
   });
 }
 
+async function fetchObjectJson(bucket, key) {
+  const out = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
+  const chunks = [];
+  for await (const c of out.Body) chunks.push(c);
+  const text = Buffer.concat(chunks).toString("utf8");
+  return JSON.parse(text);
+}
+
+// Pre-sign one URL. Adds a download-friendly content-disposition for non-mp4
+// files so the browser triggers a save dialog instead of dumping binary into
+// the tab.
+async function presign(bucket, key, ttl, displayName) {
+  const isVideo = /\.mp4$/i.test(key);
+  const params = { Bucket: bucket, Key: key };
+  if (!isVideo && displayName) {
+    // RFC 5987 quoting for unicode filenames.
+    const safe = displayName.replace(/[^a-zA-Z0-9._-]+/g, "_");
+    params.ResponseContentDisposition = `attachment; filename="${safe}"`;
+  }
+  return getSignedUrl(s3, new GetObjectCommand(params), { expiresIn: ttl });
+}
+
 // Bounded-concurrency map.
 async function mapWithConcurrency(items, n, worker) {
   const results = new Array(items.length);
@@ -216,6 +245,125 @@ async function main() {
     console.log(
       `[snapshot]   ${taskName}: raw=${rawList.length} proc=${procList.length} merged=${ids.size}`,
     );
+  }
+
+  // -------------- metadata.json (duration / frames / timestamp) ---------------
+  let metaFetched = 0;
+  let metaFailed = 0;
+  if (INCLUDE_METADATA) {
+    const metaJobs = [];
+    for (const s of sessions) {
+      const metaFile =
+        s.raw.files.find((f) => f.rel === "metadata.json") ||
+        s.processed.files.find((f) => f.rel === "metadata.json");
+      if (!metaFile) continue;
+      const bucket = s.raw.files.includes(metaFile) ? RAW_BUCKET : PROCESSED_BUCKET;
+      metaJobs.push({ session: s, key: metaFile.key, bucket });
+    }
+    console.log(
+      `[snapshot] metadata.json: fetching ${metaJobs.length} (concurrency=${CONCURRENCY * 2})`,
+    );
+    await mapWithConcurrency(metaJobs, CONCURRENCY * 2, async (job) => {
+      try {
+        const m = await fetchObjectJson(job.bucket, job.key);
+        // Only keep the small subset the UI actually renders, to keep
+        // catalogue.json from ballooning.
+        job.session.metadata = {
+          durationSec:
+            typeof m.duration_seconds === "number" ? m.duration_seconds : null,
+          frameCount: typeof m.frame_count === "number" ? m.frame_count : null,
+          fpsNominal:
+            (m.fps && typeof m.fps.nominal === "number" ? m.fps.nominal : null) ||
+            null,
+          timestamp: typeof m.timestamp === "string" ? m.timestamp : null,
+          taskCategory: m.recording_details?.task_category || null,
+          environment: m.recording_details?.environment || null,
+          lighting: m.recording_details?.lighting_type || null,
+          handUsage: m.recording_details?.hand_usage || null,
+          resolution: m.recording_settings?.resolution || null,
+          operator: m.recording_details?.operator_name || null,
+          qualityStatus: m.quality_status || null,
+        };
+        metaFetched += 1;
+      } catch (err) {
+        metaFailed += 1;
+        if (metaFailed <= 5) {
+          console.warn(`[snapshot]   metadata fail ${job.key}: ${err.message}`);
+        }
+      }
+    });
+    console.log(
+      `[snapshot] metadata.json: fetched=${metaFetched} failed=${metaFailed}`,
+    );
+  }
+
+  // -------------- presigned URLs (7-day max, refreshed each deploy) ------------
+  let urlsSigned = 0;
+  if (INCLUDE_SIGNED_URLS) {
+    const ARTIFACT_PATTERNS = [
+      { kind: "mp4", bucket: "processed", match: (f) => /\.mp4$/i.test(f.rel) },
+      { kind: "mcap", bucket: "processed", match: (f) => /\.mcap$/i.test(f.rel) },
+      {
+        kind: "xml",
+        bucket: "processed",
+        match: (f) => /(_cvat\.xml|\.xml)$/i.test(f.rel),
+      },
+      { kind: "zip", bucket: "processed", match: (f) => /\.zip$/i.test(f.rel) },
+      {
+        kind: "svo",
+        bucket: "raw",
+        match: (f) => /^recording\.svo2?$/i.test(f.rel),
+      },
+      {
+        kind: "meta_raw",
+        bucket: "raw",
+        match: (f) => f.rel === "metadata.json",
+      },
+      {
+        kind: "meta_proc",
+        bucket: "processed",
+        match: (f) => f.rel === "metadata.json",
+      },
+    ];
+
+    const urlJobs = [];
+    for (const s of sessions) {
+      s.urls = {};
+      for (const p of ARTIFACT_PATTERNS) {
+        const files = p.bucket === "raw" ? s.raw.files : s.processed.files;
+        const f = files.find(p.match);
+        if (!f) continue;
+        const bucket = p.bucket === "raw" ? RAW_BUCKET : PROCESSED_BUCKET;
+        const displayName = `${safePath(s.taskName)}_${s.sessionId}_${path.basename(f.rel)}`;
+        urlJobs.push({
+          session: s,
+          kind: p.kind,
+          bucket,
+          key: f.key,
+          displayName,
+        });
+      }
+    }
+    console.log(
+      `[snapshot] signed URLs: signing ${urlJobs.length} (ttl=${SIGNED_URL_TTL}s = ${(SIGNED_URL_TTL / 86400).toFixed(1)}d)`,
+    );
+    // Pre-signing is HMAC-only (no network) so we can crank concurrency.
+    await mapWithConcurrency(urlJobs, 64, async (job) => {
+      try {
+        job.session.urls[job.kind] = await presign(
+          job.bucket,
+          job.key,
+          SIGNED_URL_TTL,
+          job.displayName,
+        );
+        urlsSigned += 1;
+      } catch (err) {
+        if (urlsSigned < 5) {
+          console.warn(`[snapshot]   sign fail ${job.key}: ${err.message}`);
+        }
+      }
+    });
+    console.log(`[snapshot] signed URLs: ${urlsSigned} written`);
   }
 
   const publicDir = path.join(REPO_ROOT, "public");
@@ -297,6 +445,16 @@ async function main() {
       downloaded: thumbsDownloaded,
       failed: thumbsFailed,
       skipped: thumbsSkipped,
+    },
+    metadata: {
+      included: INCLUDE_METADATA,
+      fetched: metaFetched,
+      failed: metaFailed,
+    },
+    signedUrls: {
+      included: INCLUDE_SIGNED_URLS,
+      count: urlsSigned,
+      ttlSec: SIGNED_URL_TTL,
     },
     elapsedMs: Date.now() - t0,
   };
