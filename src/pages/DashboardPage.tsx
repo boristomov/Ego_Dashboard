@@ -7,9 +7,9 @@ import {
   ArrowRight,
   Loader2,
   Timer,
-  Database,
   Layers,
   CheckCircle2,
+  FolderTree,
   type LucideIcon,
 } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -45,9 +45,9 @@ export function DashboardPage() {
       )}
 
       {/* Top hero stats — totals across the whole pipeline. */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
         <HeroStat
-          label="Sessions"
+          label="Sessions total"
           value={counts.total.toLocaleString()}
           sub={`${counts.withMeta.toLocaleString()} with metadata`}
           icon={Layers}
@@ -55,7 +55,7 @@ export function DashboardPage() {
           loading={loading}
         />
         <HeroStat
-          label="Recorded"
+          label="Time recorded total"
           value={formatHours(counts.totalDurationSec)}
           sub={
             counts.avgDurationSec
@@ -63,23 +63,31 @@ export function DashboardPage() {
               : "—"
           }
           icon={Timer}
-          accent="brand"
-          loading={loading}
-        />
-        <HeroStat
-          label="Raw bytes"
-          value={formatBytes(counts.rawBytes)}
-          sub={`${formatBytes(counts.processedBytes)} processed`}
-          icon={Database}
           accent="slate"
           loading={loading}
         />
         <HeroStat
-          label="Delivered"
+          label="Sessions delivered"
           value={counts.delivered.toLocaleString()}
           sub={`${pct(counts.delivered, counts.total)} of total`}
           icon={CheckCircle2}
           accent="brand"
+          loading={loading}
+        />
+        <HeroStat
+          label="Time delivered"
+          value={formatHours(counts.deliveredDurationSec)}
+          sub={`${pct(counts.deliveredDurationSec, counts.totalDurationSec)} of recorded`}
+          icon={Package}
+          accent="brand"
+          loading={loading}
+        />
+        <HeroStat
+          label="Tasks recorded"
+          value={counts.taskCount.toLocaleString()}
+          sub="distinct task names"
+          icon={FolderTree}
+          accent="slate"
           loading={loading}
         />
       </div>
@@ -174,7 +182,9 @@ function summarize(sessions: DerivedSession[]) {
     totalDurationSec = 0,
     deliveredDurationSec = 0,
     durationCount = 0;
+  const tasks = new Set<string>();
   for (const s of sessions) {
+    tasks.add(s.taskName);
     if (s.artifacts.svo.present) withSvo++;
     if (s.artifacts.mp4.present) withMp4++;
     if (s.artifacts.mcap.present) withMcap++;
@@ -207,6 +217,7 @@ function summarize(sessions: DerivedSession[]) {
   }
   return {
     total: sessions.length,
+    taskCount: tasks.size,
     withSvo,
     withMp4,
     withMcap,
@@ -227,7 +238,7 @@ function summarize(sessions: DerivedSession[]) {
 }
 
 function pct(part: number, total: number): string {
-  if (!total) return "—";
+  if (!total || !Number.isFinite(total)) return "—";
   return `${Math.round((part / total) * 100)}%`;
 }
 
