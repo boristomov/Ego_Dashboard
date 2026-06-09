@@ -32,7 +32,9 @@ export function PrivacyPage() {
             <li>
               <span className="text-text">Dataset visitors:</span> your email
               address and company / organization name, captured when you unlock
-              a download.
+              a download. These are collected not necessarily for sales contact,
+              but for feedback surveys and direct communication regarding our
+              services.
             </li>
             <li>
               <span className="text-text">Account holders (R&amp;D, and
@@ -52,8 +54,9 @@ export function PrivacyPage() {
             Why we collect it
           </h2>
           <p className="mt-1.5">
-            To understand who is evaluating the dataset and to contact you about
-            it, and — for account holders — to authenticate sign-in and govern
+            For dataset visitors: to reach you with feedback surveys and direct
+            communication regarding our services (not necessarily for sales
+            contact). For account holders: to authenticate sign-in and govern
             access to delivered data. We do not sell your data or share it with
             third parties for marketing.
           </p>

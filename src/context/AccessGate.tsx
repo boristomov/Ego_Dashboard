@@ -253,8 +253,9 @@ function AccessGateModal({
               onChange={(e) => setConsent(e.target.checked)}
             />
             <span className="text-[0.66rem] leading-relaxed text-text-muted">
-              I agree that Thoth AI may store my email and company name to
-              contact me about this dataset, per the{" "}
+              I agree that Thoth AI may store my email and company name for
+              feedback surveys and direct communication regarding our services,
+              per the{" "}
               <a href="#/privacy" className="text-accent-hover hover:underline">
                 privacy notice
               </a>
@@ -276,9 +277,10 @@ function AccessGateModal({
           </button>
 
           <p className="mt-2 text-center text-[0.62rem] leading-relaxed text-text-dim">
-            We store only your email and company name, used solely to contact
-            you about the dataset. We never sell your data; email us to have it
-            removed.
+            We store only your email and company name — used for feedback
+            surveys and direct communication regarding our services, not
+            necessarily for sales contact. We never sell your data; email us to
+            have it removed.
           </p>
         </form>
 
