@@ -2,9 +2,14 @@
 //
 // When a public visitor unlocks downloads (email + company) we record it. The
 // record is always kept locally; if VITE_LEAD_ENDPOINT is configured it is
-// also POSTed to a small AWS Lambda Function URL that writes it into the
-// `client-data-access` S3 bucket. Capture is strictly best-effort and never
-// blocks the user — a network/endpoint failure is swallowed.
+// also POSTed to a collector that appends it to a Google Sheet (a deployed
+// Apps Script web app). Capture is strictly best-effort and never blocks the
+// user — a network/endpoint failure is swallowed.
+//
+// The POST uses text/plain + no-cors on purpose: Google Apps Script web apps
+// do not answer CORS preflight (OPTIONS) requests, so an application/json body
+// would fail. A text/plain body is a CORS-safe request that skips the
+// preflight; the response is opaque (no-cors) but we don't need to read it.
 
 type ViteEnv = { env?: { VITE_LEAD_ENDPOINT?: string } };
 const LEAD_ENDPOINT =
@@ -65,8 +70,11 @@ export function submitLead(input: LeadInput): void {
   try {
     void fetch(LEAD_ENDPOINT, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      // text/plain is CORS-safe and avoids the preflight that Apps Script
+      // cannot answer; the Apps Script reads JSON from the raw request body.
+      headers: { "content-type": "text/plain;charset=utf-8" },
       body: JSON.stringify(record),
+      mode: "no-cors",
       // keepalive lets the request outlive a navigation triggered by the
       // download that immediately follows.
       keepalive: true,

@@ -1,8 +1,43 @@
-# Lead capture → `client-data-access`
+# Lead capture
 
-A tiny AWS Lambda behind a **Function URL** that the dashboard calls when a
-public visitor unlocks downloads (email + company). It writes one JSON object
-per submission into the `client-data-access` bucket under `leads/`.
+When a public visitor unlocks downloads (email + company) — or a client signs
+in — the dashboard records the lead. It is always saved to the visitor's
+`localStorage`; if `VITE_LEAD_ENDPOINT` is set it is also sent to a collector.
+
+## Active path: Google Sheet (no AWS, no org permissions)
+
+The AWS account's organization guardrail blocks anonymous (non-org) access, so
+a public Lambda Function URL returns 403 to web visitors. The simplest working
+collector is a **Google Apps Script web app** that appends each lead to a
+Google Sheet.
+
+1. Create a Google Sheet (this is your leads database).
+2. **Extensions → Apps Script**, delete the stub, and paste
+   [`google-apps-script.gs`](./google-apps-script.gs).
+3. **Deploy → New deployment → Web app**:
+   - Execute as: **Me**
+   - Who has access: **Anyone** (required so the public site can POST)
+4. Authorize, copy the **Web app URL** (ends with `/exec`), and set it:
+
+```bash
+gh variable set VITE_LEAD_ENDPOINT --body "https://script.google.com/macros/s/AKfy.../exec"
+```
+
+5. Re-run the deploy workflow (or push). New unlocks then append a row with
+   email, company, type, consent, timestamp, page, and referrer.
+
+The client sends a `text/plain` body with `no-cors` on purpose — Apps Script
+can't answer a CORS preflight, so an `application/json` body would fail.
+
+---
+
+## Alternative (not currently used): AWS Lambda → `client-data-access`
+
+A tiny AWS Lambda behind a **Function URL** that writes one JSON object per
+submission into the `client-data-access` bucket under `leads/`. This is wired
+and deployable (see below) but **blocked by the org guardrail for anonymous
+callers**, so it is not the active path. To use it you'd need an org carve-out
+(allow anonymous invoke) or a Cognito unauth identity pool fronting it.
 
 This exists because the dashboard is a **static site** — it can't hold AWS
 credentials, and the browser can't write to a private bucket directly. The
