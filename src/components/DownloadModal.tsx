@@ -22,6 +22,7 @@ import {
   summarizeKinds,
   triggerBrowserDownloads,
 } from "../lib/exporter";
+import { useAccessGate } from "../context/AccessGate";
 
 // Above this many direct browser downloads we steer the user to the script.
 const BROWSER_DOWNLOAD_WARN = 12;
@@ -38,6 +39,7 @@ export function DownloadModal({
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(
     null,
   );
+  const { requestAccess, creds, reset } = useAccessGate();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -76,7 +78,8 @@ export function DownloadModal({
   const toggleAll = () =>
     setSelected(allSelected ? new Set() : new Set(allWithFiles));
 
-  const exportCsv = () => {
+  const exportCsv = async () => {
+    if (!(await requestAccess())) return;
     downloadTextFile(
       `ego-catalogue_${stamp}.csv`,
       buildCsv(sessions),
@@ -84,13 +87,15 @@ export function DownloadModal({
     );
   };
 
-  const exportLinks = () => {
+  const exportLinks = async () => {
     if (!targets.length) return;
+    if (!(await requestAccess())) return;
     downloadTextFile(`ego-download-links_${stamp}.txt`, buildUrlList(targets));
   };
 
-  const exportScript = () => {
+  const exportScript = async () => {
     if (!targets.length) return;
+    if (!(await requestAccess())) return;
     downloadTextFile(
       `ego-download_${stamp}.sh`,
       buildShellScript(targets),
@@ -100,6 +105,7 @@ export function DownloadModal({
 
   const downloadInBrowser = async () => {
     if (!targets.length) return;
+    if (!(await requestAccess())) return;
     setBusy("browser");
     setProgress({ done: 0, total: targets.length });
     try {
@@ -320,6 +326,22 @@ export function DownloadModal({
             Signed download links are valid for about 7 days from the latest
             snapshot. Re-open this dialog after a refresh to get fresh links.
           </p>
+
+          {creds && (
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-[0.66rem] text-text-dim">
+              <span>
+                Access:{" "}
+                <span className="text-text-muted">{creds.email}</span> ·{" "}
+                <span className="text-text-muted">{creds.company}</span>
+              </span>
+              <button
+                onClick={reset}
+                className="text-accent-hover hover:underline"
+              >
+                Use a different email
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>,

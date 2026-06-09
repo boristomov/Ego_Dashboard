@@ -1,18 +1,23 @@
 import { useEffect, useRef } from "react";
 import { X, ExternalLink, Download } from "lucide-react";
+import { useAccessGate } from "../context/AccessGate";
 
 export function VideoPlayerModal({
   src,
+  downloadSrc,
   title,
   subtitle,
   onClose,
 }: {
   src: string;
+  /** Attachment-dispositioned URL used by the Download button (falls back to src). */
+  downloadSrc?: string;
   title: string;
   subtitle?: string;
   onClose: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { requestAccess } = useAccessGate();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -61,9 +66,16 @@ export function VideoPlayerModal({
           >
             <ExternalLink size={13} />
           </a>
-          <a href={src} download className="btn" title="Download">
+          <button
+            className="btn"
+            title="Download"
+            onClick={async () => {
+              if (!(await requestAccess())) return;
+              window.open(downloadSrc ?? src, "_blank", "noopener");
+            }}
+          >
             <Download size={13} />
-          </a>
+          </button>
           <button
             onClick={onClose}
             className="btn"
