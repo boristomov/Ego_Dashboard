@@ -3,6 +3,7 @@ import { Layout } from "./components/Layout";
 import { DashboardPage } from "./pages/DashboardPage";
 import { CataloguePage } from "./pages/CataloguePage";
 import { PostprocessingPage } from "./pages/PostprocessingPage";
+import { ClientConnectionsPage } from "./pages/ClientConnectionsPage";
 import { MaintenancePage } from "./pages/MaintenancePage";
 import { WelcomePage } from "./pages/WelcomePage";
 import { PrivacyPage } from "./pages/PrivacyPage";
@@ -20,7 +21,7 @@ export default function App() {
 }
 
 function AppRoutes() {
-  const { role, isTeam } = useAuth();
+  const { role, isTeam, isAdmin } = useAuth();
 
   // Client access is parked in maintenance for now.
   if (role === "client") {
@@ -42,6 +43,7 @@ function AppRoutes() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/catalogue" element={<CataloguePage />} />
         <Route path="/postprocessing" element={<PostprocessingPage />} />
+        {isAdmin && <Route path="/clients" element={<ClientConnectionsPage />} />}
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
