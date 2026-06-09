@@ -128,8 +128,13 @@ export function SignInModal({ onClose }: { onClose: () => void }) {
             )}
           </button>
 
-          <p className="mt-2 text-center text-[0.64rem] leading-relaxed text-text-dim">
-            Client access is in maintenance. Contact us for partnership inquiries.
+          <p className="mt-2 text-center text-[0.62rem] leading-relaxed text-text-dim">
+            Client access is in maintenance. We process your sign-in details
+            only to authenticate you — see the{" "}
+            <a href="#/privacy" className="text-accent-hover hover:underline">
+              privacy notice
+            </a>
+            .
           </p>
         </form>
       </div>

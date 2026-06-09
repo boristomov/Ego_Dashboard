@@ -106,6 +106,10 @@ jobs:
           VITE_DATA_SOURCE: static
           VITE_BASE: /${{ github.event.repository.name }}/
           VITE_BUILD_ID: ${{ github.run_id }}-${{ github.run_attempt }}
+          # Optional: AWS Lambda Function URL that writes captured leads to the
+          # client-data-access bucket (see infra/lead-capture). Empty = local
+          # capture only.
+          VITE_LEAD_ENDPOINT: ${{ vars.VITE_LEAD_ENDPOINT }}
         run: npm run build
 
       - name: Setup Pages

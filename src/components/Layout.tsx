@@ -8,6 +8,7 @@ import {
   Activity,
   LogIn,
   LogOut,
+  Sparkles,
 } from "lucide-react";
 import { useHealth } from "../hooks/useHealth";
 import { DATA_SOURCE } from "../lib/api";
@@ -22,6 +23,7 @@ const TEAM_NAV = [
 ];
 
 const PUBLIC_NAV = [
+  { to: "/welcome", label: "Welcome", icon: Sparkles },
   { to: "/catalogue", label: "Demo dataset", icon: FolderOpen },
 ];
 

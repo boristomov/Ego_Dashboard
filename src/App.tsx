@@ -4,6 +4,8 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { CataloguePage } from "./pages/CataloguePage";
 import { PostprocessingPage } from "./pages/PostprocessingPage";
 import { MaintenancePage } from "./pages/MaintenancePage";
+import { WelcomePage } from "./pages/WelcomePage";
+import { PrivacyPage } from "./pages/PrivacyPage";
 import { AccessProvider } from "./context/AccessGate";
 import { AuthProvider, useAuth } from "./context/Auth";
 
@@ -36,23 +38,27 @@ function AppRoutes() {
     return (
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/catalogue" element={<CataloguePage />} />
-          <Route path="/postprocessing" element={<PostprocessingPage />} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/catalogue" element={<CataloguePage />} />
+        <Route path="/postprocessing" element={<PostprocessingPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
         </Route>
       </Routes>
     );
   }
 
-  // Public (anonymous): only the demo catalogue. Any other path redirects in.
+  // Public (anonymous): a welcome walkthrough + the demo catalogue. Any other
+  // path redirects back to the welcome page.
   return (
     <Routes>
       <Route element={<Layout />}>
-        <Route index element={<Navigate to="/catalogue" replace />} />
+        <Route index element={<Navigate to="/welcome" replace />} />
+        <Route path="/welcome" element={<WelcomePage />} />
         <Route path="/catalogue" element={<CataloguePage />} />
-        <Route path="*" element={<Navigate to="/catalogue" replace />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="*" element={<Navigate to="/welcome" replace />} />
       </Route>
     </Routes>
   );

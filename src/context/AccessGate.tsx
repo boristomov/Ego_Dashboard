@@ -10,6 +10,7 @@ import {
 import { createPortal } from "react-dom";
 import { Lock, Mail, Building2, ShieldCheck, X } from "lucide-react";
 import { useAuth } from "./Auth";
+import { submitLead } from "../lib/lead";
 
 // A lightweight access gate shown before any dataset download. This is an
 // access-capture step (who is pulling the data), not a hardened auth wall —
@@ -89,6 +90,14 @@ export function AccessProvider({ children }: { children: ReactNode }) {
       } catch {
         /* storage may be unavailable; access still granted for this session */
       }
+      // Capture the lead (local + optional S3 endpoint). Best-effort.
+      submitLead({
+        type: "public_access",
+        email: next.email,
+        company: next.company,
+        role: "public",
+        consent: true,
+      });
     }
     setOpen(false);
     resolverRef.current?.(granted);
@@ -134,6 +143,7 @@ function AccessGateModal({
 }) {
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
+  const [consent, setConsent] = useState(false);
   const [touched, setTouched] = useState(false);
 
   useEffect(() => {
@@ -151,7 +161,7 @@ function AccessGateModal({
 
   const emailOk = EMAIL_RE.test(email.trim());
   const companyOk = company.trim().length >= 2;
-  const valid = emailOk && companyOk;
+  const valid = emailOk && companyOk && consent;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -234,6 +244,29 @@ function AccessGateModal({
             )}
           </label>
 
+          {/* Consent / legal */}
+          <label className="mt-3 flex cursor-pointer items-start gap-2">
+            <input
+              type="checkbox"
+              className="mt-0.5 h-3.5 w-3.5 flex-shrink-0 accent-[var(--accent,#7c3aed)]"
+              checked={consent}
+              onChange={(e) => setConsent(e.target.checked)}
+            />
+            <span className="text-[0.66rem] leading-relaxed text-text-muted">
+              I agree that Thoth AI may store my email and company name to
+              contact me about this dataset, per the{" "}
+              <a href="#/privacy" className="text-accent-hover hover:underline">
+                privacy notice
+              </a>
+              .
+            </span>
+          </label>
+          {touched && !consent && (
+            <span className="mt-1 block text-[0.68rem] text-err">
+              Please accept the data notice to continue.
+            </span>
+          )}
+
           <button
             type="submit"
             disabled={!valid}
@@ -242,8 +275,10 @@ function AccessGateModal({
             <ShieldCheck size={14} /> Unlock downloads
           </button>
 
-          <p className="mt-2 text-center text-[0.64rem] leading-relaxed text-text-dim">
-            We use this only to understand who's evaluating the dataset.
+          <p className="mt-2 text-center text-[0.62rem] leading-relaxed text-text-dim">
+            We store only your email and company name, used solely to contact
+            you about the dataset. We never sell your data; email us to have it
+            removed.
           </p>
         </form>
 
