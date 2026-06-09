@@ -1,19 +1,36 @@
 // Lead / access capture.
 //
-// When a public visitor unlocks downloads (email + company) we record it. The
-// record is always kept locally; if VITE_LEAD_ENDPOINT is configured it is
-// also POSTed to a collector that appends it to a Google Sheet (a deployed
-// Apps Script web app). Capture is strictly best-effort and never blocks the
-// user — a network/endpoint failure is swallowed.
+// When a public visitor unlocks downloads (email + company) — or a client
+// signs in — we record it. The record is always kept locally; it is also
+// written directly into the `client-data-access` S3 bucket under `leads/`.
 //
-// The POST uses text/plain + no-cors on purpose: Google Apps Script web apps
-// do not answer CORS preflight (OPTIONS) requests, so an application/json body
-// would fail. A text/plain body is a CORS-safe request that skips the
-// preflight; the response is opaque (no-cors) but we don't need to read it.
+// The browser cannot hold permanent AWS keys, and the AWS org guardrail blocks
+// anonymous access, so we use a Cognito **unauthenticated (guest)** identity
+// pool: the SDK fetches short-lived, org-scoped credentials whose IAM role can
+// only `s3:PutObject` to `leads/*`. Nothing sensitive is exposed (the pool id
+// and bucket name are public by design), and capture is best-effort — a
+// failure never blocks the user.
 
-type ViteEnv = { env?: { VITE_LEAD_ENDPOINT?: string } };
-const LEAD_ENDPOINT =
-  (import.meta as unknown as ViteEnv).env?.VITE_LEAD_ENDPOINT || "";
+import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import { fromCognitoIdentityPool } from "@aws-sdk/credential-provider-cognito-identity";
+
+type ViteEnv = {
+  env?: {
+    VITE_LEADS_POOL_ID?: string;
+    VITE_LEADS_REGION?: string;
+    VITE_LEADS_BUCKET?: string;
+  };
+};
+const ENV = (import.meta as unknown as ViteEnv).env ?? {};
+
+// Non-secret config. Cognito identity pool ids and bucket names are safe to
+// ship in client code; the guest role is the only thing that grants access and
+// it is write-only to leads/.
+const REGION = ENV.VITE_LEADS_REGION || "ap-southeast-1";
+const IDENTITY_POOL_ID =
+  ENV.VITE_LEADS_POOL_ID ||
+  "ap-southeast-1:30d0dc6b-fc2c-4526-892b-2edbac77a33c";
+const BUCKET = ENV.VITE_LEADS_BUCKET || "client-data-access";
 
 const LOCAL_KEY = "ego_leads_v1";
 
@@ -51,9 +68,42 @@ function persistLocal(record: LeadRecord) {
   }
 }
 
+// Lazily created so the SDK + credential round-trip only happens on the first
+// actual capture, not on page load.
+let s3: S3Client | null = null;
+function getClient(): S3Client | null {
+  if (!IDENTITY_POOL_ID) return null;
+  if (!s3) {
+    s3 = new S3Client({
+      region: REGION,
+      credentials: fromCognitoIdentityPool({
+        identityPoolId: IDENTITY_POOL_ID,
+        clientConfig: { region: REGION },
+      }),
+    });
+  }
+  return s3;
+}
+
+// S3 keys avoid characters that complicate listing/prefixing.
+function slug(value: string, fallback: string): string {
+  const cleaned = value
+    .toLowerCase()
+    .replace(/[^a-z0-9._@-]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+  return cleaned || fallback;
+}
+
+function buildKey(record: LeadRecord): string {
+  const date = record.acceptedAt.slice(0, 10); // YYYY-MM-DD
+  const company = slug(record.company || "", "unknown");
+  const email = slug(record.email, "anon");
+  return `leads/${record.type}/${date}/${company}__${email}__${Date.now()}.json`;
+}
+
 /**
- * Record a captured lead. Resolves once the local copy is written; the network
- * POST is fire-and-forget so the UI is never gated on it.
+ * Record a captured lead. Writes the local copy synchronously; the S3 write is
+ * fire-and-forget so the UI is never gated on it.
  */
 export function submitLead(input: LeadInput): void {
   const record: LeadRecord = {
@@ -66,24 +116,24 @@ export function submitLead(input: LeadInput): void {
 
   persistLocal(record);
 
-  if (!LEAD_ENDPOINT) return;
+  const client = getClient();
+  if (!client) return;
   try {
-    void fetch(LEAD_ENDPOINT, {
-      method: "POST",
-      // text/plain is CORS-safe and avoids the preflight that Apps Script
-      // cannot answer; the Apps Script reads JSON from the raw request body.
-      headers: { "content-type": "text/plain;charset=utf-8" },
-      body: JSON.stringify(record),
-      mode: "no-cors",
-      // keepalive lets the request outlive a navigation triggered by the
-      // download that immediately follows.
-      keepalive: true,
-    }).catch(() => {
-      /* best-effort */
-    });
+    void client
+      .send(
+        new PutObjectCommand({
+          Bucket: BUCKET,
+          Key: buildKey(record),
+          Body: JSON.stringify(record, null, 2),
+          ContentType: "application/json",
+        })
+      )
+      .catch(() => {
+        /* best-effort; the local copy already persisted */
+      });
   } catch {
     /* never block UX */
   }
 }
 
-export const LEAD_ENDPOINT_CONFIGURED = !!LEAD_ENDPOINT;
+export const LEAD_ENDPOINT_CONFIGURED = !!IDENTITY_POOL_ID;

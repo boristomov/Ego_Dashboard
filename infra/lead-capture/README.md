@@ -4,40 +4,59 @@ When a public visitor unlocks downloads (email + company) — or a client signs
 in — the dashboard records the lead. It is always saved to the visitor's
 `localStorage`; if `VITE_LEAD_ENDPOINT` is set it is also sent to a collector.
 
-## Active path: Google Sheet (no AWS, no org permissions)
+## Active path: Cognito guest identity → direct S3 write
 
-The AWS account's organization guardrail blocks anonymous (non-org) access, so
-a public Lambda Function URL returns 403 to web visitors. The simplest working
-collector is a **Google Apps Script web app** that appends each lead to a
-Google Sheet.
+The browser can't hold permanent AWS keys, and the AWS org guardrail blocks
+anonymous (non-org) access (so a public Lambda Function URL returns 403). The
+working, AWS-native solution is a **Cognito unauthenticated (guest) identity
+pool**: the SDK fetches short-lived, org-scoped credentials whose IAM role can
+only `s3:PutObject` to `leads/*`, and the browser writes the lead straight to
+`client-data-access`.
 
-1. Create a Google Sheet (this is your leads database).
-2. **Extensions → Apps Script**, delete the stub, and paste
-   [`google-apps-script.gs`](./google-apps-script.gs).
-3. **Deploy → New deployment → Web app**:
-   - Execute as: **Me**
-   - Who has access: **Anyone** (required so the public site can POST)
-4. Authorize, copy the **Web app URL** (ends with `/exec`), and set it:
+Live resources (account `886989006633`, `ap-southeast-1`):
 
-```bash
-gh variable set VITE_LEAD_ENDPOINT --body "https://script.google.com/macros/s/AKfy.../exec"
+- Identity pool `ego_leads` → `ap-southeast-1:30d0dc6b-fc2c-4526-892b-2edbac77a33c`
+- Guest role `ego-leads-unauth-role` (inline policy `write-leads`:
+  `s3:PutObject` on `arn:aws:s3:::client-data-access/leads/*`)
+
+Frontend: `src/lib/lead.ts` uses `@aws-sdk/client-s3` +
+`fromCognitoIdentityPool`. The pool id / region / bucket are non-secret and
+baked in as defaults (overridable via `VITE_LEADS_POOL_ID`,
+`VITE_LEADS_REGION`, `VITE_LEADS_BUCKET` in the deploy workflow).
+
+**Bucket CORS is required** so the browser's cross-origin PUT is allowed. The
+bucket must have a CORS rule like:
+
+```json
+[
+  {
+    "AllowedOrigins": ["https://boristomov.github.io", "http://localhost:5173"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000
+  }
+]
 ```
 
-5. Re-run the deploy workflow (or push). New unlocks then append a row with
-   email, company, type, consent, timestamp, page, and referrer.
+Objects land at `leads/<type>/<YYYY-MM-DD>/<company>__<email>__<epoch>.json`.
 
-The client sends a `text/plain` body with `no-cors` on purpose — Apps Script
-can't answer a CORS preflight, so an `application/json` body would fail.
+### Provisioning (already done via CLI)
+
+The deployer identity (`ego-platform-deploy` policy) created the pool + role.
+This is also the foundation for real auth later: add a Cognito **User Pool**
+for email/password sign-up/sign-in with role groups, and an authenticated
+identity-pool role for client/r&d/admin data access.
 
 ---
 
-## Alternative (not currently used): AWS Lambda → `client-data-access`
+## Alternatives (not used)
 
-A tiny AWS Lambda behind a **Function URL** that writes one JSON object per
-submission into the `client-data-access` bucket under `leads/`. This is wired
-and deployable (see below) but **blocked by the org guardrail for anonymous
-callers**, so it is not the active path. To use it you'd need an org carve-out
-(allow anonymous invoke) or a Cognito unauth identity pool fronting it.
+- **Google Apps Script → Sheet** (`google-apps-script.gs`): only works from a
+  *personal* Google account; Workspace orgs (berkeley.edu, forma-bg.eu) force
+  login and block anonymous web apps.
+- **AWS Lambda Function URL** (`deploy.sh`, `index.mjs`): deployable but the
+  org guardrail blocks anonymous invoke (403), so it needs an org carve-out.
 
 This exists because the dashboard is a **static site** — it can't hold AWS
 credentials, and the browser can't write to a private bucket directly. The
