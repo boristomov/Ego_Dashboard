@@ -29,6 +29,35 @@ up, captures still persist in the visitor's `localStorage`; nothing breaks.
 }
 ```
 
+## Deploy (one command)
+
+If you have an **admin** AWS profile for account `886989006633`:
+
+```bash
+AWS_PROFILE=admin infra/lead-capture/deploy.sh
+# prints the Function URL, then:
+gh variable set VITE_LEAD_ENDPOINT --body "<that URL>"
+```
+
+`deploy.sh` creates the IAM role (write-only to `leads/`), the Node 20
+function, and a public Function URL with CORS, and is safe to re-run (it
+updates in place).
+
+> The scoped keys in `Secrets/` (`boristomov`, `S3ClientAccessRole`) do **not**
+> work for this — they have no Lambda/IAM rights and no access to
+> `client-data-access`. To let those keys deploy it, attach this policy to the
+> `boristomov` IAM user, then run `deploy.sh` with its keys:
+>
+> ```json
+> {
+>   "Version": "2012-10-17",
+>   "Statement": [
+>     { "Effect": "Allow", "Action": ["lambda:*"], "Resource": "*" },
+>     { "Effect": "Allow", "Action": ["iam:CreateRole","iam:GetRole","iam:PutRolePolicy","iam:AttachRolePolicy","iam:PassRole"], "Resource": "arn:aws:iam::886989006633:role/ego-lead-capture-role" }
+>   ]
+> }
+> ```
+
 ## Deploy (console, ~5 min)
 
 1. **IAM role** — create a role for the function with the basic Lambda
