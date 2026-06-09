@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { RefreshCw, AlertCircle, Loader2 } from "lucide-react";
+import { RefreshCw, AlertCircle, Loader2, DownloadCloud } from "lucide-react";
 import { useCatalogue } from "../hooks/useCatalogue";
 import {
   CatalogueFilters,
@@ -7,11 +7,13 @@ import {
   type FilterState,
 } from "../components/CatalogueFilters";
 import { SessionCard } from "../components/SessionCard";
+import { DownloadModal } from "../components/DownloadModal";
 import { formatBytes, formatHours } from "../lib/session";
 
 export function CataloguePage() {
   const { loading, error, sessions, refetch } = useCatalogue();
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
+  const [showDownload, setShowDownload] = useState(false);
 
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
@@ -68,15 +70,29 @@ export function CataloguePage() {
           <h1 className="text-xl font-semibold tracking-tight">
             <span className="brand-grad">Catalogue</span>
           </h1>
-          <button
-            onClick={refetch}
-            className="btn"
-            disabled={loading}
-            title="Reload from S3"
-          >
-            <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-            Refresh
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowDownload(true)}
+              className="btn !border-accent/40 !text-accent-hover hover:!bg-accent/10"
+              disabled={filtered.length === 0}
+              title="Export the filtered sessions (CSV or files)"
+            >
+              <DownloadCloud size={13} />
+              Download
+              <span className="ml-0.5 rounded-full bg-accent/20 px-1.5 text-[0.6rem] font-semibold tabular-nums">
+                {filtered.length}
+              </span>
+            </button>
+            <button
+              onClick={refetch}
+              className="btn"
+              disabled={loading}
+              title="Reload latest snapshot"
+            >
+              <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+              Refresh
+            </button>
+          </div>
         </div>
         <p className="text-[0.78rem] text-text-muted">
           Every session across the raw and processed buckets with at-a-glance artifact availability.
@@ -133,6 +149,13 @@ export function CataloguePage() {
             <SessionCard key={`${s.taskName}/${s.sessionId}`} s={s} />
           ))}
         </div>
+      )}
+
+      {showDownload && (
+        <DownloadModal
+          sessions={filtered}
+          onClose={() => setShowDownload(false)}
+        />
       )}
     </div>
   );

@@ -20,8 +20,10 @@ export function useCatalogue(): CatalogueState {
     let cancelled = false;
     setLoading(true);
     setError(null);
+    // version > 0 means the user hit Refresh — pass a unique token so the
+    // request skips any cached copy and reflects the latest CI snapshot.
     api
-      .catalogue()
+      .catalogue(undefined, version > 0 ? Date.now() : undefined)
       .then((res) => {
         if (cancelled) return;
         setRaw(res.sessions);

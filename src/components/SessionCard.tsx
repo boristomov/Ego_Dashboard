@@ -52,26 +52,30 @@ export function SessionCard({ s }: { s: DerivedSession }) {
 
   // Resolve a click on an artifact to a URL. In static (GitHub Pages) mode the
   // URL is baked into the snapshot; in proxy/dev we fall back to the live
-  // sign endpoint.
-  const resolveUrl = async (kind: ArtifactKind): Promise<string | null> => {
+  // sign endpoint. `download` picks the attachment-dispositioned link so the
+  // browser saves the file instead of opening it (matters for MP4).
+  const resolveUrl = async (
+    kind: ArtifactKind,
+    download = false,
+  ): Promise<string | null> => {
     const a = s.artifacts[kind];
     if (!a.present) return null;
-    if (a.url) return a.url;
+    const baked = download ? a.downloadUrl ?? a.url : a.url;
+    if (baked) return baked;
     if (DATA_SOURCE !== "proxy" || !a.key) return null;
     return api.signedUrl(a.key, a.bucket);
   };
 
-  const handleBadgeClick = async (kind: ArtifactKind) => {
-    if (kind === "mp4") {
-      const url = await resolveUrl("mp4");
-      if (url) setPlaying(true);
-      return;
-    }
-    const url = await resolveUrl(kind);
+  const handlePlay = async () => {
+    const url = await resolveUrl("mp4");
+    if (url) setPlaying(true);
+  };
+
+  const handleDownload = async (kind: ArtifactKind) => {
+    const url = await resolveUrl(kind, true);
     if (!url) return;
-    // For non-video files the snapshot sets Content-Disposition=attachment so
-    // navigating triggers a download in S3. Open in a new tab so we don't lose
-    // page state.
+    // S3 serves these with Content-Disposition=attachment so navigating
+    // triggers a save. Open in a new tab so we don't lose page state.
     window.open(url, "_blank", "noopener");
   };
 
@@ -93,7 +97,7 @@ export function SessionCard({ s }: { s: DerivedSession }) {
           mp4Url || canClick("mp4") ? "cursor-pointer" : ""
         }`}
         onClick={() => {
-          if (canClick("mp4")) handleBadgeClick("mp4");
+          if (canClick("mp4")) handlePlay();
         }}
         role={canClick("mp4") ? "button" : undefined}
         aria-label={canClick("mp4") ? `Play ${s.sessionId}` : undefined}
@@ -187,37 +191,37 @@ export function SessionCard({ s }: { s: DerivedSession }) {
           <ArtifactBadge
             kind="svo"
             present={s.artifacts.svo.present}
-            onClick={canClick("svo") ? () => handleBadgeClick("svo") : undefined}
+            onClick={canClick("svo") ? () => handleDownload("svo") : undefined}
             action="download"
           />
           <ArtifactBadge
             kind="mcap"
             present={s.artifacts.mcap.present}
-            onClick={canClick("mcap") ? () => handleBadgeClick("mcap") : undefined}
+            onClick={canClick("mcap") ? () => handleDownload("mcap") : undefined}
             action="download"
           />
           <ArtifactBadge
             kind="mp4"
             present={s.artifacts.mp4.present}
-            onClick={canClick("mp4") ? () => handleBadgeClick("mp4") : undefined}
-            action="play"
+            onClick={canClick("mp4") ? () => handleDownload("mp4") : undefined}
+            action="download"
           />
           <ArtifactBadge
             kind="xml"
             present={s.artifacts.xml.present}
-            onClick={canClick("xml") ? () => handleBadgeClick("xml") : undefined}
+            onClick={canClick("xml") ? () => handleDownload("xml") : undefined}
             action="download"
           />
           <ArtifactBadge
             kind="zip"
             present={s.artifacts.zip.present}
-            onClick={canClick("zip") ? () => handleBadgeClick("zip") : undefined}
+            onClick={canClick("zip") ? () => handleDownload("zip") : undefined}
             action="download"
           />
           <ArtifactBadge
             kind="meta"
             present={s.artifacts.meta.present}
-            onClick={canClick("meta") ? () => handleBadgeClick("meta") : undefined}
+            onClick={canClick("meta") ? () => handleDownload("meta") : undefined}
             action="download"
           />
         </div>

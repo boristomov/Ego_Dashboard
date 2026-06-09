@@ -17,8 +17,11 @@ export type Artifact = {
   key?: string;
   size?: number;
   lastModified?: string | null;
-  /** Pre-signed download URL baked into the snapshot, if available. */
+  /** Pre-signed URL for viewing/opening (MP4 streams inline). */
   url?: string;
+  /** Pre-signed URL that forces a download (attachment disposition). For most
+   *  kinds this equals `url`; for MP4 it's a distinct attachment-signed link. */
+  downloadUrl?: string;
 };
 
 export type PipelineStage =
@@ -95,7 +98,9 @@ export function deriveSession(s: CatalogueSession): DerivedSession {
       metaUrl,
     ),
     mcap: mkArtifact("mcap", "processed", mcapFile, urls.mcap),
-    mp4: mkArtifact("mp4", "processed", mp4File, urls.mp4),
+    // MP4 keeps the inline `url` for playback but carries the attachment-signed
+    // `mp4_dl` (falling back to inline) as its download link.
+    mp4: mkArtifact("mp4", "processed", mp4File, urls.mp4, urls.mp4_dl ?? urls.mp4),
     xml: mkArtifact("xml", "processed", xmlFile, urls.xml),
     zip: mkArtifact("zip", "processed", zipFile, urls.zip),
   };
@@ -158,6 +163,7 @@ function mkArtifact(
   bucket: "raw" | "processed",
   file?: SessionFile,
   url?: string,
+  downloadUrl?: string,
 ): Artifact {
   if (!file) return { kind, present: false, bucket };
   return {
@@ -168,6 +174,9 @@ function mkArtifact(
     size: file.size,
     lastModified: file.lastModified,
     url,
+    // Default the download link to the (attachment-dispositioned) view URL
+    // for every kind except MP4, which passes its own explicitly.
+    downloadUrl: downloadUrl ?? url,
   };
 }
 

@@ -64,7 +64,10 @@ export type SessionMetadata = {
 
 /** Pre-signed download URLs baked into the snapshot, keyed by artifact kind. */
 export type SignedUrlMap = Partial<
-  Record<"mp4" | "mcap" | "xml" | "zip" | "svo" | "meta_raw" | "meta_proc", string>
+  Record<
+    "mp4" | "mp4_dl" | "mcap" | "xml" | "zip" | "svo" | "meta_raw" | "meta_proc",
+    string
+  >
 >;
 
 export type CatalogueSession = {
@@ -173,12 +176,16 @@ export const api = {
     return { ...r, source: "proxy" };
   },
 
-  catalogue: async (task?: string): Promise<CatalogueResponse> => {
+  catalogue: async (
+    task?: string,
+    /** Unique token (e.g. Date.now()) appended on manual refresh so the
+     *  fetch fully bypasses any HTTP/disk cache and picks up a CI redeploy. */
+    freshToken?: number,
+  ): Promise<CatalogueResponse> => {
     if (DATA_SOURCE === "static") {
-      const res = await fetch(
-        bust(`${BASE_URL}catalogue.json`),
-        STATIC_FETCH_OPTS,
-      );
+      let url = bust(`${BASE_URL}catalogue.json`);
+      if (freshToken) url += `&_=${freshToken}`;
+      const res = await fetch(url, STATIC_FETCH_OPTS);
       if (!res.ok) {
         throw new Error(
           `Static catalogue not found (HTTP ${res.status}). Run npm run snapshot before building.`,
@@ -189,9 +196,11 @@ export const api = {
       const filtered = data.sessions.filter((s) => s.taskName === task);
       return { sessions: filtered, count: filtered.length };
     }
-    return http<CatalogueResponse>(
-      task ? `/catalogue?task=${encodeURIComponent(task)}` : "/catalogue",
-    );
+    const q = new URLSearchParams();
+    if (task) q.set("task", task);
+    if (freshToken) q.set("_", String(freshToken));
+    const qs = q.toString();
+    return http<CatalogueResponse>(`/catalogue${qs ? `?${qs}` : ""}`);
   },
 
   /**

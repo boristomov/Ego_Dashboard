@@ -179,11 +179,13 @@ async function fetchObjectJson(bucket, key) {
 
 // Pre-sign one URL. Adds a download-friendly content-disposition for non-mp4
 // files so the browser triggers a save dialog instead of dumping binary into
-// the tab.
-async function presign(bucket, key, ttl, displayName) {
+// the tab. Pass forceAttachment to override the inline default for MP4s (used
+// for the explicit "download" affordances — the inline copy still powers
+// in-page playback).
+async function presign(bucket, key, ttl, displayName, forceAttachment = false) {
   const isVideo = /\.mp4$/i.test(key);
   const params = { Bucket: bucket, Key: key };
-  if (!isVideo && displayName) {
+  if ((forceAttachment || !isVideo) && displayName) {
     // RFC 5987 quoting for unicode filenames.
     const safe = displayName.replace(/[^a-zA-Z0-9._-]+/g, "_");
     params.ResponseContentDisposition = `attachment; filename="${safe}"`;
@@ -302,6 +304,14 @@ async function main() {
   if (INCLUDE_SIGNED_URLS) {
     const ARTIFACT_PATTERNS = [
       { kind: "mp4", bucket: "processed", match: (f) => /\.mp4$/i.test(f.rel) },
+      // Second MP4 signature with attachment disposition so the explicit
+      // download buttons save the file rather than streaming it inline.
+      {
+        kind: "mp4_dl",
+        bucket: "processed",
+        match: (f) => /\.mp4$/i.test(f.rel),
+        forceAttachment: true,
+      },
       { kind: "mcap", bucket: "processed", match: (f) => /\.mcap$/i.test(f.rel) },
       {
         kind: "xml",
@@ -341,6 +351,7 @@ async function main() {
           bucket,
           key: f.key,
           displayName,
+          forceAttachment: !!p.forceAttachment,
         });
       }
     }
@@ -355,6 +366,7 @@ async function main() {
           job.key,
           SIGNED_URL_TTL,
           job.displayName,
+          job.forceAttachment,
         );
         urlsSigned += 1;
       } catch (err) {

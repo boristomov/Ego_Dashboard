@@ -1,0 +1,245 @@
+// Client-side export helpers for the catalogue Download dialog.
+//
+// Everything here operates on the *already-filtered* set of sessions the user
+// is looking at, so an export always honours the active search/stage/missing
+// filters. No network access is required beyond the pre-signed URLs that are
+// already baked into the static snapshot (or signed on demand in proxy dev).
+
+import {
+  formatBytes,
+  formatDuration,
+  STAGE_LABEL,
+  type ArtifactKind,
+  type DerivedSession,
+} from "./session";
+
+/** Artifact kinds that map to a real downloadable file. */
+export const DOWNLOADABLE_KINDS: ArtifactKind[] = [
+  "svo",
+  "mcap",
+  "mp4",
+  "xml",
+  "zip",
+  "meta",
+];
+
+export const KIND_LABEL: Record<ArtifactKind, string> = {
+  svo: "SVO",
+  mcap: "MCAP",
+  mp4: "MP4",
+  xml: "XML (CVAT)",
+  zip: "ZIP",
+  meta: "Metadata JSON",
+  thumb: "Thumbnail",
+};
+
+export type DownloadTarget = {
+  taskName: string;
+  sessionId: string;
+  kind: ArtifactKind;
+  fileName: string;
+  sizeBytes: number;
+  url: string;
+};
+
+function baseName(key: string | undefined, fallback: string): string {
+  if (!key) return fallback;
+  const b = key.split("/").pop();
+  return b && b.length ? b : fallback;
+}
+
+function safeSeg(name: string): string {
+  return name.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/^_+|_+$/g, "");
+}
+
+/**
+ * Walk the filtered sessions and collect a flat list of download targets for
+ * the requested artifact kinds. Targets without a usable URL (e.g. proxy mode
+ * with no baked link) are reported separately so the UI can warn.
+ */
+export function collectTargets(
+  sessions: DerivedSession[],
+  kinds: ArtifactKind[],
+): { targets: DownloadTarget[]; missingUrls: number } {
+  const targets: DownloadTarget[] = [];
+  let missingUrls = 0;
+  for (const s of sessions) {
+    for (const kind of kinds) {
+      const a = s.artifacts[kind];
+      if (!a.present) continue;
+      const url = a.downloadUrl ?? a.url;
+      if (!url) {
+        missingUrls += 1;
+        continue;
+      }
+      const ext = kind === "meta" ? "metadata.json" : kind;
+      targets.push({
+        taskName: s.taskName,
+        sessionId: s.sessionId,
+        kind,
+        fileName: baseName(a.key, `${s.sessionId}.${ext}`),
+        sizeBytes: a.size ?? 0,
+        url,
+      });
+    }
+  }
+  return { targets, missingUrls };
+}
+
+/** Per-kind file count + total bytes across the filtered sessions. */
+export function summarizeKinds(
+  sessions: DerivedSession[],
+): Record<ArtifactKind, { count: number; bytes: number }> {
+  const out = {} as Record<ArtifactKind, { count: number; bytes: number }>;
+  for (const k of DOWNLOADABLE_KINDS) out[k] = { count: 0, bytes: 0 };
+  for (const s of sessions) {
+    for (const k of DOWNLOADABLE_KINDS) {
+      const a = s.artifacts[k];
+      if (a.present) {
+        out[k].count += 1;
+        out[k].bytes += a.size ?? 0;
+      }
+    }
+  }
+  return out;
+}
+
+// ---------- CSV ----------
+
+function csvCell(v: string | number | null | undefined): string {
+  if (v == null) return "";
+  const s = String(v);
+  return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+/**
+ * Build a metadata CSV: one row per session with names, sizes and duration.
+ * Columns cover the per-artifact filename + byte size so the sheet doubles as
+ * a manifest.
+ */
+export function buildCsv(sessions: DerivedSession[]): string {
+  const header = [
+    "task",
+    "session_id",
+    "timestamp",
+    "stage",
+    "duration_seconds",
+    "duration",
+    "frame_count",
+    "total_bytes",
+    "total_size",
+  ];
+  for (const k of DOWNLOADABLE_KINDS) {
+    header.push(`${k}_present`, `${k}_filename`, `${k}_bytes`);
+  }
+
+  const rows = [header.map(csvCell).join(",")];
+  for (const s of sessions) {
+    const row: (string | number | null)[] = [
+      s.taskName,
+      s.sessionId,
+      s.timestamp ? s.timestamp.toISOString() : "",
+      STAGE_LABEL[s.pipelineStage],
+      s.durationSec ?? "",
+      s.durationSec ? formatDuration(s.durationSec) : "",
+      s.metadata?.frameCount ?? "",
+      s.totalBytes,
+      formatBytes(s.totalBytes),
+    ];
+    for (const k of DOWNLOADABLE_KINDS) {
+      const a = s.artifacts[k];
+      row.push(
+        a.present ? "yes" : "no",
+        a.present ? baseName(a.key, "") : "",
+        a.present ? a.size ?? "" : "",
+      );
+    }
+    rows.push(row.map(csvCell).join(","));
+  }
+  return rows.join("\r\n");
+}
+
+// ---------- URL list & shell script ----------
+
+/** A plain newline-delimited URL list for `wget -i links.txt`. */
+export function buildUrlList(targets: DownloadTarget[]): string {
+  return targets.map((t) => t.url).join("\n") + "\n";
+}
+
+/**
+ * A resumable curl script that lays files out as <task>/<session>/<file>.
+ * curl -L follows redirects, -C - resumes partial downloads, --create-dirs
+ * makes the tree. Ideal for the large MCAPs (multi-GB each).
+ */
+export function buildShellScript(targets: DownloadTarget[]): string {
+  const lines = [
+    "#!/usr/bin/env bash",
+    "# Generated by the Ego dashboard — downloads the selected artifacts for",
+    "# the currently-filtered sessions. Signed links are valid for ~7 days.",
+    "set -euo pipefail",
+    "",
+  ];
+  for (const t of targets) {
+    const dir = `${safeSeg(t.taskName)}/${t.sessionId}`;
+    const out = `${dir}/${safeSeg(t.fileName)}`;
+    lines.push(`mkdir -p ${shq(dir)}`);
+    lines.push(`echo "↓ ${out}"`);
+    lines.push(`curl -fL -C - -o ${shq(out)} ${shq(t.url)}`);
+    lines.push("");
+  }
+  lines.push('echo "✓ done"');
+  return lines.join("\n");
+}
+
+// POSIX single-quote escaping.
+function shq(s: string): string {
+  return `'${s.replace(/'/g, `'\\''`)}'`;
+}
+
+// ---------- browser actions ----------
+
+export function downloadTextFile(
+  fileName: string,
+  text: string,
+  mime = "text/plain;charset=utf-8",
+): void {
+  const blob = new Blob([text], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/**
+ * Kick off direct browser downloads for each target, spaced out so the browser
+ * doesn't drop them. Best for a handful of files; the script/links export is
+ * the right tool for bulk or very large sets.
+ */
+export async function triggerBrowserDownloads(
+  targets: DownloadTarget[],
+  onProgress?: (done: number, total: number) => void,
+  spacingMs = 800,
+): Promise<void> {
+  for (let i = 0; i < targets.length; i++) {
+    const t = targets[i];
+    const a = document.createElement("a");
+    a.href = t.url;
+    a.rel = "noopener";
+    // download attr is ignored cross-origin, but the signed URLs carry an
+    // attachment Content-Disposition so the save happens regardless.
+    a.download = t.fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    onProgress?.(i + 1, targets.length);
+    if (i < targets.length - 1) {
+      await new Promise((r) => setTimeout(r, spacingMs));
+    }
+  }
+}
+
+export { formatBytes };
