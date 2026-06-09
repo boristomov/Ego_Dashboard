@@ -9,6 +9,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { Lock, Mail, Building2, ShieldCheck, X } from "lucide-react";
+import { useAuth } from "./Auth";
 
 // A lightweight access gate shown before any dataset download. This is an
 // access-capture step (who is pulling the data), not a hardened auth wall —
@@ -66,17 +67,19 @@ function loadCreds(): AccessCreds | null {
 }
 
 export function AccessProvider({ children }: { children: ReactNode }) {
+  const { isTeam } = useAuth();
   const [creds, setCreds] = useState<AccessCreds | null>(() => loadCreds());
   const [open, setOpen] = useState(false);
   const resolverRef = useRef<((granted: boolean) => void) | null>(null);
 
   const requestAccess = useCallback((): Promise<boolean> => {
-    if (creds) return Promise.resolve(true);
+    // Signed-in team members (admin / r&d) skip the email + company gate.
+    if (isTeam || creds) return Promise.resolve(true);
     setOpen(true);
     return new Promise<boolean>((resolve) => {
       resolverRef.current = resolve;
     });
-  }, [creds]);
+  }, [isTeam, creds]);
 
   const settle = (granted: boolean, next?: AccessCreds) => {
     if (next) {
