@@ -338,7 +338,8 @@ export function DownloadModal({
                 For bulk or multi-GB pulls the{" "}
                 <span className="font-semibold text-text">.sh script</span> (or{" "}
                 <code className="rounded bg-input px-1">wget -i</code> on the
-                links) is far more reliable than the browser.
+                links) is far more reliable than the browser. Run it with{" "}
+                <code className="rounded bg-input px-1">bash ego-download_….sh</code>.
               </div>
             )}
           </section>
