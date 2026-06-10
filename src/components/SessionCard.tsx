@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { memo, useState } from "react";
 import { ImageOff, Clock, HardDrive, Timer, Play } from "lucide-react";
 import {
   formatBytes,
@@ -45,7 +45,13 @@ export const STAGE_STYLES: Record<
   },
 };
 
-export function SessionCard({ s }: { s: DerivedSession }) {
+// memo: cards re-render only when their own session changes — typing in the
+// search box or growing the scroll window no longer re-renders every card.
+export const SessionCard = memo(function SessionCard({
+  s,
+}: {
+  s: DerivedSession;
+}) {
   const stage = STAGE_STYLES[s.pipelineStage];
   const [thumbBroken, setThumbBroken] = useState(false);
   const [playing, setPlaying] = useState(false);
@@ -93,7 +99,7 @@ export function SessionCard({ s }: { s: DerivedSession }) {
 
   return (
     <div
-      className={`group relative flex flex-col overflow-hidden rounded-xl border-2 bg-panel transition ${stage.ring}`}
+      className={`group relative flex flex-col overflow-hidden rounded-xl border-2 bg-panel transition [contain-intrinsic-size:auto_420px] [content-visibility:auto] ${stage.ring}`}
     >
       {/* Thumbnail */}
       <div
@@ -111,6 +117,8 @@ export function SessionCard({ s }: { s: DerivedSession }) {
             src={thumbUrl(s.taskName, s.sessionId)}
             alt={s.sessionId}
             loading="lazy"
+            decoding="async"
+            fetchPriority="low"
             className="h-full w-full object-cover transition group-hover:scale-[1.02]"
             onError={() => setThumbBroken(true)}
           />
@@ -242,4 +250,4 @@ export function SessionCard({ s }: { s: DerivedSession }) {
       )}
     </div>
   );
-}
+});

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { RefreshCw, AlertCircle, Loader2, DownloadCloud } from "lucide-react";
 import { useCatalogue } from "../hooks/useCatalogue";
 import {
@@ -10,10 +10,18 @@ import { SessionCard } from "../components/SessionCard";
 import { DownloadModal } from "../components/DownloadModal";
 import { formatBytes, formatHours } from "../lib/session";
 
+// Cards are mounted in batches as the user scrolls instead of all at once —
+// mounting hundreds of image-bearing cards in one commit visibly locks up
+// low-powered (mobile) devices. The sentinel's rootMargin pre-loads the next
+// batch well before it scrolls into view so growth is imperceptible.
+const BATCH_SIZE = 24;
+
 export function CataloguePage() {
   const { loading, error, sessions, refetch } = useCatalogue();
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [showDownload, setShowDownload] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
+  const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
@@ -37,6 +45,33 @@ export function CataloguePage() {
       return true;
     });
   }, [sessions, filters]);
+
+  // Reset the window whenever the result set changes (filters/search/refetch).
+  useEffect(() => {
+    setVisibleCount(BATCH_SIZE);
+  }, [filters, sessions]);
+
+  // Grow the window when the sentinel approaches the viewport.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || visibleCount >= filtered.length) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((e) => e.isIntersecting)) {
+          setVisibleCount((c) => Math.min(c + BATCH_SIZE, filtered.length));
+        }
+      },
+      // Start mounting the next batch ~2 screens ahead of the scroll position.
+      { rootMargin: "200% 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [visibleCount, filtered.length]);
+
+  const visible = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount],
+  );
 
   const stats = useMemo(() => {
     let totalBytes = 0;
@@ -144,11 +179,22 @@ export function CataloguePage() {
           No sessions match the current filters.
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-          {filtered.map((s) => (
-            <SessionCard key={`${s.taskName}/${s.sessionId}`} s={s} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            {visible.map((s) => (
+              <SessionCard key={`${s.taskName}/${s.sessionId}`} s={s} />
+            ))}
+          </div>
+          {visibleCount < filtered.length && (
+            <div
+              ref={sentinelRef}
+              className="flex items-center justify-center gap-2 py-6 text-[0.72rem] text-text-dim"
+            >
+              <Loader2 size={13} className="animate-spin" />
+              Loading more… ({visibleCount} of {filtered.length})
+            </div>
+          )}
+        </>
       )}
 
       {showDownload && (
