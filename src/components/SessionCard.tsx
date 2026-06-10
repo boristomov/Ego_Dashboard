@@ -12,7 +12,7 @@ import {
 import { thumbUrl, api, DATA_SOURCE } from "../lib/api";
 import { ArtifactBadge } from "./ArtifactBadge";
 import { VideoPlayerModal } from "./VideoPlayerModal";
-import { useAccessGate } from "../context/AccessGate";
+import { useAccessGate, useDownloadLog } from "../context/AccessGate";
 
 export const STAGE_STYLES: Record<
   PipelineStage,
@@ -57,6 +57,7 @@ export const SessionCard = memo(function SessionCard({
   const [playing, setPlaying] = useState(false);
   const hasThumb = s.artifacts.thumb.present && !thumbBroken;
   const { requestAccess } = useAccessGate();
+  const logDownload = useDownloadLog();
 
   // Resolve a click on an artifact to a URL. In static (GitHub Pages) mode the
   // URL is baked into the snapshot; in proxy/dev we fall back to the live
@@ -84,6 +85,7 @@ export const SessionCard = memo(function SessionCard({
     if (!(await requestAccess())) return;
     const url = await resolveUrl(kind, true);
     if (!url) return;
+    logDownload(`${kind} · ${s.taskName}/${s.sessionId}`);
     // S3 serves these with Content-Disposition=attachment so navigating
     // triggers a save. Open in a new tab so we don't lose page state.
     window.open(url, "_blank", "noopener");

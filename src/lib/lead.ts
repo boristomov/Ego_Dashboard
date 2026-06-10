@@ -41,7 +41,11 @@ const LOCAL_KEY = "ego_leads_v1";
 const OUTBOX_KEY = "ego_leads_outbox_v1";
 const OUTBOX_MAX = 20;
 
-export type LeadType = "public_access" | "client_signin";
+export type LeadType =
+  | "public_access" // visitor unlocked the demo via the access gate
+  | "client_signin" // legacy alias kept for old rows
+  | "signin" // client / r&d signed in to the platform
+  | "download"; // client / public visitor downloaded data
 
 export type LeadRecord = {
   type: LeadType;
@@ -53,6 +57,8 @@ export type LeadRecord = {
   page: string;
   userAgent: string;
   referrer: string;
+  /** Free-form event detail, e.g. "mp4 · task/session" for downloads. */
+  detail?: string;
 };
 
 export type LeadInput = {
@@ -61,6 +67,7 @@ export type LeadInput = {
   company?: string;
   role?: string;
   consent: boolean;
+  detail?: string;
 };
 
 function persistLocal(record: LeadRecord) {
@@ -121,6 +128,7 @@ function getClients(): Promise<Clients> {
                 page: { S: record.page },
                 userAgent: { S: record.userAgent },
                 referrer: { S: record.referrer },
+                ...(record.detail ? { detail: { S: record.detail } } : {}),
               },
             }),
           );
@@ -253,7 +261,9 @@ export function submitLead(input: LeadInput): void {
     {
       id: `${record.acceptedAt}_${Math.random().toString(36).slice(2, 8)}`,
       record,
-      pending: { row: true, note: true },
+      // The standing demo-access note only makes sense for gate unlocks;
+      // sign-in/download activity is row-only.
+      pending: { row: true, note: record.type === "public_access" },
     },
   ]);
   void flushLeads();

@@ -43,6 +43,12 @@ export function PrivacyPage() {
               access, used to authenticate you and control access.
             </li>
             <li>
+              <span className="text-text">Usage events:</span> when you unlock
+              the demo, sign in, or download dataset files, we log the event
+              (what was downloaded, when, and under which email/account) to
+              administer dataset access and understand usage.
+            </li>
+            <li>
               Basic request context (timestamp, browser user-agent, referring
               page) submitted alongside the above.
             </li>
@@ -67,8 +73,8 @@ export function PrivacyPage() {
             Where it's stored
           </h2>
           <p className="mt-1.5">
-            Records are stored in Thoth AI's private AWS account (Amazon S3).
-            Access is limited to authorized Thoth AI personnel.
+            Records are stored in Thoth AI's private AWS account (Amazon S3 and
+            DynamoDB). Access is limited to authorized Thoth AI personnel.
           </p>
         </section>
 

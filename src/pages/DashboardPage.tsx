@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCatalogue } from "../hooks/useCatalogue";
+import { useAuth } from "../context/Auth";
+import { AdminActivityPanels } from "../components/AdminActivityPanels";
 import {
   formatBytes,
   formatDuration,
@@ -23,6 +25,7 @@ import {
 
 export function DashboardPage() {
   const { loading, sessions, error } = useCatalogue();
+  const { isAdmin } = useAuth();
 
   const counts = useMemo(() => summarize(sessions), [sessions]);
 
@@ -149,6 +152,9 @@ export function DashboardPage() {
           loading={loading}
         />
       </div>
+
+      {/* Admin-only: client registry preview + client/public activity feed. */}
+      {isAdmin && <AdminActivityPanels />}
 
       <div className="flex items-center justify-between rounded-xl border border-border bg-panel/40 px-5 py-4">
         <div>

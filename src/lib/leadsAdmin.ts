@@ -130,6 +130,7 @@ export async function fetchLeads(creds: AdminCreds): Promise<StoredLead[]> {
       page: str(i, "page"),
       userAgent: str(i, "userAgent"),
       referrer: str(i, "referrer"),
+      detail: str(i, "detail"),
     }))
     .sort((a, b) => (b.acceptedAt ?? "").localeCompare(a.acceptedAt ?? ""));
 }

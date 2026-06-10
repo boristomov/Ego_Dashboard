@@ -22,7 +22,7 @@ import {
   summarizeKinds,
   triggerBrowserDownloads,
 } from "../lib/exporter";
-import { useAccessGate } from "../context/AccessGate";
+import { useAccessGate, useDownloadLog } from "../context/AccessGate";
 
 // Above this many direct browser downloads we steer the user to the script.
 const BROWSER_DOWNLOAD_WARN = 12;
@@ -40,6 +40,7 @@ export function DownloadModal({
     null,
   );
   const { requestAccess, creds, reset } = useAccessGate();
+  const logDownload = useDownloadLog();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -78,8 +79,12 @@ export function DownloadModal({
   const toggleAll = () =>
     setSelected(allSelected ? new Set() : new Set(allWithFiles));
 
+  const bulkDetail = (what: string) =>
+    `${what} · ${targets.length} files (${Array.from(selected).join("+") || "csv"}) · ${sessions.length} sessions`;
+
   const exportCsv = async () => {
     if (!(await requestAccess())) return;
+    logDownload(`metadata-csv · ${sessions.length} sessions`);
     downloadTextFile(
       `ego-catalogue_${stamp}.csv`,
       buildCsv(sessions),
@@ -90,12 +95,14 @@ export function DownloadModal({
   const exportLinks = async () => {
     if (!targets.length) return;
     if (!(await requestAccess())) return;
+    logDownload(bulkDetail("link-list"));
     downloadTextFile(`ego-download-links_${stamp}.txt`, buildUrlList(targets));
   };
 
   const exportScript = async () => {
     if (!targets.length) return;
     if (!(await requestAccess())) return;
+    logDownload(bulkDetail("shell-script"));
     downloadTextFile(
       `ego-download_${stamp}.sh`,
       buildShellScript(targets),
@@ -106,6 +113,7 @@ export function DownloadModal({
   const downloadInBrowser = async () => {
     if (!targets.length) return;
     if (!(await requestAccess())) return;
+    logDownload(bulkDetail("browser-bulk"));
     setBusy("browser");
     setProgress({ done: 0, total: targets.length });
     try {

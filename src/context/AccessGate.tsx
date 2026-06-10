@@ -64,6 +64,32 @@ export function useAccessGate(): AccessContextValue {
   return ctx;
 }
 
+/**
+ * Returns a logger that records a download event in the activity feed —
+ * but only for clients and public visitors. Team (admin / r&d) downloads
+ * are not logged: the feed is about external data movement.
+ */
+export function useDownloadLog(): (detail: string) => void {
+  const { session, isTeam } = useAuth();
+  const { creds } = useAccessGate();
+  return useCallback(
+    (detail: string) => {
+      if (isTeam) return;
+      const email = session?.email ?? creds?.email;
+      if (!email) return;
+      submitLead({
+        type: "download",
+        email,
+        company: session ? undefined : creds?.company,
+        role: session?.role ?? "public",
+        consent: true,
+        detail,
+      });
+    },
+    [session, isTeam, creds],
+  );
+}
+
 function loadCreds(): AccessCreds | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);

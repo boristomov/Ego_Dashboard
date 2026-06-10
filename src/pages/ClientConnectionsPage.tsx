@@ -81,7 +81,7 @@ export function ClientConnectionsPage() {
     if (!leads) return [];
     if (!q) return leads;
     return leads.filter((l) =>
-      [l.email, l.company ?? "", l.type ?? ""].some((v) =>
+      [l.email, l.company ?? "", l.type ?? "", l.detail ?? ""].some((v) =>
         v.toLowerCase().includes(q),
       ),
     );
@@ -105,12 +105,12 @@ export function ClientConnectionsPage() {
   const exportLeadsCsv = () => {
     if (!leads) return;
     downloadCsv(
-      "ego-demo-unlocks.csv",
+      "ego-activity.csv",
       toCsv(
-        ["acceptedAt", "email", "company", "type", "consent", "page", "referrer"],
+        ["acceptedAt", "email", "company", "type", "detail", "consent", "page", "referrer"],
         leads.map((l) => [
           l.acceptedAt ?? "", l.email, l.company ?? "", l.type ?? "",
-          l.consent ? "yes" : "no", l.page ?? "", l.referrer ?? "",
+          l.detail ?? "", l.consent ? "yes" : "no", l.page ?? "", l.referrer ?? "",
         ]),
       ),
     );
@@ -279,10 +279,12 @@ export function ClientConnectionsPage() {
           <section className="rounded-xl border border-border bg-panel/40">
             <header className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
               <Inbox size={15} className="text-accent-hover" />
-              <h2 className="text-[0.85rem] font-semibold">Demo unlocks</h2>
+              <h2 className="text-[0.85rem] font-semibold">
+                Access-gate entries &amp; activity
+              </h2>
               <span className="text-[0.68rem] text-text-muted">
-                {filteredLeads.length} of {leads?.length ?? 0} · from{" "}
-                <code>ego-leads</code>
+                {filteredLeads.length} of {leads?.length ?? 0} · unlocks,
+                sign-ins &amp; downloads · from <code>ego-leads</code>
               </span>
               <button
                 onClick={exportLeadsCsv}
@@ -305,7 +307,8 @@ export function ClientConnectionsPage() {
                       <th className="px-4 py-2 font-semibold">When</th>
                       <th className="px-4 py-2 font-semibold">Email</th>
                       <th className="px-4 py-2 font-semibold">Company</th>
-                      <th className="px-4 py-2 font-semibold">Type</th>
+                      <th className="px-4 py-2 font-semibold">Event</th>
+                      <th className="px-4 py-2 font-semibold">Detail</th>
                       <th className="px-4 py-2 font-semibold">Consent</th>
                       <th className="px-4 py-2 font-semibold">Page</th>
                     </tr>
@@ -328,9 +331,24 @@ export function ClientConnectionsPage() {
                           {l.company || "—"}
                         </td>
                         <td className="px-4 py-2">
-                          <span className="rounded-md border border-border bg-input px-1.5 py-0.5 text-[0.62rem] text-text-muted">
-                            {l.type ?? "?"}
+                          <span
+                            className={`rounded-md border px-1.5 py-0.5 text-[0.62rem] ${
+                              l.type === "download"
+                                ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                                : l.type === "signin" || l.type === "client_signin"
+                                  ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
+                                  : "border-accent/40 bg-accent/10 text-accent-hover"
+                            }`}
+                          >
+                            {l.type === "public_access"
+                              ? "demo unlock"
+                              : l.type === "client_signin"
+                                ? "signin"
+                                : (l.type ?? "?")}
                           </span>
+                        </td>
+                        <td className="max-w-[200px] truncate px-4 py-2 font-mono text-[0.66rem] text-text-muted">
+                          {l.detail || "—"}
                         </td>
                         <td className="px-4 py-2">
                           {l.consent ? (

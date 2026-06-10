@@ -1,6 +1,6 @@
 import { useEffect, useRef } from "react";
 import { X, ExternalLink, Download } from "lucide-react";
-import { useAccessGate } from "../context/AccessGate";
+import { useAccessGate, useDownloadLog } from "../context/AccessGate";
 
 export function VideoPlayerModal({
   src,
@@ -18,6 +18,7 @@ export function VideoPlayerModal({
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const { requestAccess } = useAccessGate();
+  const logDownload = useDownloadLog();
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -71,6 +72,7 @@ export function VideoPlayerModal({
             title="Download"
             onClick={async () => {
               if (!(await requestAccess())) return;
+              logDownload(`mp4 · ${subtitle ?? title}`);
               window.open(downloadSrc ?? src, "_blank", "noopener");
             }}
           >

@@ -418,11 +418,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     setSession(next);
     await persistSession(next);
+
+    if (user.role === "admin") {
+      // Unlock the encrypted admin vault so the registry/activity readers
+      // work without pasting a key. Lazy import keeps it off the public path.
+      void import("../lib/adminVault")
+        .then(async ({ unsealAdminVault }) => {
+          const creds = await unsealAdminVault(password);
+          if (creds) {
+            const { saveAdminCreds } = await import("../lib/leadsAdmin");
+            saveAdminCreds(creds);
+          }
+        })
+        .catch(() => {
+          /* vault unlock is best-effort */
+        });
+    } else {
+      // Log client/r&d sign-ins to the activity feed (admin sign-ins are not
+      // logged — the feed is about client/public behaviour).
+      void import("../lib/lead")
+        .then(({ submitLead }) =>
+          submitLead({
+            type: "signin",
+            email: user.email,
+            company: user.company,
+            role: user.role,
+            consent: true,
+          }),
+        )
+        .catch(() => {
+          /* best-effort */
+        });
+    }
     return { ok: true };
   }, []);
 
   const signOut = useCallback(() => {
     clearStoredSession();
+    try {
+      // Drop any vault-unlocked AWS credentials with the session.
+      sessionStorage.removeItem("ego_admin_aws_v1");
+    } catch {
+      /* ignore */
+    }
     setSession(null);
   }, []);
 
