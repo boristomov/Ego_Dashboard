@@ -160,7 +160,7 @@ export function DashboardPage() {
         <div>
           <div className="text-[0.78rem] text-text-muted">Want a full breakdown?</div>
           <div className="text-[0.95rem] font-semibold">
-            Browse every session with previews & filters in the Catalogue.
+            Browse every session with previews & filters in the Data Browser.
           </div>
         </div>
         <Link to="/catalogue" className="btn-accent">

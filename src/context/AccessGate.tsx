@@ -388,7 +388,7 @@ function QuotaModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <p className="mt-3 text-center text-[0.62rem] leading-relaxed text-text-dim">
-            Streaming previews in the catalogue remain available.
+            Streaming previews in the data browser remain available.
           </p>
         </div>
       </div>

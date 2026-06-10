@@ -95,7 +95,7 @@ export function WelcomePage() {
                 previews, and downloadable artifacts.
               </p>
               <span className="mt-2 inline-flex items-center gap-1.5 text-[0.75rem] font-medium text-accent-hover">
-                Open the catalogue <ArrowRight size={12} />
+                Open the data browser <ArrowRight size={12} />
               </span>
             </div>
           </div>

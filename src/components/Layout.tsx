@@ -21,7 +21,7 @@ import { SignInModal } from "./SignInModal";
 
 const TEAM_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/catalogue", label: "Catalogue", icon: FolderOpen },
+  { to: "/catalogue", label: "Data Browser", icon: FolderOpen },
   { to: "/postprocessing", label: "Live postprocessing", icon: Activity },
 ];
 
@@ -29,7 +29,7 @@ const ADMIN_NAV = [{ to: "/clients", label: "Client connections", icon: Users }]
 
 const PUBLIC_NAV = [
   { to: "/welcome", label: "Welcome", icon: Sparkles },
-  { to: "/catalogue", label: "Demo dataset", icon: FolderOpen },
+  { to: "/catalogue", label: "Data Browser", icon: FolderOpen },
 ];
 
 export function Layout() {
@@ -43,11 +43,8 @@ export function Layout() {
   const working = instances.filter((i) => i.live?.status === "working").length;
   const reachable = instances.filter((i) => i.live).length;
 
-  const nav = isTeam
-    ? [...TEAM_NAV, ...(isAdmin ? ADMIN_NAV : [])]
-    : role === "client"
-      ? []
-      : PUBLIC_NAV;
+  // Clients get the same welcome + data-browser nav as public visitors.
+  const nav = isTeam ? [...TEAM_NAV, ...(isAdmin ? ADMIN_NAV : [])] : PUBLIC_NAV;
 
   // Close the mobile drawer on navigation.
   useEffect(() => {

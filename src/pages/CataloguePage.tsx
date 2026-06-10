@@ -103,7 +103,7 @@ export function CataloguePage() {
       <div className="flex flex-col gap-1">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold tracking-tight">
-            <span className="brand-grad">Catalogue</span>
+            <span className="brand-grad">Data Browser</span>
           </h1>
           <div className="flex items-center gap-2">
             <button

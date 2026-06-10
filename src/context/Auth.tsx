@@ -77,6 +77,17 @@ const USERS: UserRecord[] = [
     company: "Thoth AI",
     allowedData: ["Full platform", "All buckets", "Client connections"],
   },
+  {
+    email: "johnson@genesis-ai.company",
+    salt: "4157e7b1d43ff10eb2fc621ae2daac1a",
+    passwordHash:
+      "8e43465ad1efe03c22ce30c2a45f12e509e908b9a39ec6aca1d2cda0eb07aad1",
+    iterations: 310000,
+    role: "client",
+    name: "Johnson",
+    company: "Genesis AI",
+    allowedData: ["Welcome", "Data browser (demo dataset)"],
+  },
 ];
 
 export function listUsers(): UserInfo[] {

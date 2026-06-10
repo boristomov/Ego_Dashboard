@@ -4,7 +4,6 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { CataloguePage } from "./pages/CataloguePage";
 import { PostprocessingPage } from "./pages/PostprocessingPage";
 import { ClientConnectionsPage } from "./pages/ClientConnectionsPage";
-import { MaintenancePage } from "./pages/MaintenancePage";
 import { WelcomePage } from "./pages/WelcomePage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { AccessProvider } from "./context/AccessGate";
@@ -23,12 +22,17 @@ export default function App() {
 function AppRoutes() {
   const { role, isTeam, isAdmin } = useAuth();
 
-  // Client access is parked in maintenance for now.
+  // Clients see the welcome walkthrough and the data browser — no internal
+  // pages. Signed-in clients are exempt from the public transfer allowance.
   if (role === "client") {
     return (
       <Routes>
         <Route element={<Layout />}>
-          <Route path="*" element={<MaintenancePage />} />
+          <Route index element={<Navigate to="/welcome" replace />} />
+          <Route path="/welcome" element={<WelcomePage />} />
+          <Route path="/catalogue" element={<CataloguePage />} />
+          <Route path="/privacy" element={<PrivacyPage />} />
+          <Route path="*" element={<Navigate to="/welcome" replace />} />
         </Route>
       </Routes>
     );
