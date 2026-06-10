@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api, type CatalogueSession } from "../lib/api";
 import { deriveSession, type DerivedSession } from "../lib/session";
 
@@ -39,11 +39,20 @@ export function useCatalogue(): CatalogueState {
     };
   }, [version]);
 
-  const sessions = raw.map(deriveSession).sort((a, b) => {
-    const at = a.timestamp?.getTime() ?? 0;
-    const bt = b.timestamp?.getTime() ?? 0;
-    return bt - at;
-  });
+  // Memoized so the array (and each session object) keeps a stable identity
+  // across re-renders. Without this, every render produced fresh objects,
+  // which defeated SessionCard's memo() (thumbnail flicker) and re-fired the
+  // catalogue's "reset scroll window" effect — locking the list at the first
+  // batch of 24 cards.
+  const sessions = useMemo(
+    () =>
+      raw.map(deriveSession).sort((a, b) => {
+        const at = a.timestamp?.getTime() ?? 0;
+        const bt = b.timestamp?.getTime() ?? 0;
+        return bt - at;
+      }),
+    [raw],
+  );
 
   return {
     loading,

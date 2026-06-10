@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
 import { X, ExternalLink, Download } from "lucide-react";
 import { useAccessGate, useDownloadLog } from "../context/AccessGate";
 
@@ -37,12 +38,16 @@ export function VideoPlayerModal({
     };
   }, [onClose]);
 
-  return (
+  // Portaled to <body>: the session cards use content-visibility containment,
+  // which turns them into containing blocks for fixed-position descendants —
+  // rendered in place, this fullscreen overlay would be trapped inside the
+  // card's little rectangle.
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-label={title}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+      className="fixed inset-0 z-[150] flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
@@ -108,6 +113,7 @@ export function VideoPlayerModal({
           />
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
