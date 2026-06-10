@@ -25,6 +25,7 @@ import {
 import { useAccessGate, useDownloadLog } from "../context/AccessGate";
 import { useAuth } from "../context/Auth";
 import { getUsageBytes, QUOTA_BYTES, formatGb } from "../lib/quota";
+import { canSeeArtifact } from "../lib/artifacts";
 
 // Above this many direct browser downloads we steer the user to the script.
 const BROWSER_DOWNLOAD_WARN = 12;
@@ -42,8 +43,14 @@ export function DownloadModal({
     null,
   );
   const { requestAccess, chargeDownload, creds, reset } = useAccessGate();
-  const { session } = useAuth();
+  const { session, isTeam } = useAuth();
   const logDownload = useDownloadLog();
+
+  // XML preannotations are internal-only — never offered to clients / public.
+  const visibleKinds = useMemo(
+    () => DOWNLOADABLE_KINDS.filter((k) => canSeeArtifact(k, isTeam)),
+    [isTeam],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -76,7 +83,7 @@ export function DownloadModal({
       return next;
     });
 
-  const allWithFiles = DOWNLOADABLE_KINDS.filter((k) => perKind[k].count > 0);
+  const allWithFiles = visibleKinds.filter((k) => perKind[k].count > 0);
   const allSelected =
     allWithFiles.length > 0 && allWithFiles.every((k) => selected.has(k));
   const toggleAll = () =>
@@ -90,7 +97,7 @@ export function DownloadModal({
     logDownload(`metadata-csv · ${sessions.length} sessions`);
     downloadTextFile(
       `ego-catalogue_${stamp}.csv`,
-      buildCsv(sessions),
+      buildCsv(sessions, visibleKinds),
       "text/csv;charset=utf-8",
     );
   };
@@ -215,7 +222,7 @@ export function DownloadModal({
             </p>
 
             <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-              {DOWNLOADABLE_KINDS.map((k) => {
+              {visibleKinds.map((k) => {
                 const info = perKind[k];
                 const disabled = info.count === 0;
                 const on = selected.has(k);

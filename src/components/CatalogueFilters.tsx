@@ -1,6 +1,8 @@
 import { useMemo } from "react";
 import { Search, X, Filter } from "lucide-react";
 import type { DerivedSession } from "../lib/session";
+import { useAuth } from "../context/Auth";
+import { canSeeArtifact } from "../lib/artifacts";
 
 export type Completeness =
   | "all"
@@ -66,6 +68,12 @@ export function CatalogueFilters({
   total: number;
   visible: number;
 }) {
+  const { isTeam } = useAuth();
+  // XML is internal-only — drop "Missing XML" for clients / public.
+  const missingOptions = MISSING_OPTIONS.filter(
+    (o) => o.value === "none" || canSeeArtifact(o.value, isTeam),
+  );
+
   const tasks = useMemo(() => {
     const set = new Set<string>();
     for (const s of sessions) set.add(s.taskName);
@@ -128,7 +136,7 @@ export function CatalogueFilters({
         label="Missing"
         value={value.missing}
         onChange={(v) => onChange({ ...value, missing: v as MissingArtifact })}
-        options={MISSING_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+        options={missingOptions.map((o) => ({ value: o.value, label: o.label }))}
       />
 
       {dirty && (

@@ -12,12 +12,15 @@ import {
   Users,
   Menu,
   X,
+  Info,
+  ExternalLink,
 } from "lucide-react";
 import { useHealth } from "../hooks/useHealth";
 import { DATA_SOURCE } from "../lib/api";
 import { useInstances } from "../hooks/useInstances";
 import { useAuth } from "../context/Auth";
 import { SignInModal } from "./SignInModal";
+import { ARTIFACT_LEGEND, EXHIBIT_URL } from "../lib/artifacts";
 
 const TEAM_NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -63,7 +66,7 @@ export function Layout() {
         </div>
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 px-3">
+      <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto px-3">
         {nav.map((item) => (
           <NavLink
             key={item.to}
@@ -110,7 +113,51 @@ export function Layout() {
             </button>
           </div>
         )}
+
+        {/* Artifact legend — what each colored file badge means. Shown to
+            clients & public visitors browsing the data. */}
+        {!isTeam && (
+          <div className="mt-4">
+            <div className="flex items-center gap-1.5 px-3 text-[0.6rem] font-semibold uppercase tracking-[0.18em] text-text-dim">
+              <Info size={11} /> What's in a session
+            </div>
+            <ul className="mt-2 flex flex-col gap-2">
+              {ARTIFACT_LEGEND.map((a) => (
+                <li
+                  key={a.kind}
+                  className="rounded-md border border-border bg-panel/50 px-2.5 py-2"
+                >
+                  <div className="flex items-center gap-1.5">
+                    <span
+                      className={`inline-block h-2 w-2 rounded-sm ${a.dot}`}
+                    />
+                    <span className="text-[0.68rem] font-semibold tracking-wide text-text">
+                      {a.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-[0.64rem] leading-relaxed text-text-muted">
+                    {a.desc}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </nav>
+
+      {/* Non-team: link out to the full marketing/explainer exhibit. */}
+      {!isTeam && (
+        <div className="mt-auto border-t border-border px-3 py-3">
+          <a
+            href={EXHIBIT_URL}
+            target="_blank"
+            rel="noopener"
+            className="btn w-full justify-center !border-accent/40 !text-accent-hover hover:!bg-accent/10"
+          >
+            <ExternalLink size={13} /> More about the dataset
+          </a>
+        </div>
+      )}
 
       {isTeam && (
         <div className="mt-auto border-t border-border px-4 py-3 text-[0.7rem] text-text-dim">

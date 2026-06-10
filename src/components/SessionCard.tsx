@@ -13,6 +13,8 @@ import { thumbUrl, api, DATA_SOURCE } from "../lib/api";
 import { ArtifactBadge } from "./ArtifactBadge";
 import { VideoPlayerModal } from "./VideoPlayerModal";
 import { useAccessGate, useDownloadLog } from "../context/AccessGate";
+import { useAuth } from "../context/Auth";
+import { canSeeArtifact } from "../lib/artifacts";
 
 export const STAGE_STYLES: Record<
   PipelineStage,
@@ -58,6 +60,7 @@ export const SessionCard = memo(function SessionCard({
   const hasThumb = s.artifacts.thumb.present && !thumbBroken;
   const { requestAccess, chargeDownload } = useAccessGate();
   const logDownload = useDownloadLog();
+  const { isTeam } = useAuth();
 
   // Resolve a click on an artifact to a URL. In static (GitHub Pages) mode the
   // URL is baked into the snapshot; in proxy/dev we fall back to the live
@@ -222,12 +225,14 @@ export const SessionCard = memo(function SessionCard({
             onClick={canClick("mp4") ? () => handleDownload("mp4") : undefined}
             action="download"
           />
-          <ArtifactBadge
-            kind="xml"
-            present={s.artifacts.xml.present}
-            onClick={canClick("xml") ? () => handleDownload("xml") : undefined}
-            action="download"
-          />
+          {canSeeArtifact("xml", isTeam) && (
+            <ArtifactBadge
+              kind="xml"
+              present={s.artifacts.xml.present}
+              onClick={canClick("xml") ? () => handleDownload("xml") : undefined}
+              action="download"
+            />
+          )}
           <ArtifactBadge
             kind="zip"
             present={s.artifacts.zip.present}

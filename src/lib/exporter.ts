@@ -117,7 +117,10 @@ function csvCell(v: string | number | null | undefined): string {
  * Columns cover the per-artifact filename + byte size so the sheet doubles as
  * a manifest.
  */
-export function buildCsv(sessions: DerivedSession[]): string {
+export function buildCsv(
+  sessions: DerivedSession[],
+  kinds: ArtifactKind[] = DOWNLOADABLE_KINDS,
+): string {
   const header = [
     "task",
     "session_id",
@@ -129,7 +132,7 @@ export function buildCsv(sessions: DerivedSession[]): string {
     "total_bytes",
     "total_size",
   ];
-  for (const k of DOWNLOADABLE_KINDS) {
+  for (const k of kinds) {
     header.push(`${k}_present`, `${k}_filename`, `${k}_bytes`);
   }
 
@@ -146,7 +149,7 @@ export function buildCsv(sessions: DerivedSession[]): string {
       s.totalBytes,
       formatBytes(s.totalBytes),
     ];
-    for (const k of DOWNLOADABLE_KINDS) {
+    for (const k of kinds) {
       const a = s.artifacts[k];
       row.push(
         a.present ? "yes" : "no",
