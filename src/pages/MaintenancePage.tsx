@@ -1,5 +1,5 @@
 import { Wrench, Mail } from "lucide-react";
-import { PARTNERSHIP_CONTACTS } from "../context/AccessGate";
+import { PARTNERSHIP_CONTACTS, openContactEmail } from "../context/AccessGate";
 import { useAuth } from "../context/Auth";
 
 export function MaintenancePage() {
@@ -21,11 +21,10 @@ export function MaintenancePage() {
 
         <div className="mt-6 grid gap-2 sm:grid-cols-2">
           {PARTNERSHIP_CONTACTS.map((c) => (
-            <a
-              key={c.email}
-              href={`mailto:${c.email}?subject=${encodeURIComponent(
-                "Client portal access",
-              )}`}
+            <button
+              key={c.user}
+              type="button"
+              onClick={() => openContactEmail(c, "Client portal access")}
               className="group flex items-center gap-2 rounded-md border border-border bg-panel px-3 py-2 text-left transition hover:border-accent/40 hover:bg-panel-hover"
             >
               <Mail size={13} className="flex-shrink-0 text-accent-hover" />
@@ -37,7 +36,7 @@ export function MaintenancePage() {
                   {c.role}
                 </span>
               </span>
-            </a>
+            </button>
           ))}
         </div>
       </div>

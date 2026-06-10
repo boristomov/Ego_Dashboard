@@ -40,6 +40,14 @@ const LEADS_TABLE = "ego-leads";
 const LOCAL_KEY = "ego_leads_v1";
 const OUTBOX_KEY = "ego_leads_outbox_v1";
 const OUTBOX_MAX = 20;
+const RECENT_KEY = "ego_leads_recent_v1";
+
+// Activity rows (sign-ins / downloads) auto-expire from DynamoDB via TTL so
+// the table never grows unbounded; gate unlocks are kept indefinitely.
+const ACTIVITY_TTL_DAYS = 180;
+// Identical download events within this window are collapsed into one row
+// (e.g. someone re-clicking the same artifact repeatedly).
+const DEDUPE_WINDOW_MS = 10 * 60 * 1000;
 
 export type LeadType =
   | "public_access" // visitor unlocked the demo via the access gate
@@ -129,6 +137,17 @@ function getClients(): Promise<Clients> {
                 userAgent: { S: record.userAgent },
                 referrer: { S: record.referrer },
                 ...(record.detail ? { detail: { S: record.detail } } : {}),
+                // TTL: activity events expire; unlocks are permanent.
+                ...(record.type === "download" || record.type === "signin"
+                  ? {
+                      expiresAt: {
+                        N: String(
+                          Math.floor(Date.now() / 1000) +
+                            ACTIVITY_TTL_DAYS * 86400,
+                        ),
+                      },
+                    }
+                  : {}),
               },
             }),
           );
@@ -242,11 +261,35 @@ export async function flushLeads(): Promise<void> {
   }
 }
 
+// Collapse identical events fired in quick succession (same person re-clicking
+// a download) so heavy users don't generate thousands of rows.
+function isDuplicate(input: LeadInput): boolean {
+  if (input.type !== "download") return false;
+  const key = `${input.email}|${input.type}|${input.detail ?? ""}`;
+  try {
+    const now = Date.now();
+    const recent: Record<string, number> = JSON.parse(
+      localStorage.getItem(RECENT_KEY) || "{}",
+    );
+    // Drop expired entries while we're here.
+    for (const k of Object.keys(recent)) {
+      if (now - recent[k] > DEDUPE_WINDOW_MS) delete recent[k];
+    }
+    if (recent[key] && now - recent[key] < DEDUPE_WINDOW_MS) return true;
+    recent[key] = now;
+    localStorage.setItem(RECENT_KEY, JSON.stringify(recent));
+  } catch {
+    /* storage unavailable — log normally */
+  }
+  return false;
+}
+
 /**
  * Record a captured lead. Persists locally and queues delivery (flushed
  * immediately and retried on later visits); the UI is never gated on it.
  */
 export function submitLead(input: LeadInput): void {
+  if (isDuplicate(input)) return;
   const record: LeadRecord = {
     ...input,
     acceptedAt: new Date().toISOString(),

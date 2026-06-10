@@ -40,10 +40,26 @@ const STORAGE_KEY = "ego_dataset_access_v1";
 // that unlocked before lead delivery existed get captured retroactively.
 const DELIVERED_FLAG = "ego_dataset_access_delivered_v1";
 
-export const PARTNERSHIP_CONTACTS = [
-  { name: "Pedro Alves", role: "CTO", email: "pedro.alves@aithoth.com" },
-  { name: "Boris Tomov", role: "Embodied AI Engineer", email: "boris.tomov@aithoth.com" },
+// Addresses are stored split and only assembled at click time so they never
+// appear contiguously in the bundle or the rendered DOM (scraper bots harvest
+// mailto: links and visible addresses for spam lists).
+export type PartnershipContact = {
+  name: string;
+  role: string;
+  user: string;
+  domain: string;
+};
+
+export const PARTNERSHIP_CONTACTS: PartnershipContact[] = [
+  { name: "Pedro Alves", role: "CTO", user: "pedro.alves", domain: "aithoth.com" },
+  { name: "Boris Tomov", role: "Embodied AI Engineer", user: "boris.tomov", domain: "aithoth.com" },
 ];
+
+/** Assemble and open a mailto link at interaction time (never in the DOM). */
+export function openContactEmail(c: PartnershipContact, subject: string): void {
+  const addr = `${c.user}\u0040${c.domain}`;
+  window.location.href = `mailto:${addr}?subject=${encodeURIComponent(subject)}`;
+}
 
 type AccessContextValue = {
   creds: AccessCreds | null;
@@ -163,7 +179,7 @@ export function AccessProvider({ children }: { children: ReactNode }) {
     });
   }, [session, creds]);
 
-  const settle = (granted: boolean, next?: AccessCreds) => {
+  const settle = (granted: boolean, next?: AccessCreds, suspectBot = false) => {
     if (next) {
       setCreds(next);
       try {
@@ -172,14 +188,18 @@ export function AccessProvider({ children }: { children: ReactNode }) {
       } catch {
         /* storage may be unavailable; access still granted for this session */
       }
-      // Capture the lead (local audit + queued S3 write). Best-effort.
-      submitLead({
-        type: "public_access",
-        email: next.email,
-        company: next.company,
-        role: "public",
-        consent: true,
-      });
+      // Capture the lead (local audit + queued AWS write). Best-effort.
+      // Submissions that tripped the bot heuristics (honeypot filled /
+      // inhumanly fast) are accepted in the UI but never written upstream.
+      if (!suspectBot) {
+        submitLead({
+          type: "public_access",
+          email: next.email,
+          company: next.company,
+          role: "public",
+          consent: true,
+        });
+      }
     }
     setOpen(false);
     resolverRef.current?.(granted);
@@ -202,12 +222,16 @@ export function AccessProvider({ children }: { children: ReactNode }) {
       {open && (
         <AccessGateModal
           blocking={mode === "blocking"}
-          onSubmit={(email, company) =>
-            settle(true, {
-              email,
-              company,
-              acceptedAt: new Date().toISOString(),
-            })
+          onSubmit={(email, company, suspectBot) =>
+            settle(
+              true,
+              {
+                email,
+                company,
+                acceptedAt: new Date().toISOString(),
+              },
+              suspectBot,
+            )
           }
           onCancel={() => settle(false)}
           onSignedIn={() => settle(true)}
@@ -226,7 +250,7 @@ function AccessGateModal({
   onSignedIn,
 }: {
   blocking: boolean;
-  onSubmit: (email: string, company: string) => void;
+  onSubmit: (email: string, company: string, suspectBot: boolean) => void;
   onCancel: () => void;
   onSignedIn: () => void;
 }) {
@@ -301,12 +325,13 @@ function AccessGateModal({
           </div>
           <div className="mt-2 grid gap-2 sm:grid-cols-2">
             {PARTNERSHIP_CONTACTS.map((c) => (
-              <a
-                key={c.email}
-                href={`mailto:${c.email}?subject=${encodeURIComponent(
-                  "Egocentric dataset — partnership inquiry",
-                )}`}
-                className="group flex items-center gap-2 rounded-md border border-border bg-panel px-3 py-2 transition hover:border-accent/40 hover:bg-panel-hover"
+              <button
+                key={c.user}
+                type="button"
+                onClick={() =>
+                  openContactEmail(c, "Egocentric dataset — partnership inquiry")
+                }
+                className="group flex items-center gap-2 rounded-md border border-border bg-panel px-3 py-2 text-left transition hover:border-accent/40 hover:bg-panel-hover"
               >
                 <Mail size={13} className="flex-shrink-0 text-accent-hover" />
                 <span className="min-w-0">
@@ -317,7 +342,7 @@ function AccessGateModal({
                     {c.role}
                   </span>
                 </span>
-              </a>
+              </button>
             ))}
           </div>
         </div>
@@ -327,17 +352,24 @@ function AccessGateModal({
   );
 }
 
+// Minimum ms between the form appearing and a credible human submission.
+// Typing an email, a company and ticking consent simply can't happen faster.
+const MIN_FILL_MS = 3000;
+
 function AccessForm({
   onSubmit,
   onSwitchToSignIn,
 }: {
-  onSubmit: (email: string, company: string) => void;
+  onSubmit: (email: string, company: string, suspectBot: boolean) => void;
   onSwitchToSignIn: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [company, setCompany] = useState("");
   const [consent, setConsent] = useState(false);
   const [touched, setTouched] = useState(false);
+  // Honeypot: invisible to humans, autofilled by naive bots.
+  const [website, setWebsite] = useState("");
+  const openedAtRef = useRef(Date.now());
 
   const emailOk = EMAIL_RE.test(email.trim());
   const companyOk = company.trim().length >= 2;
@@ -346,11 +378,26 @@ function AccessForm({
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     setTouched(true);
-    if (valid) onSubmit(email.trim(), company.trim());
+    if (!valid) return;
+    const suspectBot =
+      website.trim().length > 0 ||
+      Date.now() - openedAtRef.current < MIN_FILL_MS;
+    onSubmit(email.trim(), company.trim(), suspectBot);
   };
 
   return (
     <form onSubmit={submit} className="px-5 py-4">
+      {/* Honeypot — visually hidden, excluded from tab order. */}
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        value={website}
+        onChange={(e) => setWebsite(e.target.value)}
+        className="pointer-events-none absolute -left-[9999px] h-0 w-0 opacity-0"
+      />
       <label className="block">
         <span className="mb-1 flex items-center gap-1.5 text-[0.72rem] font-semibold uppercase tracking-wider text-text-muted">
           <Mail size={11} /> Work email

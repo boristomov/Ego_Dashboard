@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { ShieldCheck, ArrowLeft } from "lucide-react";
-import { PARTNERSHIP_CONTACTS } from "../context/AccessGate";
+import { PARTNERSHIP_CONTACTS, openContactEmail } from "../context/AccessGate";
 
 // Minimal, plain-language data notice. Not legal advice — covers what we
 // collect, why, where it's stored, and how to have it removed.
@@ -93,15 +93,14 @@ export function PrivacyPage() {
           <h2 className="text-[0.9rem] font-semibold text-text">Contact</h2>
           <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1">
             {PARTNERSHIP_CONTACTS.map((c) => (
-              <a
-                key={c.email}
-                href={`mailto:${c.email}?subject=${encodeURIComponent(
-                  "Data privacy request",
-                )}`}
+              <button
+                key={c.user}
+                type="button"
+                onClick={() => openContactEmail(c, "Data privacy request")}
                 className="text-accent-hover hover:underline"
               >
-                {c.name} · {c.email}
-              </a>
+                {c.name} · {c.user} [at] {c.domain}
+              </button>
             ))}
           </div>
         </section>

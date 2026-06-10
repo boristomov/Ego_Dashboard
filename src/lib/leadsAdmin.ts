@@ -77,6 +77,11 @@ type Item = Record<string, AttrValue>;
 
 const str = (item: Item, key: string): string => item[key]?.S ?? "";
 
+// Hard ceiling on scanned rows so a spammed table can't hang the admin UI or
+// burn read capacity — beyond this the page shows the newest slice and the
+// full data stays queryable in the AWS console.
+const SCAN_MAX_ITEMS = 3000;
+
 async function scanTable(creds: AdminCreds, table: string): Promise<Item[]> {
   const { DynamoDBClient, ScanCommand } = await import(
     "@aws-sdk/client-dynamodb"
@@ -89,11 +94,12 @@ async function scanTable(creds: AdminCreds, table: string): Promise<Item[]> {
       new ScanCommand({
         TableName: table,
         ExclusiveStartKey: startKey as never,
+        Limit: 1000,
       }),
     );
     items.push(...((res.Items ?? []) as Item[]));
     startKey = res.LastEvaluatedKey as Record<string, unknown> | undefined;
-  } while (startKey);
+  } while (startKey && items.length < SCAN_MAX_ITEMS);
   return items;
 }
 
