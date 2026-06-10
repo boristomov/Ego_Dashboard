@@ -19,10 +19,13 @@
 
 import type { AdminCreds } from "./leadsAdmin";
 
+// Holds the `ego-registry-reader` IAM key: dynamodb:Scan on ego-users and
+// ego-leads ONLY — even a hypothetical offline crack of the vault yields no
+// access to S3 data or any write/delete capability.
 const VAULT = {
-  salt: "28696d5ca2dd2cfc57f494f03f1236ac",
-  iv: "f1db6ef505de727aff2fc7a2",
-  ct: "e7a93457ac9c6834809b31bad859cd6ec960d97ae9ba09f067553e232b729e09725e81edb2fe2bb7b0d191e0138517204e03e2a5e4c3722b7bab918028eafd92e9f3b3c9c3e7b617e88d96faf8145bcc5e313f6943e7d1da3f5551f41d1d849fa99e97436172f621f7b9480d1b333f06354625",
+  salt: "3a6c9a83aa365448afaedc5f50525b4e",
+  iv: "f1e3ab47d67b3bbe1de00038",
+  ct: "38793d1dc18fcfe296799923b67bd202bc1d7e81deded5f72c855554758a7ad5f087771d61d269a6b1d713d7ef6cf44d2f15eac0afc6b7ab55cc5031c0c622b52d12b44f7a9bb60038a40382c1f185994d2d4189fa39e119b39f74ca8613cd507c1d757388f54fb9eeea0ca54d4c4ab5a0f6a3",
 };
 
 function hexToBytes(hex: string): Uint8Array {
