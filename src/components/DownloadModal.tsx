@@ -23,6 +23,8 @@ import {
   triggerBrowserDownloads,
 } from "../lib/exporter";
 import { useAccessGate, useDownloadLog } from "../context/AccessGate";
+import { useAuth } from "../context/Auth";
+import { getUsageBytes, QUOTA_BYTES, formatGb } from "../lib/quota";
 
 // Above this many direct browser downloads we steer the user to the script.
 const BROWSER_DOWNLOAD_WARN = 12;
@@ -39,7 +41,8 @@ export function DownloadModal({
   const [progress, setProgress] = useState<{ done: number; total: number } | null>(
     null,
   );
-  const { requestAccess, creds, reset } = useAccessGate();
+  const { requestAccess, chargeDownload, creds, reset } = useAccessGate();
+  const { session } = useAuth();
   const logDownload = useDownloadLog();
 
   useEffect(() => {
@@ -95,6 +98,7 @@ export function DownloadModal({
   const exportLinks = async () => {
     if (!targets.length) return;
     if (!(await requestAccess())) return;
+    if (!chargeDownload(selectedBytes)) return;
     logDownload(bulkDetail("link-list"));
     downloadTextFile(`ego-download-links_${stamp}.txt`, buildUrlList(targets));
   };
@@ -102,6 +106,7 @@ export function DownloadModal({
   const exportScript = async () => {
     if (!targets.length) return;
     if (!(await requestAccess())) return;
+    if (!chargeDownload(selectedBytes)) return;
     logDownload(bulkDetail("shell-script"));
     downloadTextFile(
       `ego-download_${stamp}.sh`,
@@ -113,6 +118,7 @@ export function DownloadModal({
   const downloadInBrowser = async () => {
     if (!targets.length) return;
     if (!(await requestAccess())) return;
+    if (!chargeDownload(selectedBytes)) return;
     logDownload(bulkDetail("browser-bulk"));
     setBusy("browser");
     setProgress({ done: 0, total: targets.length });
@@ -348,6 +354,14 @@ export function DownloadModal({
               >
                 Use a different email
               </button>
+              {!session && (
+                <span>
+                  · Demo transfer used:{" "}
+                  <span className="text-text-muted">
+                    {formatGb(getUsageBytes())} / {formatGb(QUOTA_BYTES)}
+                  </span>
+                </span>
+              )}
             </div>
           )}
         </div>

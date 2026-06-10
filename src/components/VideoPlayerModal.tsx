@@ -5,6 +5,7 @@ import { useAccessGate, useDownloadLog } from "../context/AccessGate";
 export function VideoPlayerModal({
   src,
   downloadSrc,
+  downloadBytes = 0,
   title,
   subtitle,
   onClose,
@@ -12,12 +13,14 @@ export function VideoPlayerModal({
   src: string;
   /** Attachment-dispositioned URL used by the Download button (falls back to src). */
   downloadSrc?: string;
+  /** File size, charged against the public transfer allowance on download. */
+  downloadBytes?: number;
   title: string;
   subtitle?: string;
   onClose: () => void;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const { requestAccess } = useAccessGate();
+  const { requestAccess, chargeDownload } = useAccessGate();
   const logDownload = useDownloadLog();
 
   useEffect(() => {
@@ -58,20 +61,25 @@ export function VideoPlayerModal({
               </div>
             )}
           </div>
-          <a
-            href={src}
-            target="_blank"
-            rel="noopener"
+          <button
             className="btn"
             title="Open in new tab"
+            onClick={async () => {
+              // Opening the raw file streams it in full — meter it like a
+              // download so the tab isn't a quota loophole.
+              if (!(await requestAccess())) return;
+              if (!chargeDownload(downloadBytes)) return;
+              window.open(src, "_blank", "noopener");
+            }}
           >
             <ExternalLink size={13} />
-          </a>
+          </button>
           <button
             className="btn"
             title="Download"
             onClick={async () => {
               if (!(await requestAccess())) return;
+              if (!chargeDownload(downloadBytes)) return;
               logDownload(`mp4 · ${subtitle ?? title}`);
               window.open(downloadSrc ?? src, "_blank", "noopener");
             }}

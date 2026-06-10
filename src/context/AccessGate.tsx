@@ -19,9 +19,18 @@ import {
   AlertCircle,
   ArrowLeft,
   Sparkles,
+  Gauge,
 } from "lucide-react";
 import { useAuth } from "./Auth";
 import { submitLead, flushLeads } from "../lib/lead";
+import {
+  chargeQuota,
+  wouldExceedQuota,
+  registerGateEmail,
+  verifyEmailDeliverable,
+  QUOTA_BYTES,
+  formatGb,
+} from "../lib/quota";
 
 // The access gate now greets public visitors on first load (instead of waiting
 // for a download click): browsing the demo requires telling us who you are.
@@ -66,6 +75,10 @@ type AccessContextValue = {
   /** Resolves true once the visitor has provided email + company, false if
    *  they dismissed the gate. Resolves immediately when already unlocked. */
   requestAccess: () => Promise<boolean>;
+  /** Charge a download of `bytes` against the public transfer allowance.
+   *  Returns false (and shows the allowance dialog) when the cap is reached.
+   *  Signed-in users are never metered. */
+  chargeDownload: (bytes: number) => boolean;
   /** Forget the stored credentials (e.g. "use a different email"). */
   reset: () => void;
 };
@@ -128,6 +141,7 @@ export function AccessProvider({ children }: { children: ReactNode }) {
   const { session, ready } = useAuth();
   const [creds, setCreds] = useState<AccessCreds | null>(() => loadCreds());
   const [open, setOpen] = useState(false);
+  const [quotaOpen, setQuotaOpen] = useState(false);
   // "blocking": shown on first load, can't be dismissed without unlocking or
   // signing in. "request": opened by a download click, dismissible.
   const [mode, setMode] = useState<"blocking" | "request">("blocking");
@@ -179,6 +193,41 @@ export function AccessProvider({ children }: { children: ReactNode }) {
     });
   }, [session, creds]);
 
+  const chargeDownload = useCallback(
+    (bytes: number): boolean => {
+      // Signed-in users (team / client accounts) are not metered.
+      if (session) return true;
+      if (wouldExceedQuota(bytes)) {
+        setQuotaOpen(true);
+        // Surface the hot lead once per browser: someone who consumed the
+        // full demo allowance is worth a personal follow-up.
+        try {
+          const FLAG = "ego_quota_lead_v1";
+          if (!localStorage.getItem(FLAG)) {
+            localStorage.setItem(FLAG, "1");
+            const c = loadCreds();
+            if (c) {
+              submitLead({
+                type: "quota_exceeded",
+                email: c.email,
+                company: c.company,
+                role: "public",
+                consent: true,
+                detail: `reached ${formatGb(QUOTA_BYTES)} demo transfer allowance`,
+              });
+            }
+          }
+        } catch {
+          /* best-effort */
+        }
+        return false;
+      }
+      chargeQuota(bytes);
+      return true;
+    },
+    [session],
+  );
+
   const settle = (granted: boolean, next?: AccessCreds, suspectBot = false) => {
     if (next) {
       setCreds(next);
@@ -217,8 +266,11 @@ export function AccessProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <AccessContext.Provider value={{ creds, requestAccess, reset }}>
+    <AccessContext.Provider
+      value={{ creds, requestAccess, chargeDownload, reset }}
+    >
       {children}
+      {quotaOpen && <QuotaModal onClose={() => setQuotaOpen(false)} />}
       {open && (
         <AccessGateModal
           blocking={mode === "blocking"}
@@ -242,6 +294,108 @@ export function AccessProvider({ children }: { children: ReactNode }) {
 }
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/** Shown when a public visitor has consumed the demo transfer allowance. */
+function QuotaModal({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Transfer allowance reached"
+      className="fixed inset-0 z-[210] flex items-center justify-center overflow-y-auto bg-black/85 p-3 backdrop-blur-md sm:p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative my-auto w-full max-w-md overflow-hidden rounded-2xl border border-border bg-panel shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="relative border-b border-border bg-gradient-to-br from-accent/25 via-accent/10 to-transparent px-5 py-5">
+          <button
+            onClick={onClose}
+            className="btn absolute right-3 top-3 !px-1.5"
+            aria-label="Close"
+          >
+            <X size={14} />
+          </button>
+          <div className="flex items-center gap-3">
+            <div className="grid h-10 w-10 flex-shrink-0 place-items-center rounded-xl border border-accent/40 bg-accent/15 text-accent-hover">
+              <Gauge size={18} />
+            </div>
+            <div className="min-w-0">
+              <div className="text-[1rem] font-semibold leading-tight text-text">
+                Demo transfer allowance reached
+              </div>
+              <div className="mt-0.5 text-[0.72rem] leading-snug text-text-muted">
+                You've downloaded {formatGb(QUOTA_BYTES)} of demo data
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-5 py-4">
+          <p className="text-[0.78rem] leading-relaxed text-text-muted">
+            Thank you for taking such a deep look at the dataset. Due to AWS
+            data-transfer pricing, volumes beyond {formatGb(QUOTA_BYTES)} are
+            best served through a{" "}
+            <span className="font-medium text-text">
+              direct AWS-to-AWS transfer
+            </span>{" "}
+            (S3 bucket grant or Requester-Pays access) — faster and more
+            reliable than per-file downloads.
+          </p>
+          <p className="mt-2 text-[0.78rem] leading-relaxed text-text-muted">
+            Please contact us to discuss your needs or to request access to the
+            full database — we typically respond within one business day.
+          </p>
+
+          <div className="mt-4 grid gap-2 sm:grid-cols-2">
+            {PARTNERSHIP_CONTACTS.map((c) => (
+              <button
+                key={c.user}
+                type="button"
+                onClick={() =>
+                  openContactEmail(
+                    c,
+                    "Full dataset access — direct transfer request",
+                  )
+                }
+                className="group flex items-center gap-2 rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-left transition hover:border-accent/60 hover:bg-accent/20"
+              >
+                <Mail size={13} className="flex-shrink-0 text-accent-hover" />
+                <span className="min-w-0">
+                  <span className="block truncate text-[0.74rem] font-medium text-text">
+                    {c.name}
+                  </span>
+                  <span className="block truncate text-[0.64rem] text-text-muted">
+                    {c.role}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <p className="mt-3 text-center text-[0.62rem] leading-relaxed text-text-dim">
+            Streaming previews in the catalogue remain available.
+          </p>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
 
 function AccessGateModal({
   blocking,
@@ -367,6 +521,8 @@ function AccessForm({
   const [company, setCompany] = useState("");
   const [consent, setConsent] = useState(false);
   const [touched, setTouched] = useState(false);
+  const [checking, setChecking] = useState(false);
+  const [gateError, setGateError] = useState<string | null>(null);
   // Honeypot: invisible to humans, autofilled by naive bots.
   const [website, setWebsite] = useState("");
   const openedAtRef = useRef(Date.now());
@@ -375,14 +531,39 @@ function AccessForm({
   const companyOk = company.trim().length >= 2;
   const valid = emailOk && companyOk && consent;
 
-  const submit = (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setTouched(true);
-    if (!valid) return;
+    setGateError(null);
+    if (!valid || checking) return;
     const suspectBot =
       website.trim().length > 0 ||
       Date.now() - openedAtRef.current < MIN_FILL_MS;
-    onSubmit(email.trim(), company.trim(), suspectBot);
+    if (suspectBot) {
+      // Bots get a quiet fake success — no verification, nothing recorded.
+      onSubmit(email.trim(), company.trim(), true);
+      return;
+    }
+    setChecking(true);
+    try {
+      // Verify the domain actually exists and can receive mail.
+      const deliverable = await verifyEmailDeliverable(email.trim());
+      if (!deliverable.ok) {
+        setGateError(deliverable.reason ?? "Enter a valid email address.");
+        return;
+      }
+      // Cap distinct emails per browser — rotating addresses to extend the
+      // download allowance is the abuse case.
+      if (!registerGateEmail(email.trim()).ok) {
+        setGateError(
+          "This browser has reached its limit of access emails. For continued or larger-volume access, please contact us below — we're happy to set you up directly.",
+        );
+        return;
+      }
+      onSubmit(email.trim(), company.trim(), false);
+    } finally {
+      setChecking(false);
+    }
   };
 
   return (
@@ -461,12 +642,26 @@ function AccessForm({
         </span>
       )}
 
+      {gateError && (
+        <div className="mt-3 flex items-start gap-1.5 rounded-md border border-err/30 bg-err/10 px-2.5 py-1.5 text-[0.7rem] leading-relaxed text-err">
+          <AlertCircle size={12} className="mt-0.5 flex-shrink-0" /> {gateError}
+        </div>
+      )}
+
       <button
         type="submit"
-        disabled={!valid}
+        disabled={!valid || checking}
         className="btn mt-4 w-full justify-center !border-accent/50 !bg-accent/15 !py-2 !text-accent-hover hover:!bg-accent/25 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <ShieldCheck size={14} /> Start exploring
+        {checking ? (
+          <>
+            <Loader2 size={14} className="animate-spin" /> Verifying…
+          </>
+        ) : (
+          <>
+            <ShieldCheck size={14} /> Start exploring
+          </>
+        )}
       </button>
 
       <button

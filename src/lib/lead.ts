@@ -53,7 +53,8 @@ export type LeadType =
   | "public_access" // visitor unlocked the demo via the access gate
   | "client_signin" // legacy alias kept for old rows
   | "signin" // client / r&d signed in to the platform
-  | "download"; // client / public visitor downloaded data
+  | "download" // client / public visitor downloaded data
+  | "quota_exceeded"; // public visitor hit the demo transfer allowance (hot lead)
 
 export type LeadRecord = {
   type: LeadType;

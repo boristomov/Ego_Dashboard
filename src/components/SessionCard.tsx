@@ -56,7 +56,7 @@ export const SessionCard = memo(function SessionCard({
   const [thumbBroken, setThumbBroken] = useState(false);
   const [playing, setPlaying] = useState(false);
   const hasThumb = s.artifacts.thumb.present && !thumbBroken;
-  const { requestAccess } = useAccessGate();
+  const { requestAccess, chargeDownload } = useAccessGate();
   const logDownload = useDownloadLog();
 
   // Resolve a click on an artifact to a URL. In static (GitHub Pages) mode the
@@ -81,8 +81,10 @@ export const SessionCard = memo(function SessionCard({
   };
 
   const handleDownload = async (kind: ArtifactKind) => {
-    // Gate every download behind the access capture (email + company).
+    // Gate every download behind the access capture (email + company),
+    // then charge it against the public transfer allowance.
     if (!(await requestAccess())) return;
+    if (!chargeDownload(s.artifacts[kind].size ?? 0)) return;
     const url = await resolveUrl(kind, true);
     if (!url) return;
     logDownload(`${kind} · ${s.taskName}/${s.sessionId}`);
@@ -245,6 +247,7 @@ export const SessionCard = memo(function SessionCard({
         <VideoPlayerModal
           src={mp4Url}
           downloadSrc={s.artifacts.mp4.downloadUrl ?? mp4Url}
+          downloadBytes={s.artifacts.mp4.size ?? 0}
           title={s.taskName}
           subtitle={`${s.sessionId}  ·  ${formatDuration(s.durationSec)}`}
           onClose={() => setPlaying(false)}

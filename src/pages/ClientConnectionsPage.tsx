@@ -337,14 +337,18 @@ export function ClientConnectionsPage() {
                                 ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
                                 : l.type === "signin" || l.type === "client_signin"
                                   ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
-                                  : "border-accent/40 bg-accent/10 text-accent-hover"
+                                  : l.type === "quota_exceeded"
+                                    ? "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                                    : "border-accent/40 bg-accent/10 text-accent-hover"
                             }`}
                           >
                             {l.type === "public_access"
                               ? "demo unlock"
                               : l.type === "client_signin"
                                 ? "signin"
-                                : (l.type ?? "?")}
+                                : l.type === "quota_exceeded"
+                                  ? "quota reached"
+                                  : (l.type ?? "?")}
                           </span>
                         </td>
                         <td className="max-w-[200px] truncate px-4 py-2 font-mono text-[0.66rem] text-text-muted">

@@ -56,6 +56,11 @@ const EVENT_META: Record<
     icon: DownloadCloud,
     cls: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
   },
+  quota_exceeded: {
+    label: "quota reached",
+    icon: Activity,
+    cls: "border-amber-500/40 bg-amber-500/10 text-amber-300",
+  },
 };
 
 export function AdminActivityPanels() {
