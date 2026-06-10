@@ -11,43 +11,21 @@ import {
   Loader2,
   Database,
   UserCheck,
+  FileDown,
+  FileJson,
 } from "lucide-react";
-import { listUsers, type UserInfo } from "../context/Auth";
 import {
   fetchLeads,
+  fetchUsers,
   loadAdminCreds,
   saveAdminCreds,
   clearAdminCreds,
+  toCsv,
+  downloadCsv,
   type AdminCreds,
   type StoredLead,
+  type RegisteredUser,
 } from "../lib/leadsAdmin";
-
-// Known client data-access accounts (AWS console users for delivered data).
-// These are not platform sign-ins; they exist so the team can see at a glance
-// who has standing access to which data.
-const CLIENT_ACCOUNTS: UserInfo[] = [
-  {
-    email: "johnson-genesis-ai",
-    name: "Johnson",
-    company: "Genesis AI",
-    role: "client",
-    allowedData: ["Delivered sessions (S3 console)", "Own deliveries only"],
-  },
-  {
-    email: "noetix",
-    name: "Noetix",
-    company: "Noetix Robotics",
-    role: "client",
-    allowedData: ["Delivered sessions (S3 console)", "Own deliveries only"],
-  },
-  {
-    email: "boristomov-clientview",
-    name: "Client-view test",
-    company: "Thoth AI (internal)",
-    role: "client",
-    allowedData: ["Delivered sessions (S3 console)", "QA / verification"],
-  },
-];
 
 const ROLE_BADGE: Record<string, string> = {
   admin: "border-purple-500/40 bg-purple-500/10 text-purple-300",
@@ -58,6 +36,7 @@ const ROLE_BADGE: Record<string, string> = {
 
 export function ClientConnectionsPage() {
   const [creds, setCreds] = useState<AdminCreds | null>(() => loadAdminCreds());
+  const [users, setUsers] = useState<RegisteredUser[] | null>(null);
   const [leads, setLeads] = useState<StoredLead[] | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,16 +46,17 @@ export function ClientConnectionsPage() {
     setLoading(true);
     setError(null);
     try {
-      setLeads(await fetchLeads(c));
+      const [u, l] = await Promise.all([fetchUsers(c), fetchLeads(c)]);
+      setUsers(u);
+      setLeads(l);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setError(
-        /403|AccessDenied/i.test(msg)
-          ? "Access denied — the key needs s3:ListBucket + s3:GetObject on client-data-access/leads/*."
-          : /Failed to fetch|NetworkError|CORS/i.test(msg)
-            ? "Blocked by the bucket CORS — allow GET from this origin on client-data-access."
-            : `Could not load leads: ${msg}`,
+        /AccessDenied|not authorized/i.test(msg)
+          ? "Access denied — the key needs dynamodb:Scan on the ego-users and ego-leads tables."
+          : `Could not load: ${msg}`,
       );
+      setUsers(null);
       setLeads(null);
     } finally {
       setLoading(false);
@@ -87,21 +67,54 @@ export function ClientConnectionsPage() {
     if (creds) void refresh(creds);
   }, [creds, refresh]);
 
-  const filtered = useMemo(() => {
+  const q = query.trim().toLowerCase();
+  const filteredUsers = useMemo(() => {
+    if (!users) return [];
+    if (!q) return users;
+    return users.filter((u) =>
+      [u.username, u.name, u.email, u.company, u.role, u.contract]
+        .some((v) => v.toLowerCase().includes(q)),
+    );
+  }, [users, q]);
+
+  const filteredLeads = useMemo(() => {
     if (!leads) return [];
-    const q = query.trim().toLowerCase();
     if (!q) return leads;
     return leads.filter((l) =>
-      [l.email, l.company, l.type, l.key]
-        .filter(Boolean)
-        .some((v) => String(v).toLowerCase().includes(q)),
+      [l.email, l.company ?? "", l.type ?? ""].some((v) =>
+        v.toLowerCase().includes(q),
+      ),
     );
-  }, [leads, query]);
+  }, [leads, q]);
 
-  const accounts = useMemo(
-    () => [...listUsers(), ...CLIENT_ACCOUNTS],
-    [],
-  );
+  const exportUsersCsv = () => {
+    if (!users) return;
+    downloadCsv(
+      "ego-users.csv",
+      toCsv(
+        ["username", "name", "email", "company", "role", "contract",
+         "requirements", "accessFileRef", "status", "createdAt"],
+        users.map((u) => [
+          u.username, u.name, u.email, u.company, u.role, u.contract,
+          u.requirements, u.accessFileRef, u.status, u.createdAt,
+        ]),
+      ),
+    );
+  };
+
+  const exportLeadsCsv = () => {
+    if (!leads) return;
+    downloadCsv(
+      "ego-demo-unlocks.csv",
+      toCsv(
+        ["acceptedAt", "email", "company", "type", "consent", "page", "referrer"],
+        leads.map((l) => [
+          l.acceptedAt ?? "", l.email, l.company ?? "", l.type ?? "",
+          l.consent ? "yes" : "no", l.page ?? "", l.referrer ?? "",
+        ]),
+      ),
+    );
+  };
 
   return (
     <div className="flex flex-col gap-5">
@@ -112,190 +125,232 @@ export function ClientConnectionsPage() {
             <span className="brand-grad">Client connections</span>
           </h1>
           <p className="text-[0.78rem] text-text-muted">
-            Accounts with platform or data access, and captured access-gate
-            entries from the public site.
+            The user registry (DynamoDB <code>ego-users</code> + per-user
+            access files in <code>client-data-access</code>) and demo unlocks
+            captured by the public access gate.
           </p>
         </div>
-      </div>
-
-      {/* ----- Accounts ----- */}
-      <section className="rounded-xl border border-border bg-panel/40">
-        <header className="flex items-center gap-2 border-b border-border px-4 py-3">
-          <UserCheck size={15} className="text-accent-hover" />
-          <h2 className="text-[0.85rem] font-semibold">Accounts</h2>
-          <span className="ml-auto text-[0.68rem] text-text-muted">
-            {accounts.length} total
-          </span>
-        </header>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-[0.78rem]">
-            <thead>
-              <tr className="border-b border-border text-[0.65rem] uppercase tracking-wider text-text-dim">
-                <th className="px-4 py-2 font-semibold">Account</th>
-                <th className="px-4 py-2 font-semibold">Company</th>
-                <th className="px-4 py-2 font-semibold">Role</th>
-                <th className="px-4 py-2 font-semibold">Allowed data</th>
-              </tr>
-            </thead>
-            <tbody>
-              {accounts.map((a) => (
-                <tr
-                  key={a.email}
-                  className="border-b border-border/50 last:border-0 hover:bg-panel-hover/50"
-                >
-                  <td className="px-4 py-2.5">
-                    <div className="font-medium text-text">{a.name}</div>
-                    <div className="text-[0.68rem] text-text-muted">
-                      {a.email}
-                    </div>
-                  </td>
-                  <td className="px-4 py-2.5 text-text-muted">{a.company}</td>
-                  <td className="px-4 py-2.5">
-                    <span
-                      className={`rounded-full border px-2 py-0.5 text-[0.62rem] font-semibold uppercase tracking-wider ${ROLE_BADGE[a.role]}`}
-                    >
-                      {a.role}
-                    </span>
-                  </td>
-                  <td className="px-4 py-2.5">
-                    <div className="flex flex-wrap gap-1">
-                      {a.allowedData.map((d) => (
-                        <span
-                          key={d}
-                          className="rounded-md border border-border bg-input px-1.5 py-0.5 text-[0.62rem] text-text-muted"
-                        >
-                          {d}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </section>
-
-      {/* ----- Lead entries ----- */}
-      <section className="rounded-xl border border-border bg-panel/40">
-        <header className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
-          <Inbox size={15} className="text-accent-hover" />
-          <h2 className="text-[0.85rem] font-semibold">Access-gate entries</h2>
-          <span className="text-[0.68rem] text-text-muted">
-            from s3://client-data-access/leads/
-          </span>
-          {creds && (
-            <div className="ml-auto flex items-center gap-2">
-              <div className="relative">
-                <Search
-                  size={12}
-                  className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-text-dim"
-                />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Filter…"
-                  className="input-base !w-40 !py-1 !pl-7 text-[0.72rem]"
-                />
-              </div>
-              <button
-                onClick={() => void refresh(creds)}
-                disabled={loading}
-                className="btn"
-                title="Reload leads from S3"
-              >
-                <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
-                Refresh
-              </button>
-              <button
-                onClick={() => {
-                  clearAdminCreds();
-                  setCreds(null);
-                  setLeads(null);
-                  setError(null);
-                }}
-                className="btn"
-                title="Forget the AWS key (sessionStorage)"
-              >
-                <Trash2 size={13} /> Forget key
-              </button>
+        {creds && (
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search
+                size={12}
+                className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-text-dim"
+              />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Filter everything…"
+                className="input-base !w-44 !py-1 !pl-7 text-[0.72rem]"
+              />
             </div>
-          )}
-        </header>
-
-        {!creds ? (
-          <CredsForm onSubmit={(c) => setCreds(c)} />
-        ) : loading && !leads ? (
-          <div className="flex items-center gap-2 px-4 py-8 text-[0.8rem] text-text-muted">
-            <Loader2 size={15} className="animate-spin" /> Loading lead
-            entries…
-          </div>
-        ) : error ? (
-          <div className="flex items-start gap-2 px-4 py-6 text-[0.78rem] text-err">
-            <AlertCircle size={15} className="mt-0.5 flex-shrink-0" /> {error}
-          </div>
-        ) : !leads || leads.length === 0 ? (
-          <div className="px-4 py-8 text-[0.8rem] text-text-muted">
-            No entries captured yet. New unlocks on the public site will appear
-            here.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-[0.78rem]">
-              <thead>
-                <tr className="border-b border-border text-[0.65rem] uppercase tracking-wider text-text-dim">
-                  <th className="px-4 py-2 font-semibold">When</th>
-                  <th className="px-4 py-2 font-semibold">Email</th>
-                  <th className="px-4 py-2 font-semibold">Company</th>
-                  <th className="px-4 py-2 font-semibold">Type</th>
-                  <th className="px-4 py-2 font-semibold">Consent</th>
-                  <th className="px-4 py-2 font-semibold">Page</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((l) => (
-                  <tr
-                    key={l.key}
-                    className="border-b border-border/50 last:border-0 hover:bg-panel-hover/50"
-                  >
-                    <td className="whitespace-nowrap px-4 py-2 text-text-muted">
-                      {l.acceptedAt || l.lastModified
-                        ? new Date(
-                            l.acceptedAt ?? l.lastModified!,
-                          ).toLocaleString()
-                        : "—"}
-                    </td>
-                    <td className="px-4 py-2 font-medium text-text">
-                      {l.email ?? "—"}
-                    </td>
-                    <td className="px-4 py-2 text-text-muted">
-                      {l.company || "—"}
-                    </td>
-                    <td className="px-4 py-2">
-                      <span className="rounded-md border border-border bg-input px-1.5 py-0.5 text-[0.62rem] text-text-muted">
-                        {l.type ?? "?"}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2">
-                      {l.consent ? (
-                        <span className="text-emerald-400">yes</span>
-                      ) : (
-                        <span className="text-text-dim">no</span>
-                      )}
-                    </td>
-                    <td className="max-w-[220px] truncate px-4 py-2 text-[0.68rem] text-text-dim">
-                      {l.page || "—"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            <div className="border-t border-border px-4 py-2 text-[0.65rem] text-text-dim">
-              {filtered.length} of {leads.length} entries
-            </div>
+            <button
+              onClick={() => void refresh(creds)}
+              disabled={loading}
+              className="btn"
+              title="Reload from DynamoDB"
+            >
+              <RefreshCw size={13} className={loading ? "animate-spin" : ""} />
+              Refresh
+            </button>
+            <button
+              onClick={() => {
+                clearAdminCreds();
+                setCreds(null);
+                setUsers(null);
+                setLeads(null);
+                setError(null);
+              }}
+              className="btn"
+              title="Forget the AWS key (sessionStorage)"
+            >
+              <Trash2 size={13} /> Forget key
+            </button>
           </div>
         )}
-      </section>
+      </div>
+
+      {!creds ? (
+        <section className="rounded-xl border border-border bg-panel/40">
+          <CredsForm onSubmit={(c) => setCreds(c)} />
+        </section>
+      ) : error ? (
+        <div className="flex items-start gap-2 rounded-xl border border-err/30 bg-err/10 px-4 py-4 text-[0.78rem] text-err">
+          <AlertCircle size={15} className="mt-0.5 flex-shrink-0" /> {error}
+        </div>
+      ) : loading && !users ? (
+        <div className="flex items-center gap-2 rounded-xl border border-border bg-panel/40 px-4 py-8 text-[0.8rem] text-text-muted">
+          <Loader2 size={15} className="animate-spin" /> Loading registry…
+        </div>
+      ) : (
+        <>
+          {/* ----- Users registry ----- */}
+          <section className="rounded-xl border border-border bg-panel/40">
+            <header className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
+              <UserCheck size={15} className="text-accent-hover" />
+              <h2 className="text-[0.85rem] font-semibold">Users</h2>
+              <span className="text-[0.68rem] text-text-muted">
+                {filteredUsers.length} of {users?.length ?? 0}
+              </span>
+              <button
+                onClick={exportUsersCsv}
+                className="btn ml-auto"
+                title="Download the full users table as CSV"
+              >
+                <FileDown size={13} /> CSV
+              </button>
+            </header>
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[900px] text-left text-[0.76rem]">
+                <thead>
+                  <tr className="border-b border-border text-[0.64rem] uppercase tracking-wider text-text-dim">
+                    <th className="px-4 py-2 font-semibold">User</th>
+                    <th className="px-4 py-2 font-semibold">Company</th>
+                    <th className="px-4 py-2 font-semibold">Role</th>
+                    <th className="px-4 py-2 font-semibold">Contract</th>
+                    <th className="px-4 py-2 font-semibold">Requirements</th>
+                    <th className="px-4 py-2 font-semibold">Allowed data</th>
+                    <th className="px-4 py-2 font-semibold">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map((u) => (
+                    <tr
+                      key={u.username}
+                      className="border-b border-border/50 align-top last:border-0 hover:bg-panel-hover/50"
+                    >
+                      <td className="px-4 py-2.5">
+                        <div className="font-medium text-text">{u.name}</div>
+                        <div className="font-mono text-[0.66rem] text-text-muted">
+                          {u.username}
+                        </div>
+                        {u.email && (
+                          <div className="text-[0.66rem] text-text-dim">
+                            {u.email}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-text-muted">
+                        {u.company}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span
+                          className={`rounded-full border px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider ${
+                            ROLE_BADGE[u.role] ?? ROLE_BADGE.public
+                          }`}
+                        >
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5 text-text-muted">
+                        {u.contract}
+                      </td>
+                      <td className="max-w-[200px] px-4 py-2.5 text-[0.7rem] text-text-muted">
+                        {u.requirements}
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span
+                          className="inline-flex items-center gap-1 rounded-md border border-border bg-input px-1.5 py-0.5 font-mono text-[0.62rem] text-text-muted"
+                          title={u.accessFileRef}
+                        >
+                          <FileJson size={10} className="text-accent-hover" />
+                          {u.accessFileRef.split("/").slice(-2).join("/")}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2.5">
+                        <span
+                          className={
+                            u.status === "active"
+                              ? "text-emerald-400"
+                              : "text-text-dim"
+                          }
+                        >
+                          {u.status}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+
+          {/* ----- Demo unlocks ----- */}
+          <section className="rounded-xl border border-border bg-panel/40">
+            <header className="flex flex-wrap items-center gap-2 border-b border-border px-4 py-3">
+              <Inbox size={15} className="text-accent-hover" />
+              <h2 className="text-[0.85rem] font-semibold">Demo unlocks</h2>
+              <span className="text-[0.68rem] text-text-muted">
+                {filteredLeads.length} of {leads?.length ?? 0} · from{" "}
+                <code>ego-leads</code>
+              </span>
+              <button
+                onClick={exportLeadsCsv}
+                className="btn ml-auto"
+                title="Download all unlock entries as CSV"
+              >
+                <FileDown size={13} /> CSV
+              </button>
+            </header>
+            {!leads || leads.length === 0 ? (
+              <div className="px-4 py-8 text-[0.8rem] text-text-muted">
+                No entries captured yet. New unlocks on the public site will
+                appear here.
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[760px] text-left text-[0.76rem]">
+                  <thead>
+                    <tr className="border-b border-border text-[0.64rem] uppercase tracking-wider text-text-dim">
+                      <th className="px-4 py-2 font-semibold">When</th>
+                      <th className="px-4 py-2 font-semibold">Email</th>
+                      <th className="px-4 py-2 font-semibold">Company</th>
+                      <th className="px-4 py-2 font-semibold">Type</th>
+                      <th className="px-4 py-2 font-semibold">Consent</th>
+                      <th className="px-4 py-2 font-semibold">Page</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLeads.map((l) => (
+                      <tr
+                        key={`${l.email}_${l.acceptedAt}`}
+                        className="border-b border-border/50 last:border-0 hover:bg-panel-hover/50"
+                      >
+                        <td className="whitespace-nowrap px-4 py-2 text-text-muted">
+                          {l.acceptedAt
+                            ? new Date(l.acceptedAt).toLocaleString()
+                            : "—"}
+                        </td>
+                        <td className="px-4 py-2 font-medium text-text">
+                          {l.email}
+                        </td>
+                        <td className="px-4 py-2 text-text-muted">
+                          {l.company || "—"}
+                        </td>
+                        <td className="px-4 py-2">
+                          <span className="rounded-md border border-border bg-input px-1.5 py-0.5 text-[0.62rem] text-text-muted">
+                            {l.type ?? "?"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-2">
+                          {l.consent ? (
+                            <span className="text-emerald-400">yes</span>
+                          ) : (
+                            <span className="text-text-dim">no</span>
+                          )}
+                        </td>
+                        <td className="max-w-[220px] truncate px-4 py-2 text-[0.68rem] text-text-dim">
+                          {l.page || "—"}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+        </>
+      )}
     </div>
   );
 }
@@ -321,9 +376,10 @@ function CredsForm({ onSubmit }: { onSubmit: (c: AdminCreds) => void }) {
       <div className="flex items-start gap-2 rounded-md border border-cyan-500/30 bg-cyan-500/10 px-3 py-2.5 text-[0.72rem] leading-relaxed text-cyan-200">
         <ShieldCheck size={14} className="mt-0.5 flex-shrink-0" />
         <span>
-          Lead entries are never baked into this public site. Paste an AWS key
-          with read access to <code>client-data-access/leads/*</code>; it stays
-          in this tab's sessionStorage only and is cleared when the tab closes.
+          Registry data is never baked into this public site. Paste an AWS key
+          with <code>dynamodb:Scan</code> on the <code>ego-users</code> and{" "}
+          <code>ego-leads</code> tables; it stays in this tab's sessionStorage
+          only and is cleared when the tab closes.
         </span>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
@@ -358,7 +414,7 @@ function CredsForm({ onSubmit }: { onSubmit: (c: AdminCreds) => void }) {
         disabled={!accessKeyId.trim() || !secretAccessKey.trim()}
         className="btn w-fit !border-accent/50 !bg-accent/15 !text-accent-hover hover:!bg-accent/25 disabled:cursor-not-allowed disabled:opacity-40"
       >
-        <Database size={13} /> Connect &amp; load entries
+        <Database size={13} /> Connect &amp; load
       </button>
     </form>
   );

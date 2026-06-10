@@ -1,37 +1,41 @@
-// Admin-side reader for captured leads in s3://client-data-access/leads/.
+// Admin-side reader for the user registry (DynamoDB ego-users) and captured
+// demo unlocks (DynamoDB ego-leads).
 //
-// The dashboard is a public static site, so lead data must NEVER be baked into
-// the build. Instead, an admin pastes an AWS access key into the Client
+// The dashboard is a public static site, so none of this data is ever baked
+// into the build. An admin pastes an AWS access key into the Client
 // Connections page; it is held only in sessionStorage (cleared when the tab
-// closes) and used directly from the browser to list + fetch lead objects.
+// closes) and used directly from the browser. The key needs dynamodb:Scan on
+// the two ego-* tables.
 //
-// The key needs: s3:ListBucket (prefix leads/*) and s3:GetObject on
-// arn:aws:s3:::client-data-access/leads/*, and the bucket CORS must allow GET
-// from this origin.
+// The AWS client is imported dynamically so only admins ever download it.
 
-import {
-  S3Client,
-  ListObjectsV2Command,
-  GetObjectCommand,
-} from "@aws-sdk/client-s3";
 import type { LeadRecord } from "./lead";
 
-const BUCKET = "client-data-access";
-const PREFIX = "leads/";
 const REGION = "ap-southeast-1";
+const USERS_TABLE = "ego-users";
+const LEADS_TABLE = "ego-leads";
 const CREDS_KEY = "ego_admin_aws_v1";
-const MAX_OBJECTS = 500;
-const FETCH_CONCURRENCY = 8;
 
 export type AdminCreds = {
   accessKeyId: string;
   secretAccessKey: string;
 };
 
-export type StoredLead = Partial<LeadRecord> & {
-  key: string;
-  lastModified?: string;
-  size?: number;
+export type StoredLead = Partial<LeadRecord> & { email: string };
+
+export type RegisteredUser = {
+  username: string;
+  name: string;
+  email: string;
+  company: string;
+  role: string;
+  contract: string;
+  requirements: string;
+  accessFileRef: string;
+  preferences: string;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 };
 
 export function loadAdminCreds(): AdminCreds | null {
@@ -64,67 +68,85 @@ export function clearAdminCreds(): void {
   }
 }
 
-function makeClient(creds: AdminCreds): S3Client {
-  return new S3Client({ region: REGION, credentials: creds });
-}
+type AttrValue = {
+  S?: string;
+  BOOL?: boolean;
+  N?: string;
+};
+type Item = Record<string, AttrValue>;
 
-/**
- * List and fetch all lead objects (newest first). Throws on auth/CORS
- * failures so the page can surface a helpful message.
- */
-export async function fetchLeads(creds: AdminCreds): Promise<StoredLead[]> {
-  const s3 = makeClient(creds);
+const str = (item: Item, key: string): string => item[key]?.S ?? "";
 
-  // 1) List keys under leads/ (paginated).
-  const keys: { key: string; lastModified?: string; size?: number }[] = [];
-  let token: string | undefined;
+async function scanTable(creds: AdminCreds, table: string): Promise<Item[]> {
+  const { DynamoDBClient, ScanCommand } = await import(
+    "@aws-sdk/client-dynamodb"
+  );
+  const ddb = new DynamoDBClient({ region: REGION, credentials: creds });
+  const items: Item[] = [];
+  let startKey: Record<string, unknown> | undefined;
   do {
-    const res = await s3.send(
-      new ListObjectsV2Command({
-        Bucket: BUCKET,
-        Prefix: PREFIX,
-        ContinuationToken: token,
-        MaxKeys: 1000,
+    const res = await ddb.send(
+      new ScanCommand({
+        TableName: table,
+        ExclusiveStartKey: startKey as never,
       }),
     );
-    for (const obj of res.Contents ?? []) {
-      if (obj.Key && obj.Key.endsWith(".json")) {
-        keys.push({
-          key: obj.Key,
-          lastModified: obj.LastModified?.toISOString(),
-          size: obj.Size,
-        });
-      }
-    }
-    token = res.IsTruncated ? res.NextContinuationToken : undefined;
-  } while (token && keys.length < MAX_OBJECTS);
+    items.push(...((res.Items ?? []) as Item[]));
+    startKey = res.LastEvaluatedKey as Record<string, unknown> | undefined;
+  } while (startKey);
+  return items;
+}
 
-  keys.sort((a, b) => (b.lastModified ?? "").localeCompare(a.lastModified ?? ""));
-  const limited = keys.slice(0, MAX_OBJECTS);
+export async function fetchUsers(creds: AdminCreds): Promise<RegisteredUser[]> {
+  const items = await scanTable(creds, USERS_TABLE);
+  return items
+    .map((i) => ({
+      username: str(i, "username"),
+      name: str(i, "name"),
+      email: str(i, "email"),
+      company: str(i, "company"),
+      role: str(i, "role"),
+      contract: str(i, "contract"),
+      requirements: str(i, "requirements"),
+      accessFileRef: str(i, "accessFileRef"),
+      preferences: str(i, "preferences"),
+      status: str(i, "status"),
+      createdAt: str(i, "createdAt"),
+      updatedAt: str(i, "updatedAt"),
+    }))
+    .sort((a, b) => a.username.localeCompare(b.username));
+}
 
-  // 2) Fetch object bodies with bounded concurrency.
-  const out: StoredLead[] = [];
-  let cursor = 0;
-  async function worker() {
-    while (cursor < limited.length) {
-      const item = limited[cursor++];
-      try {
-        const res = await s3.send(
-          new GetObjectCommand({ Bucket: BUCKET, Key: item.key }),
-        );
-        const body = await res.Body?.transformToString();
-        const parsed = body ? (JSON.parse(body) as Partial<LeadRecord>) : {};
-        out.push({ ...parsed, ...item });
-      } catch {
-        // Unreadable/corrupt object: still show the key so it's visible.
-        out.push({ ...item });
-      }
-    }
-  }
-  await Promise.all(
-    Array.from({ length: Math.min(FETCH_CONCURRENCY, limited.length) }, worker),
-  );
+export async function fetchLeads(creds: AdminCreds): Promise<StoredLead[]> {
+  const items = await scanTable(creds, LEADS_TABLE);
+  return items
+    .map((i) => ({
+      email: str(i, "email"),
+      acceptedAt: str(i, "acceptedAt"),
+      type: (str(i, "type") || "public_access") as LeadRecord["type"],
+      company: str(i, "company"),
+      role: str(i, "role"),
+      consent: i.consent?.BOOL ?? false,
+      page: str(i, "page"),
+      userAgent: str(i, "userAgent"),
+      referrer: str(i, "referrer"),
+    }))
+    .sort((a, b) => (b.acceptedAt ?? "").localeCompare(a.acceptedAt ?? ""));
+}
 
-  out.sort((a, b) => (b.lastModified ?? "").localeCompare(a.lastModified ?? ""));
-  return out;
+/** Build a CSV from rows of [header, ...values]. */
+export function toCsv(headers: string[], rows: string[][]): string {
+  const esc = (v: string) =>
+    /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+  return [headers, ...rows].map((r) => r.map(esc).join(",")).join("\n");
+}
+
+export function downloadCsv(filename: string, csv: string): void {
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
 }
