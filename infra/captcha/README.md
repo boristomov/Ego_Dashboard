@@ -1,78 +1,70 @@
-# CAPTCHA for the access gate (Turnstile + Lambda)
+# CAPTCHA for the access gate (Cloudflare Turnstile)
 
-Status: **not deployed** — written up so it can be turned on the day the org
-policy allows it (or traffic justifies it).
+The access gate verifies humans with **Cloudflare Turnstile** (free, invisible
+for most users). Token verification needs a server-side secret, which cannot
+live in a static bundle — the verifier is a **Cloudflare Worker**
+(`worker.js`), chosen because the AWS org guardrail blocks anonymous Lambda
+Function URLs and a Worker avoids AWS entirely. $0/month at any realistic
+volume (Workers free tier: 100k requests/day).
 
-## Why a Lambda is required at all
+The frontend (`src/lib/captcha.ts`) is config-driven: the widget and
+verification only activate when both `VITE_TURNSTILE_SITE_KEY` and
+`VITE_CAPTCHA_ENDPOINT` are set at build time. Unset → the gate behaves as
+before (honeypot + fill-time heuristics only), so deploys never break while
+the Cloudflare side isn't configured yet.
 
-A CAPTCHA only works if the token the browser produces is verified with a
-**secret key that never ships to the browser**. On a fully static site there is
-nowhere to keep that secret, so verification needs one tiny server-side
-endpoint. Everything else stays static.
+## Setup (one-time, ~10 minutes)
 
-We use **Cloudflare Turnstile** rather than Google reCAPTCHA: free at any
-volume, no puzzle-solving for humans (invisible in most cases), no Google
-account requirement, GDPR-friendlier.
+### 1. Turnstile site
 
-## The current blocker
+1. Create / sign in to a free Cloudflare account.
+2. Dashboard → **Turnstile** → **Add site**:
+   - Hostname: `boristomov.github.io`
+   - Widget mode: **Managed** (invisible for most humans)
+3. Note the **Site key** (public) and **Secret key**.
 
-The AWS organization's Service Control Policy **denies anonymous invocation of
-Lambda Function URLs** (this is the same guardrail that forced the lead-capture
-work onto Cognito). Until that changes, this endpoint cannot be called by
-anonymous visitors. Options, in order of preference:
+### 2. Worker
 
-1. **Org carve-out (ask the org admin):** allow `lambda:InvokeFunctionUrl`
-   with `FunctionUrlAuthType=NONE` for one specific function ARN
-   (`ego-captcha-verify`). This is a minimal, targeted exception.
-2. **API Gateway HTTP API** in front of the Lambda — *if* the org policy only
-   blocks Function URLs and not public API Gateway endpoints (test first).
-3. **CloudFront → Lambda** (function URL as origin with OAC): also gives the
-   site a WAF attachment point and rate limiting. More moving parts, ~$1–10/mo.
+1. Dashboard → **Workers & Pages** → **Create** → **Worker**, name it
+   `ego-captcha-verify`, deploy the hello-world, then **Edit code** and paste
+   the contents of `worker.js`. Deploy.
+2. Worker → **Settings → Variables and secrets**:
+   - Secret `TURNSTILE_SECRET` = the Turnstile secret key
+   - Variable `ALLOWED_ORIGIN` = `https://boristomov.github.io`
+3. Note the Worker URL, e.g. `https://ego-captcha-verify.<account>.workers.dev`.
 
-## Deploy (once unblocked)
+Smoke test (expect `{"ok":false,...}` — a bad token must be rejected):
 
-1. Create a Turnstile site at <https://dash.cloudflare.com/?to=/:account/turnstile>
-   (hostname: `boristomov.github.io`). Note the **site key** (public) and
-   **secret key**.
+```bash
+curl -s -X POST https://ego-captcha-verify.<account>.workers.dev \
+  -H 'content-type: application/json' -d '{"token":"test"}'
+```
 
-2. Create the Lambda (Node.js 22, `index.mjs` from this folder):
+### 3. Wire the dashboard build
 
-   ```bash
-   cd infra/captcha
-   zip fn.zip index.mjs
-   aws lambda create-function \
-     --function-name ego-captcha-verify \
-     --runtime nodejs22.x --handler index.handler \
-     --zip-file fileb://fn.zip \
-     --role arn:aws:iam::886989006633:role/ego-captcha-role \
-     --environment "Variables={TURNSTILE_SECRET=<secret>,ALLOWED_ORIGIN=https://boristomov.github.io}" \
-     --timeout 5 --memory-size 128
-   aws lambda create-function-url-config \
-     --function-name ego-captcha-verify --auth-type NONE \
-     --cors '{"AllowOrigins":["https://boristomov.github.io"],"AllowMethods":["POST"]}'
-   aws lambda add-permission --function-name ego-captcha-verify \
-     --action lambda:InvokeFunctionUrl --principal "*" \
-     --function-url-auth-type NONE --statement-id public-url
-   ```
+GitHub repo → Settings → Secrets and variables → Actions → **Variables**
+(these are non-secret):
 
-   The execution role needs only `AWSLambdaBasicExecutionRole` (logs). The
-   function holds no AWS permissions — it just calls Cloudflare.
+| Variable | Value |
+| --- | --- |
+| `VITE_TURNSTILE_SITE_KEY` | the Turnstile site key |
+| `VITE_CAPTCHA_ENDPOINT` | the Worker URL |
 
-3. Frontend wiring (in `AccessForm`, ~20 lines):
-   - Load `https://challenges.cloudflare.com/turnstile/v0/api.js` when the
-     gate opens; render the widget with the **site key**
-     (`turnstile.render(el, { sitekey, callback })`).
-   - On submit, POST `{ token }` to the Function URL; only call `onSubmit`
-     when the response is `{ ok: true }`.
-   - Configure the URL via `VITE_CAPTCHA_ENDPOINT` so dev/prod can differ.
+Re-run the deploy workflow. The gate now requires a passed challenge before
+the form can be submitted; the token is verified server-side by the Worker.
 
-4. Defense notes:
-   - Keep the existing honeypot + minimum-fill-time — they're free and stack.
-   - The Lambda is itself rate-limit-able: set **reserved concurrency = 2**
-     on `ego-captcha-verify` so a flood can't scale it (worst case it
-     throttles, which fails closed).
+## Behaviour / failure modes
 
-## Cost
+- Explicit `{ok:false}` from the Worker → submission blocked with an error.
+- Worker unreachable (network error / outage) → **fail open**: a legit
+  visitor is never locked out by our infra. Bots that can't execute the
+  widget still fail the token requirement in the normal case.
+- The honeypot + minimum-fill-time heuristics remain active underneath.
 
-Turnstile: $0. Lambda: free tier covers ~1M verifications/month; this gate
-sees a handful per day. Effectively $0/month.
+## Alternative: AWS Lambda (kept for reference)
+
+`index.mjs` is the same verifier as an AWS Lambda Function URL. It is blocked
+by the org SCP on anonymous `lambda:InvokeFunctionUrl`; if the org ever grants
+a carve-out for `ego-captcha-verify`, deployment commands are in git history
+(or front it with API Gateway / CloudFront + OAC). The Worker path makes this
+unnecessary.

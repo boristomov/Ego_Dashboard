@@ -31,6 +31,11 @@ import {
   QUOTA_BYTES,
   formatGb,
 } from "../lib/quota";
+import {
+  CAPTCHA_ENABLED,
+  mountTurnstile,
+  verifyCaptchaToken,
+} from "../lib/captcha";
 
 // The access gate now greets public visitors on first load (instead of waiting
 // for a download click): browsing the demo requires telling us who you are.
@@ -526,10 +531,23 @@ function AccessForm({
   // Honeypot: invisible to humans, autofilled by naive bots.
   const [website, setWebsite] = useState("");
   const openedAtRef = useRef(Date.now());
+  // Turnstile (only active when the Cloudflare side is configured).
+  const captchaRef = useRef<HTMLDivElement | null>(null);
+  const [captchaToken, setCaptchaToken] = useState("");
+
+  useEffect(() => {
+    if (!CAPTCHA_ENABLED || !captchaRef.current) return;
+    let cleanup: (() => void) | undefined;
+    void mountTurnstile(captchaRef.current, setCaptchaToken).then((c) => {
+      cleanup = c;
+    });
+    return () => cleanup?.();
+  }, []);
 
   const emailOk = EMAIL_RE.test(email.trim());
   const companyOk = company.trim().length >= 2;
-  const valid = emailOk && companyOk && consent;
+  const valid =
+    emailOk && companyOk && consent && (!CAPTCHA_ENABLED || !!captchaToken);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -550,6 +568,16 @@ function AccessForm({
       const deliverable = await verifyEmailDeliverable(email.trim());
       if (!deliverable.ok) {
         setGateError(deliverable.reason ?? "Enter a valid email address.");
+        return;
+      }
+      // Server-side Turnstile verification (no-op until configured). Runs
+      // before registerGateEmail so a failed challenge never burns one of
+      // the browser's email slots.
+      if (!(await verifyCaptchaToken(captchaToken))) {
+        setCaptchaToken("");
+        setGateError(
+          "Human verification failed — please complete the challenge and try again.",
+        );
         return;
       }
       // Cap distinct emails per browser — rotating addresses to extend the
@@ -640,6 +668,10 @@ function AccessForm({
         <span className="mt-1 block text-[0.68rem] text-err">
           Please accept the data notice to continue.
         </span>
+      )}
+
+      {CAPTCHA_ENABLED && (
+        <div className="mt-3 flex justify-center" ref={captchaRef} />
       )}
 
       {gateError && (
