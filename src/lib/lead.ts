@@ -33,6 +33,8 @@ const IDENTITY_POOL_ID =
 const BUCKET = ENV.VITE_LEADS_BUCKET || "client-data-access";
 
 const LOCAL_KEY = "ego_leads_v1";
+const OUTBOX_KEY = "ego_leads_outbox_v1";
+const OUTBOX_MAX = 20;
 
 export type LeadType = "public_access" | "client_signin";
 
@@ -101,9 +103,67 @@ function buildKey(record: LeadRecord): string {
   return `leads/${record.type}/${date}/${company}__${email}__${Date.now()}.json`;
 }
 
+// --- outbox: leads queue locally and are removed only on confirmed S3 write,
+// so a transient network/CORS failure is retried on the next visit instead of
+// silently losing the lead. -------------------------------------------------
+
+type OutboxEntry = { key: string; record: LeadRecord };
+
+function readOutbox(): OutboxEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem(OUTBOX_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function writeOutbox(entries: OutboxEntry[]): void {
+  try {
+    localStorage.setItem(OUTBOX_KEY, JSON.stringify(entries.slice(-OUTBOX_MAX)));
+  } catch {
+    /* ignore */
+  }
+}
+
+let flushing = false;
+
 /**
- * Record a captured lead. Writes the local copy synchronously; the S3 write is
- * fire-and-forget so the UI is never gated on it.
+ * Try to deliver every queued lead to S3. Safe to call often; concurrent
+ * calls coalesce. Resolves when the attempt (not necessarily delivery) ends.
+ */
+export async function flushLeads(): Promise<void> {
+  if (flushing) return;
+  const pending = readOutbox();
+  if (pending.length === 0) return;
+  const client = getClient();
+  if (!client) return;
+
+  flushing = true;
+  try {
+    for (const entry of pending) {
+      try {
+        await client.send(
+          new PutObjectCommand({
+            Bucket: BUCKET,
+            Key: entry.key,
+            Body: JSON.stringify(entry.record, null, 2),
+            ContentType: "application/json",
+          }),
+        );
+        writeOutbox(readOutbox().filter((e) => e.key !== entry.key));
+      } catch (err) {
+        // Leave it queued for the next visit/flush.
+        console.warn("[lead] delivery failed, will retry:", err);
+      }
+    }
+  } finally {
+    flushing = false;
+  }
+}
+
+/**
+ * Record a captured lead. Persists locally and queues the S3 write (flushed
+ * immediately and retried on later visits); the UI is never gated on it.
  */
 export function submitLead(input: LeadInput): void {
   const record: LeadRecord = {
@@ -115,25 +175,8 @@ export function submitLead(input: LeadInput): void {
   };
 
   persistLocal(record);
-
-  const client = getClient();
-  if (!client) return;
-  try {
-    void client
-      .send(
-        new PutObjectCommand({
-          Bucket: BUCKET,
-          Key: buildKey(record),
-          Body: JSON.stringify(record, null, 2),
-          ContentType: "application/json",
-        })
-      )
-      .catch(() => {
-        /* best-effort; the local copy already persisted */
-      });
-  } catch {
-    /* never block UX */
-  }
+  writeOutbox([...readOutbox(), { key: buildKey(record), record }]);
+  void flushLeads();
 }
 
 export const LEAD_ENDPOINT_CONFIGURED = !!IDENTITY_POOL_ID;

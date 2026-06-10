@@ -110,6 +110,8 @@ type AuthContextValue = {
   role: Role;
   isTeam: boolean;
   isAdmin: boolean;
+  /** True once the stored session has been validated (or found absent). */
+  ready: boolean;
   signIn: (
     email: string,
     password: string,
@@ -334,12 +336,15 @@ const GENERIC_ERROR = "Invalid email or password.";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
+  const [ready, setReady] = useState(false);
 
   // Validate the stored session asynchronously on mount (sig check is async).
   useEffect(() => {
     let cancelled = false;
     void loadSession().then((s) => {
-      if (!cancelled && s) setSession(s);
+      if (cancelled) return;
+      if (s) setSession(s);
+      setReady(true);
     });
     return () => {
       cancelled = true;
@@ -428,10 +433,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       role,
       isTeam: isTeamRole(role),
       isAdmin: role === "admin",
+      ready,
       signIn,
       signOut,
     };
-  }, [session, signIn, signOut]);
+  }, [session, ready, signIn, signOut]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
