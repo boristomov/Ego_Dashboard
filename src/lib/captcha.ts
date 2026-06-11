@@ -14,8 +14,14 @@ type ViteEnv = {
 };
 const ENV = (import.meta as unknown as ViteEnv).env ?? {};
 
-export const TURNSTILE_SITE_KEY = ENV.VITE_TURNSTILE_SITE_KEY || "";
-export const CAPTCHA_ENDPOINT = ENV.VITE_CAPTCHA_ENDPOINT || "";
+// Live defaults (both values are public by design — the secret key lives
+// only in the Cloudflare Worker). Env vars override if these ever rotate.
+const DEFAULT_SITE_KEY = "0x4AAAAAADiQkK2iTKALKudD";
+const DEFAULT_ENDPOINT = "https://raspy-dew-e3b5.aws-633.workers.dev/";
+
+export const TURNSTILE_SITE_KEY =
+  ENV.VITE_TURNSTILE_SITE_KEY || DEFAULT_SITE_KEY;
+export const CAPTCHA_ENDPOINT = ENV.VITE_CAPTCHA_ENDPOINT || DEFAULT_ENDPOINT;
 export const CAPTCHA_ENABLED = !!(TURNSTILE_SITE_KEY && CAPTCHA_ENDPOINT);
 
 type TurnstileApi = {

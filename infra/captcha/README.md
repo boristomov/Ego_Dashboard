@@ -42,16 +42,14 @@ curl -s -X POST https://ego-captcha-verify.<account>.workers.dev \
 
 ### 3. Wire the dashboard build
 
-GitHub repo → Settings → Secrets and variables → Actions → **Variables**
-(these are non-secret):
+The live site key and Worker URL are baked into `src/lib/captcha.ts` as
+defaults (both are public by design). If they ever rotate, either update the
+defaults or override via GitHub repo variables `VITE_TURNSTILE_SITE_KEY` /
+`VITE_CAPTCHA_ENDPOINT` (Settings → Secrets and variables → Actions →
+Variables) without touching code.
 
-| Variable | Value |
-| --- | --- |
-| `VITE_TURNSTILE_SITE_KEY` | the Turnstile site key |
-| `VITE_CAPTCHA_ENDPOINT` | the Worker URL |
-
-Re-run the deploy workflow. The gate now requires a passed challenge before
-the form can be submitted; the token is verified server-side by the Worker.
+Deployed: site key `0x4AAAAAADiQkK2iTKALKudD`, verifier
+`https://raspy-dew-e3b5.aws-633.workers.dev/`.
 
 ## Behaviour / failure modes
 
