@@ -104,7 +104,10 @@ jobs:
       - name: Build site
         env:
           VITE_DATA_SOURCE: static
-          VITE_BASE: /${{ github.event.repository.name }}/
+          # Served from the root of the custom domain (egodash.aithoth.com),
+          # so the base is "/", not "/Ego_Dashboard/". The CNAME file in
+          # public/ keeps the custom domain bound on every deploy.
+          VITE_BASE: /
           VITE_BUILD_ID: ${{ github.run_id }}-${{ github.run_attempt }}
           # Lead capture writes to client-data-access via a Cognito guest
           # identity pool (see infra/lead-capture). These are non-secret and
