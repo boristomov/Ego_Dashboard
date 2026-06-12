@@ -101,11 +101,11 @@ export function CataloguePage() {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-col gap-1">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h1 className="text-xl font-semibold tracking-tight">
             <span className="brand-grad">Data Browser</span>
           </h1>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-shrink-0 items-center gap-2">
             <button
               onClick={() => setShowDownload(true)}
               className="btn !border-accent/40 !text-accent-hover hover:!bg-accent/10"
