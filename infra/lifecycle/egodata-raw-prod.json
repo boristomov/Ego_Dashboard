@@ -1,0 +1,24 @@
+{
+  "Rules": [
+    {
+      "ID": "svo-source-to-deep-archive",
+      "Status": "Enabled",
+      "Filter": { "ObjectSizeGreaterThan": 10485760 },
+      "Transitions": [{ "Days": 30, "StorageClass": "DEEP_ARCHIVE" }]
+    },
+    {
+      "ID": "expire-fleet-heartbeats",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "_fleet/" },
+      "Expiration": { "Days": 30 }
+    },
+    {
+      "ID": "housekeeping",
+      "Status": "Enabled",
+      "Filter": { "Prefix": "" },
+      "Expiration": { "ExpiredObjectDeleteMarker": true },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 90 },
+      "AbortIncompleteMultipartUpload": { "DaysAfterInitiation": 7 }
+    }
+  ]
+}

@@ -1,0 +1,58 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AccountWideReadOnlyContext",
+      "Effect": "Allow",
+      "Action": [
+        "s3:ListAllMyBuckets",
+        "s3:GetAccountPublicAccessBlock",
+        "sts:GetCallerIdentity",
+        "iam:GetUser",
+        "iam:ListUserPolicies",
+        "iam:ListAttachedUserPolicies",
+        "iam:GetUserPolicy",
+        "iam:GetPolicy",
+        "iam:GetPolicyVersion",
+        "iam:SimulatePrincipalPolicy",
+        "cloudwatch:ListMetrics",
+        "cloudwatch:GetMetricData",
+        "cloudwatch:GetMetricStatistics",
+        "ce:GetCostAndUsage",
+        "ce:GetCostForecast",
+        "ce:GetDimensionValues",
+        "ce:GetTags"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "FullS3OnEgoBuckets",
+      "Effect": "Allow",
+      "Action": "s3:*",
+      "Resource": [
+        "arn:aws:s3:::egodata-*",
+        "arn:aws:s3:::egodata-*/*"
+      ]
+    },
+    {
+      "Sid": "NeverDestroyExposeOrEscalate",
+      "Effect": "Deny",
+      "Action": [
+        "s3:DeleteBucket",
+        "s3:DeleteObjectVersion",
+        "s3:PutBucketVersioning",
+        "s3:PutBucketPolicy",
+        "s3:DeleteBucketPolicy",
+        "s3:PutBucketPublicAccessBlock",
+        "s3:PutAccountPublicAccessBlock",
+        "s3:PutBucketAcl",
+        "s3:PutObjectAcl",
+        "s3:BypassGovernanceRetention",
+        "s3:PutObjectLegalHold",
+        "s3:PutObjectRetention",
+        "s3:PutBucketObjectLockConfiguration"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
