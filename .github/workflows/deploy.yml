@@ -101,6 +101,17 @@ jobs:
             shred -u ~/.ssh/vast_instance_1 || rm -f ~/.ssh/vast_instance_1
           fi
 
+      # Collect the recording stations' heartbeats. Stations push these to
+      # s3://$S3_RAW_BUCKET/_fleet/ themselves, so this only reads — no extra
+      # credentials beyond the snapshot's, and no station list to maintain.
+      - name: Collect recording-station heartbeats
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
+          S3_RAW_BUCKET: ${{ vars.S3_RAW_BUCKET || 'ego-raw-prod-886989006633-ap-southeast-1-an' }}
+        run: node scripts/poll-stations.mjs
+
       - name: Build site
         env:
           VITE_DATA_SOURCE: static

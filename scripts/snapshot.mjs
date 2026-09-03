@@ -218,7 +218,12 @@ async function main() {
   console.log(`[snapshot] raw=${RAW_BUCKET}`);
   console.log(`[snapshot] processed=${PROCESSED_BUCKET}`);
 
-  const taskPrefixes = await listCommonPrefixes(RAW_BUCKET, "");
+  // Top-level prefixes are task names, with one exception: underscore-prefixed
+  // ones are internal. `_fleet/` holds the recording stations' heartbeats
+  // (see scripts/poll-stations.mjs), and would otherwise show up as a task.
+  const taskPrefixes = (await listCommonPrefixes(RAW_BUCKET, "")).filter(
+    (p) => !p.startsWith("_"),
+  );
   console.log(`[snapshot] discovered ${taskPrefixes.length} tasks`);
 
   const sessions = [];

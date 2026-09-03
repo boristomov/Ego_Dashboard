@@ -143,6 +143,7 @@ async function loadSnapshotMeta() {
 // ---------- Postprocessing instance status ----------
 
 import type { InstancesSnapshot } from "./instances";
+import type { StationsSnapshot } from "./stations";
 
 export const api = {
   instances: async (): Promise<InstancesSnapshot | null> => {
@@ -155,6 +156,20 @@ export const api = {
       );
       if (!res.ok) return null;
       return (await res.json()) as InstancesSnapshot;
+    } catch {
+      return null;
+    }
+  },
+
+  /** Recording-station heartbeats, collected from S3 by scripts/poll-stations.mjs. */
+  stations: async (): Promise<StationsSnapshot | null> => {
+    try {
+      const res = await fetch(
+        bust(`${BASE_URL}stations.json`),
+        STATIC_FETCH_OPTS,
+      );
+      if (!res.ok) return null;
+      return (await res.json()) as StationsSnapshot;
     } catch {
       return null;
     }

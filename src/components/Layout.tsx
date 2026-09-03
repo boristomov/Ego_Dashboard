@@ -28,7 +28,10 @@ const TEAM_NAV = [
   { to: "/postprocessing", label: "Live postprocessing", icon: Activity },
 ];
 
-const ADMIN_NAV = [{ to: "/clients", label: "Client connections", icon: Users }];
+const ADMIN_NAV = [
+  { to: "/stations", label: "Recording stations", icon: Radio },
+  { to: "/clients", label: "Client connections", icon: Users },
+];
 
 const PUBLIC_NAV = [
   { to: "/welcome", label: "Welcome", icon: Sparkles },
