@@ -14,9 +14,11 @@ import {
   X,
   Info,
   ExternalLink,
+  AlertTriangle,
 } from "lucide-react";
 import { useHealth } from "../hooks/useHealth";
 import { DATA_SOURCE } from "../lib/api";
+import { formatTimeLeft, linkHealthFromSnapshot } from "../lib/downloadUrl";
 import { useInstances } from "../hooks/useInstances";
 import { useAuth } from "../context/Auth";
 import { SignInModal } from "./SignInModal";
@@ -338,9 +340,58 @@ export function Layout() {
 
         {showSignIn && <SignInModal onClose={() => setShowSignIn(false)} />}
 
+        <StaleLinksBanner generatedAt={health?.generated_at} />
+
         <main className="flex-1 overflow-auto px-3 py-4 sm:px-6 sm:py-5">
           <Outlet />
         </main>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Warn everyone — clients included — before the site's download links die.
+ *
+ * Baked links last 7 days and only a deploy renews them, so a stalled deploy
+ * schedule silently breaks every download exactly a week later. That is not
+ * hypothetical: it happened for 16 days in Aug 2026 and was only noticed when
+ * a client reported an S3 error page. This makes the same failure loud, and
+ * loud a day and a half early. Disappears entirely once the redirect Worker
+ * is configured, since links then cannot expire at all.
+ */
+function StaleLinksBanner({ generatedAt }: { generatedAt?: string | null }) {
+  if (DATA_SOURCE !== "static") return null;
+  const health = linkHealthFromSnapshot(generatedAt);
+  if (health.permanent || (!health.expired && !health.expiringSoon)) return null;
+
+  const left = health.timeLeftMs ?? 0;
+  return (
+    <div
+      className={`flex flex-shrink-0 items-start gap-2 border-b px-3 py-2 text-[0.75rem] sm:px-6 ${
+        health.expired
+          ? "border-err/40 bg-err/15 text-red-200"
+          : "border-warn/40 bg-warn/15 text-amber-200"
+      }`}
+    >
+      <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
+      <div className="min-w-0">
+        {health.expired ? (
+          <>
+            <span className="font-semibold">Downloads are broken.</span> Every
+            link on this site expired {formatTimeLeft(left)} ago because the
+            catalogue has not been rebuilt in over a week. Re-run the deploy
+            workflow to restore them.
+          </>
+        ) : (
+          <>
+            <span className="font-semibold">
+              Downloads stop working in {formatTimeLeft(left)}.
+            </span>{" "}
+            The catalogue is nearly a week old — re-run the deploy workflow to
+            mint fresh links before they expire.
+          </>
+        )}
       </div>
     </div>
   );

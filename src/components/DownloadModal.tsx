@@ -17,6 +17,7 @@ import {
   buildShellScript,
   buildUrlList,
   collectTargets,
+  targetsExpireAt,
   downloadTextFile,
   formatBytes,
   summarizeKinds,
@@ -67,13 +68,20 @@ export function DownloadModal({
 
   const perKind = useMemo(() => summarizeKinds(sessions), [sessions]);
 
-  const { targets, missingUrls } = useMemo(
+  const { targets, missingUrls, expiredUrls } = useMemo(
     () => collectTargets(sessions, Array.from(selected)),
     [sessions, selected],
   );
 
   const selectedBytes = targets.reduce((a, t) => a + t.sizeBytes, 0);
   const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+
+  // A link list outlives the page that produced it, so the deadline goes in
+  // the filename — the one piece of metadata that survives being emailed on.
+  const expiresAt = useMemo(() => targetsExpireAt(targets), [targets]);
+  const expirySuffix = expiresAt
+    ? `_expires-${new Date(expiresAt).toISOString().slice(0, 10)}`
+    : "";
 
   const toggle = (k: ArtifactKind) =>
     setSelected((prev) => {
@@ -107,7 +115,10 @@ export function DownloadModal({
     if (!(await requestAccess())) return;
     if (!chargeDownload(selectedBytes)) return;
     logDownload(bulkDetail("link-list"));
-    downloadTextFile(`ego-download-links_${stamp}.txt`, buildUrlList(targets));
+    downloadTextFile(
+      `ego-download-links_${stamp}${expirySuffix}.txt`,
+      buildUrlList(targets),
+    );
   };
 
   const exportScript = async () => {
@@ -288,6 +299,25 @@ export function DownloadModal({
                 <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
                 {missingUrls} matching file{missingUrls === 1 ? "" : "s"} have no
                 signed link in this snapshot and were skipped.
+              </div>
+            )}
+
+            {expiredUrls > 0 && (
+              <div className="mt-2 flex items-start gap-1.5 text-[0.68rem] text-red-300">
+                <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
+                {expiredUrls} link{expiredUrls === 1 ? " has" : "s have"} expired
+                and {expiredUrls === 1 ? "was" : "were"} skipped — this snapshot
+                is over a week old. Re-run the deploy to mint fresh links.
+              </div>
+            )}
+
+            {expiresAt && targets.length > 0 && (
+              <div className="mt-2 text-[0.68rem] text-text-muted">
+                These links stop working on{" "}
+                <span className="text-text">
+                  {new Date(expiresAt).toLocaleString()}
+                </span>
+                . Exported files carry that date in their name.
               </div>
             )}
 

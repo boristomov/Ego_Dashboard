@@ -17,8 +17,25 @@ on:
         default: false
   schedule:
     # Every 5 minutes — minimum cron granularity on GitHub Actions. Cheap on
-    # public repos (unlimited minutes) thanks to the thumbnail cache.
+    # public repos (unlimited minutes) thanks to the thumbnail cache. In
+    # practice GitHub drops most of these under load; ~20 runs/day is typical.
     - cron: "*/5 * * * *"
+    # Backstop at an off-peak, non-round minute, which GitHub is far likelier
+    # to honour than the high-frequency entry above. Every deploy re-mints the
+    # catalogue's presigned URLs, so a run at least every few hours is what
+    # keeps downloads alive.
+    - cron: "23 */4 * * *"
+  #
+  # WARNING: none of the above survives repository inactivity. GitHub disables
+  # scheduled workflows after 60 days without a commit, with no failure and no
+  # warning in the Actions UI. That is what broke every download on the site
+  # for 16 days in Aug 2026: last commit 2026-06-12, cron stopped 2026-08-11
+  # (day 60), the 7-day presigned URLs expired on 08-18, and a client hit an
+  # S3 "Request has expired" page on 08-22. A push on 09-03 silently revived
+  # the schedule, which is the only reason it recovered.
+  #
+  # The durable fix is the Cloudflare cron in infra/download-redirect, which
+  # dispatches this workflow from outside GitHub. See that README.
 
 concurrency:
   group: pages

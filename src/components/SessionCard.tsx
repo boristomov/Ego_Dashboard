@@ -10,6 +10,7 @@ import {
   type PipelineStage,
 } from "../lib/session";
 import { thumbUrl, api, DATA_SOURCE } from "../lib/api";
+import { resolveDownloadUrl } from "../lib/downloadUrl";
 import { ArtifactBadge } from "./ArtifactBadge";
 import { VideoPlayerModal } from "./VideoPlayerModal";
 import { useAccessGate, useDownloadLog } from "../context/AccessGate";
@@ -57,15 +58,17 @@ export const SessionCard = memo(function SessionCard({
   const stage = STAGE_STYLES[s.pipelineStage];
   const [thumbBroken, setThumbBroken] = useState(false);
   const [playing, setPlaying] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
   const hasThumb = s.artifacts.thumb.present && !thumbBroken;
   const { requestAccess, chargeDownload } = useAccessGate();
   const logDownload = useDownloadLog();
   const { isTeam } = useAuth();
 
-  // Resolve a click on an artifact to a URL. In static (GitHub Pages) mode the
-  // URL is baked into the snapshot; in proxy/dev we fall back to the live
-  // sign endpoint. `download` picks the attachment-dispositioned link so the
-  // browser saves the file instead of opening it (matters for MP4).
+  // Resolve a click on an artifact to a URL. Prefers the redirect Worker
+  // (signed per click, never expires), then the URL baked into the snapshot,
+  // and reports expiry rather than returning a link that would 403.
+  // `download` picks the attachment-dispositioned link so the browser saves
+  // the file instead of opening it (matters for MP4).
   const resolveUrl = async (
     kind: ArtifactKind,
     download = false,
@@ -73,7 +76,19 @@ export const SessionCard = memo(function SessionCard({
     const a = s.artifacts[kind];
     if (!a.present) return null;
     const baked = download ? a.downloadUrl ?? a.url : a.url;
-    if (baked) return baked;
+    const r = resolveDownloadUrl({
+      bucket: a.bucket,
+      key: a.key,
+      baked,
+      fileName: download ? a.key?.split("/").pop() : undefined,
+    });
+    if (r.ok) return r.url;
+    if (r.reason === "expired") {
+      setLinkError(
+        "This link expired because the site has not been rebuilt in over a week. Ask an admin to re-run the deploy.",
+      );
+      return null;
+    }
     if (DATA_SOURCE !== "proxy" || !a.key) return null;
     return api.signedUrl(a.key, a.bucket);
   };
@@ -246,6 +261,12 @@ export const SessionCard = memo(function SessionCard({
             action="download"
           />
         </div>
+
+        {linkError && (
+          <div className="mt-2 rounded-md border border-err/30 bg-err/10 px-2 py-1.5 text-[0.68rem] text-red-300">
+            {linkError}
+          </div>
+        )}
       </div>
 
       {playing && mp4Url && (
