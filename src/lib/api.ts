@@ -73,6 +73,16 @@ export type SignedUrlMap = Partial<
 export type CatalogueSession = {
   taskName: string;
   sessionId: string;
+  /**
+   * Which chapter of the dataset this came from — see scripts/snapshot.mjs.
+   * The pilot recordings stayed in the original AWS account when collection
+   * moved to a new one, so the catalogue spans two accounts and each session
+   * carries the source it was listed from. Absent on pre-multi-source
+   * snapshots, which is why every reader defaults it.
+   */
+  collection?: string;
+  /** Display name for the badge; null for the current collection, which has none. */
+  collectionLabel?: string | null;
   raw: SessionBucketInfo;
   processed: SessionBucketInfo;
   metadata?: SessionMetadata | null;
@@ -249,20 +259,32 @@ export const api = {
  * In "static" mode it points at the file under public/thumbs/, falling back to
  * a deterministic path if the manifest hasn't loaded yet.
  */
-export function thumbUrl(taskName: string, sessionId: string): string {
+export function thumbUrl(
+  taskName: string,
+  sessionId: string,
+  collection = "pilot",
+): string {
   if (DATA_SOURCE === "proxy") {
     const key = `${taskName}/${sessionId}/thumb.jpg`;
     return `${API_BASE}/object?bucket=raw&key=${encodeURIComponent(key)}`;
   }
   const safe = taskName.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/^_+|_+$/g, "");
-  return `${BASE_URL}thumbs/${safe}/${sessionId}.jpg`;
+  // Namespaced by collection: task names repeat across chapters, so the same
+  // task/session path can exist in both accounts.
+  return `${BASE_URL}thumbs/${collection}/${safe}/${sessionId}.jpg`;
 }
 
 // Async variant that consults the manifest when available (handles edge cases
 // where the safePath transform doesn't perfectly match).
-export async function thumbUrlPrecise(taskName: string, sessionId: string) {
-  if (DATA_SOURCE === "proxy") return thumbUrl(taskName, sessionId);
+export async function thumbUrlPrecise(
+  taskName: string,
+  sessionId: string,
+  collection = "pilot",
+) {
+  if (DATA_SOURCE === "proxy") return thumbUrl(taskName, sessionId, collection);
   const m = await loadThumbManifest();
-  const rel = m[`${taskName}/${sessionId}`];
-  return rel ? `${BASE_URL}thumbs/${rel}` : thumbUrl(taskName, sessionId);
+  const rel = m[`${collection}/${taskName}/${sessionId}`];
+  return rel
+    ? `${BASE_URL}thumbs/${rel}`
+    : thumbUrl(taskName, sessionId, collection);
 }

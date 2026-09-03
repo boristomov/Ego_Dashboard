@@ -34,6 +34,10 @@ export type PipelineStage =
 export type DerivedSession = {
   taskName: string;
   sessionId: string;
+  /** Chapter this session belongs to; "prod" is the current collection. */
+  collection: string;
+  /** Badge text, or null for the current collection which is unlabelled. */
+  collectionLabel: string | null;
   timestamp: Date | null;
   totalBytes: number;
   /** Recording duration in seconds, from raw metadata.json (null if missing). */
@@ -143,6 +147,10 @@ export function deriveSession(s: CatalogueSession): DerivedSession {
   return {
     taskName,
     sessionId,
+    // Snapshots taken before the catalogue spanned two accounts have no
+    // collection, and everything in them is pilot-era data.
+    collection: s.collection || "pilot",
+    collectionLabel: s.collectionLabel ?? null,
     timestamp:
       metaTimestamp && !Number.isNaN(metaTimestamp.getTime())
         ? metaTimestamp

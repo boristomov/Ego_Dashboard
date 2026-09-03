@@ -82,6 +82,7 @@ export function collectTargets(
       const ext = kind === "meta" ? "metadata.json" : kind;
       const fileName = baseName(a.key, `${s.sessionId}.${ext}`);
       const r = resolveDownloadUrl({
+        collection: s.collection,
         bucket: a.bucket,
         key: a.key,
         baked: a.downloadUrl ?? a.url,

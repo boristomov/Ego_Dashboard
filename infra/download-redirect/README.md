@@ -41,8 +41,16 @@ resume keep working. Because it is a navigation rather than a `fetch`, the
 data buckets need **no CORS configuration** (they have none, and adding some
 would be required for any browser-side signing approach).
 
-The caller names a *tier* (`raw` / `processed`), never a bucket, so the Worker
-can only ever be pointed at the two buckets in its own config.
+The caller names a *tier*, never a bucket, so the Worker can only ever be
+pointed at the buckets in its own config.
+
+A tier is `<collection>-<raw|processed>` — `pilot-processed`, `prod-raw` —
+because the catalogue spans two AWS accounts: the pilot recordings stayed in
+the original account rather than being copied. Each collection maps to its own
+buckets *and its own credentials*, so one endpoint serves both chapters
+without either account granting the other anything. Bare `raw` / `processed`
+still work and use the unprefixed variables, which is all a single-account
+setup needs. See `docs/COLLECTIONS.md`.
 
 This also fixes the exported `links.txt` and `download.sh`, which are the
 worst case for expiry — a client may not run them for weeks. Those now point
@@ -83,20 +91,24 @@ secrets**:
 
 | Name | Kind | Value |
 | --- | --- | --- |
-| `AWS_ACCESS_KEY_ID` | secret | from step 1 |
-| `AWS_SECRET_ACCESS_KEY` | secret | from step 1 |
-| `AWS_REGION` | var | `ap-southeast-1` |
-| `RAW_BUCKET` | var | `ego-raw-prod-886989006633-ap-southeast-1-an` |
-| `PROCESSED_BUCKET` | var | `ego-processed-prod-886989006633-ap-southeast-1-an` |
+| `PILOT_AWS_ACCESS_KEY_ID` | secret | from step 1 |
+| `PILOT_AWS_SECRET_ACCESS_KEY` | secret | from step 1 |
+| `PILOT_AWS_REGION` | var | `ap-southeast-1` |
+| `PILOT_RAW_BUCKET` | var | `ego-raw-prod-886989006633-ap-southeast-1-an` |
+| `PILOT_PROCESSED_BUCKET` | var | `ego-processed-prod-886989006633-ap-southeast-1-an` |
 | `ALLOWED_ORIGIN` | var | `https://egodash.aithoth.com` |
 
-Smoke test — expect a `302` whose `Location` is an S3 URL that returns `206`:
+Add the same five with a `PROD_` prefix once the new account's buckets exist,
+using a read-only key created there the same way.
+
+Smoke test — `/health` lists the tiers that resolve and whether each can sign,
+so a missing variable shows up there rather than as a 500 on a download:
 
 ```bash
 W=https://ego-download.<account>.workers.dev
 curl -s "$W/health"
-curl -sI "$W/?b=processed&k=SOME/KEY.mcap" | grep -i location
-curl -sL -r 0-0 -o /dev/null -w '%{http_code}\n' "$W/?b=processed&k=SOME/KEY.mcap"
+curl -sI "$W/?b=pilot-processed&k=SOME/KEY.mcap" | grep -i location
+curl -sL -r 0-0 -o /dev/null -w '%{http_code}\n' "$W/?b=pilot-processed&k=SOME/KEY.mcap"
 ```
 
 ### 3. Point the dashboard at it

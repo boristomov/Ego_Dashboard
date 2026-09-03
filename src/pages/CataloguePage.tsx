@@ -31,6 +31,7 @@ export function CataloguePage() {
         if (!hay.includes(q)) return false;
       }
       if (filters.task && s.taskName !== filters.task) return false;
+      if (filters.collection && s.collection !== filters.collection) return false;
       if (filters.day) {
         const day = s.timestamp?.toISOString().slice(0, 10);
         if (day !== filters.day) return false;

@@ -26,12 +26,46 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const REPO_ROOT = path.resolve(__dirname, "..");
 
-const RAW_BUCKET =
-  process.env.S3_RAW_BUCKET || "ego-raw-prod-886989006633-ap-southeast-1-an";
-const PROCESSED_BUCKET =
-  process.env.S3_PROCESSED_BUCKET ||
-  "ego-processed-prod-886989006633-ap-southeast-1-an";
+// The catalogue spans more than one bucket pair, and more than one AWS
+// account.
+//
+// The pilot data (~2.3 TB) stays where it was recorded: it is finished, no
+// new sessions land there, and copying it into the new account would mean a
+// cross-account KMS re-encryption for no benefit. So instead of migrating,
+// the snapshot reads both sets and tags each session with the collection it
+// came from; the UI badges them apart.
+//
+// Nothing crosses accounts — each source is read with its own credentials, so
+// neither account needs a bucket policy or a KMS grant naming the other.
+//
+// A source with no bucket configured is skipped, so this file is correct both
+// before and after the new account exists.
 const REGION = process.env.AWS_REGION || "ap-southeast-1";
+
+const SOURCES = [
+  {
+    id: "pilot",
+    label: "Pilot",
+    // Frozen. Kept readable for render and download, never written again.
+    raw:
+      process.env.S3_PILOT_RAW_BUCKET ||
+      "ego-raw-prod-886989006633-ap-southeast-1-an",
+    processed:
+      process.env.S3_PILOT_PROCESSED_BUCKET ||
+      "ego-processed-prod-886989006633-ap-southeast-1-an",
+    region: process.env.AWS_PILOT_REGION || REGION,
+    credPrefix: "PILOT",
+  },
+  {
+    id: "prod",
+    // Current data is the default case and carries no badge.
+    label: "",
+    raw: process.env.S3_RAW_BUCKET || "",
+    processed: process.env.S3_PROCESSED_BUCKET || "",
+    region: REGION,
+    credPrefix: "",
+  },
+];
 
 const args = parseArgs(process.argv.slice(2));
 const INCLUDE_THUMBS = !args.flags.has("--no-thumbs");
@@ -64,12 +98,25 @@ function parseArgs(argv) {
   return { flags, opts };
 }
 
-function loadCredentials() {
-  if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+/**
+ * Credentials for one source.
+ *
+ * `AWS_PILOT_ACCESS_KEY_ID` etc. name a specific account; when absent we fall
+ * back to the unprefixed pair. That fallback is what lets a single-account
+ * setup keep working untouched, and it means the new account can be wired up
+ * by adding variables rather than by re-pointing the existing ones.
+ */
+function loadCredentials(prefix) {
+  const p = prefix ? `AWS_${prefix}_` : "AWS_";
+  const id = process.env[`${p}ACCESS_KEY_ID`] || process.env.AWS_ACCESS_KEY_ID;
+  const secret =
+    process.env[`${p}SECRET_ACCESS_KEY`] || process.env.AWS_SECRET_ACCESS_KEY;
+  if (id && secret) {
     return {
-      accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-      secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-      sessionToken: process.env.AWS_SESSION_TOKEN,
+      accessKeyId: id,
+      secretAccessKey: secret,
+      sessionToken:
+        process.env[`${p}SESSION_TOKEN`] || process.env.AWS_SESSION_TOKEN,
     };
   }
   const csvPath =
@@ -83,9 +130,40 @@ function loadCredentials() {
   return { accessKeyId, secretAccessKey };
 }
 
-const s3 = new S3Client({ region: REGION, credentials: loadCredentials() });
+/**
+ * The sources we can actually read, each with its own S3 client.
+ *
+ * Skips any source without both buckets named, and drops a source that
+ * duplicates one already resolved — otherwise, while the new account is being
+ * set up and both variable sets still point at the pilot buckets, every
+ * session would be listed twice.
+ */
+function activeSources() {
+  const seen = new Set();
+  const out = [];
+  for (const src of SOURCES) {
+    if (!src.raw || !src.processed) continue;
+    const fingerprint = `${src.raw}|${src.processed}`;
+    if (seen.has(fingerprint)) {
+      console.warn(
+        `[snapshot] source "${src.id}" duplicates ${src.raw} — skipping`,
+      );
+      continue;
+    }
+    seen.add(fingerprint);
+    out.push({
+      ...src,
+      s3: new S3Client({
+        region: src.region,
+        credentials: loadCredentials(src.credPrefix),
+      }),
+    });
+  }
+  if (!out.length) throw new Error("No S3 sources configured");
+  return out;
+}
 
-async function listCommonPrefixes(bucket, prefix) {
+async function listCommonPrefixes(s3, bucket, prefix) {
   const out = [];
   let token;
   do {
@@ -103,7 +181,7 @@ async function listCommonPrefixes(bucket, prefix) {
   return out;
 }
 
-async function listSessionsWithFiles(bucket, taskPrefix, limit) {
+async function listSessionsWithFiles(s3, bucket, taskPrefix, limit) {
   const sessions = new Map();
   let token;
   let n = 0;
@@ -157,7 +235,7 @@ function safePath(name) {
   return name.replace(/[^a-zA-Z0-9._-]+/g, "_").replace(/^_+|_+$/g, "");
 }
 
-async function downloadObject(bucket, key, destFile) {
+async function downloadObject(s3, bucket, key, destFile) {
   const out = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
   await fsp.mkdir(path.dirname(destFile), { recursive: true });
   await new Promise((resolve, reject) => {
@@ -169,7 +247,7 @@ async function downloadObject(bucket, key, destFile) {
   });
 }
 
-async function fetchObjectJson(bucket, key) {
+async function fetchObjectJson(s3, bucket, key) {
   const out = await s3.send(new GetObjectCommand({ Bucket: bucket, Key: key }));
   const chunks = [];
   for await (const c of out.Body) chunks.push(c);
@@ -182,7 +260,7 @@ async function fetchObjectJson(bucket, key) {
 // the tab. Pass forceAttachment to override the inline default for MP4s (used
 // for the explicit "download" affordances — the inline copy still powers
 // in-page playback).
-async function presign(bucket, key, ttl, displayName, forceAttachment = false) {
+async function presign(s3, bucket, key, ttl, displayName, forceAttachment = false) {
   const isVideo = /\.mp4$/i.test(key);
   const params = { Bucket: bucket, Key: key };
   if ((forceAttachment || !isVideo) && displayName) {
@@ -214,45 +292,81 @@ async function mapWithConcurrency(items, n, worker) {
 
 async function main() {
   const t0 = Date.now();
+  const sources = activeSources();
   console.log(`[snapshot] region=${REGION}`);
-  console.log(`[snapshot] raw=${RAW_BUCKET}`);
-  console.log(`[snapshot] processed=${PROCESSED_BUCKET}`);
-
-  // Top-level prefixes are task names, with one exception: underscore-prefixed
-  // ones are internal. `_fleet/` holds the recording stations' heartbeats
-  // (see scripts/poll-stations.mjs), and would otherwise show up as a task.
-  const taskPrefixes = (await listCommonPrefixes(RAW_BUCKET, "")).filter(
-    (p) => !p.startsWith("_"),
-  );
-  console.log(`[snapshot] discovered ${taskPrefixes.length} tasks`);
-
-  const sessions = [];
-  for (const taskPrefix of taskPrefixes) {
-    const taskName = taskPrefix.replace(/\/$/, "");
-    const [rawList, procList] = await Promise.all([
-      listSessionsWithFiles(RAW_BUCKET, taskPrefix, LIMIT),
-      listSessionsWithFiles(PROCESSED_BUCKET, taskPrefix, LIMIT),
-    ]);
-    const procMap = new Map(procList.map((s) => [s.sessionId, s]));
-    const rawMap = new Map(rawList.map((s) => [s.sessionId, s]));
-    const ids = new Set([
-      ...rawList.map((s) => s.sessionId),
-      ...procList.map((s) => s.sessionId),
-    ]);
-    for (const sid of ids) {
-      const raw = rawMap.get(sid);
-      const proc = procMap.get(sid);
-      sessions.push({
-        taskName,
-        sessionId: sid,
-        raw: raw || { files: [], totalBytes: 0, lastModified: null },
-        processed: proc || { files: [], totalBytes: 0, lastModified: null },
-      });
-    }
+  for (const src of sources) {
     console.log(
-      `[snapshot]   ${taskName}: raw=${rawList.length} proc=${procList.length} merged=${ids.size}`,
+      `[snapshot] source "${src.id}"${src.label ? ` (${src.label})` : ""}: raw=${src.raw} processed=${src.processed}`,
     );
   }
+
+  const sessions = [];
+  let taskCount = 0;
+
+  for (const src of sources) {
+    // Top-level prefixes are task names, with one exception: underscore-prefixed
+    // ones are internal. `_fleet/` holds the recording stations' heartbeats
+    // (see scripts/poll-stations.mjs), and would otherwise show up as a task.
+    const taskPrefixes = (await listCommonPrefixes(src.s3, src.raw, "")).filter(
+      (p) => !p.startsWith("_"),
+    );
+    taskCount += taskPrefixes.length;
+    console.log(
+      `[snapshot] ${src.id}: discovered ${taskPrefixes.length} tasks`,
+    );
+
+    for (const taskPrefix of taskPrefixes) {
+      const taskName = taskPrefix.replace(/\/$/, "");
+      const [rawList, procList] = await Promise.all([
+        listSessionsWithFiles(src.s3, src.raw, taskPrefix, LIMIT),
+        listSessionsWithFiles(src.s3, src.processed, taskPrefix, LIMIT),
+      ]);
+      const procMap = new Map(procList.map((s) => [s.sessionId, s]));
+      const rawMap = new Map(rawList.map((s) => [s.sessionId, s]));
+      const ids = new Set([
+        ...rawList.map((s) => s.sessionId),
+        ...procList.map((s) => s.sessionId),
+      ]);
+      for (const sid of ids) {
+        const raw = rawMap.get(sid);
+        const proc = procMap.get(sid);
+        sessions.push({
+          taskName,
+          sessionId: sid,
+          // Which chapter this belongs to. Drives the UI badge, and pairs with
+          // the artifact tier to address the right bucket at download time.
+          collection: src.id,
+          collectionLabel: src.label || null,
+          raw: raw || { files: [], totalBytes: 0, lastModified: null },
+          processed: proc || { files: [], totalBytes: 0, lastModified: null },
+        });
+      }
+      console.log(
+        `[snapshot]   ${src.id}/${taskName}: raw=${rawList.length} proc=${procList.length} merged=${ids.size}`,
+      );
+    }
+  }
+
+  // A session is addressed by task + id, which is only unique within a source.
+  // Warn rather than merge: two chapters holding the same id means someone
+  // pointed a variable at the wrong bucket, and silently collapsing them would
+  // hide that.
+  const byKey = new Map();
+  for (const s of sessions) {
+    const k = `${s.taskName}/${s.sessionId}`;
+    if (byKey.has(k)) {
+      console.warn(
+        `[snapshot] duplicate ${k} in "${byKey.get(k)}" and "${s.collection}"`,
+      );
+    } else {
+      byKey.set(k, s.collection);
+    }
+  }
+
+  const sourceOf = new Map(sources.map((s) => [s.id, s]));
+  const bucketFor = (s, tier) =>
+    tier === "raw" ? sourceOf.get(s.collection).raw : sourceOf.get(s.collection).processed;
+  const clientFor = (s) => sourceOf.get(s.collection).s3;
 
   // -------------- metadata.json (duration / frames / timestamp) ---------------
   let metaFetched = 0;
@@ -264,15 +378,20 @@ async function main() {
         s.raw.files.find((f) => f.rel === "metadata.json") ||
         s.processed.files.find((f) => f.rel === "metadata.json");
       if (!metaFile) continue;
-      const bucket = s.raw.files.includes(metaFile) ? RAW_BUCKET : PROCESSED_BUCKET;
-      metaJobs.push({ session: s, key: metaFile.key, bucket });
+      const tier = s.raw.files.includes(metaFile) ? "raw" : "processed";
+      metaJobs.push({
+        session: s,
+        key: metaFile.key,
+        bucket: bucketFor(s, tier),
+        s3: clientFor(s),
+      });
     }
     console.log(
       `[snapshot] metadata.json: fetching ${metaJobs.length} (concurrency=${CONCURRENCY * 2})`,
     );
     await mapWithConcurrency(metaJobs, CONCURRENCY * 2, async (job) => {
       try {
-        const m = await fetchObjectJson(job.bucket, job.key);
+        const m = await fetchObjectJson(job.s3, job.bucket, job.key);
         // Only keep the small subset the UI actually renders, to keep
         // catalogue.json from ballooning.
         job.session.metadata = {
@@ -348,12 +467,12 @@ async function main() {
         const files = p.bucket === "raw" ? s.raw.files : s.processed.files;
         const f = files.find(p.match);
         if (!f) continue;
-        const bucket = p.bucket === "raw" ? RAW_BUCKET : PROCESSED_BUCKET;
         const displayName = `${safePath(s.taskName)}_${s.sessionId}_${path.basename(f.rel)}`;
         urlJobs.push({
           session: s,
           kind: p.kind,
-          bucket,
+          bucket: bucketFor(s, p.bucket),
+          s3: clientFor(s),
           key: f.key,
           displayName,
           forceAttachment: !!p.forceAttachment,
@@ -367,6 +486,7 @@ async function main() {
     await mapWithConcurrency(urlJobs, 64, async (job) => {
       try {
         job.session.urls[job.kind] = await presign(
+          job.s3,
           job.bucket,
           job.key,
           SIGNED_URL_TTL,
@@ -412,14 +532,28 @@ async function main() {
         (f) => f.rel === "thumb.jpg" || f.rel === "thumbnail.jpg",
       );
       if (!thumb) continue;
-      const rel = path.posix.join(safePath(s.taskName), `${s.sessionId}.jpg`);
+      // Namespaced by collection: task names repeat across chapters, so two
+      // sources could otherwise write the same thumbnail path from different
+      // accounts.
+      const rel = path.posix.join(
+        s.collection,
+        safePath(s.taskName),
+        `${s.sessionId}.jpg`,
+      );
       const dest = path.join(thumbsDir, rel);
-      thumbManifest[`${s.taskName}/${s.sessionId}`] = rel;
+      thumbManifest[`${s.collection}/${s.taskName}/${s.sessionId}`] = rel;
       if (USE_EXISTING_THUMBS && fs.existsSync(dest)) {
         reused += 1;
         continue;
       }
-      jobs.push({ session: s, key: thumb.key, rel, dest });
+      jobs.push({
+        session: s,
+        key: thumb.key,
+        rel,
+        dest,
+        bucket: bucketFor(s, "raw"),
+        s3: clientFor(s),
+      });
     }
     console.log(
       `[snapshot] thumbnails: download=${jobs.length} reused=${reused} concurrency=${CONCURRENCY}`,
@@ -428,7 +562,7 @@ async function main() {
     let done = 0;
     await mapWithConcurrency(jobs, CONCURRENCY, async (job) => {
       try {
-        await downloadObject(RAW_BUCKET, job.key, job.dest);
+        await downloadObject(job.s3, job.bucket, job.key, job.dest);
         thumbsDownloaded += 1;
       } catch (err) {
         thumbsFailed += 1;
@@ -453,10 +587,20 @@ async function main() {
   const meta = {
     generatedAt: new Date().toISOString(),
     region: REGION,
-    rawBucket: RAW_BUCKET,
-    processedBucket: PROCESSED_BUCKET,
+    sources: sources.map((s) => ({
+      id: s.id,
+      label: s.label || null,
+      raw: s.raw,
+      processed: s.processed,
+      region: s.region,
+      sessionCount: sessions.filter((x) => x.collection === s.id).length,
+    })),
+    // Retained for the health panel and anything reading the older shape;
+    // reflects the first configured source.
+    rawBucket: sources[0].raw,
+    processedBucket: sources[0].processed,
     sessionCount: sessions.length,
-    taskCount: taskPrefixes.length,
+    taskCount,
     thumbs: {
       included: INCLUDE_THUMBS,
       downloaded: thumbsDownloaded,

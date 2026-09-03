@@ -1,0 +1,14 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadDataBucketsOnly",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": [
+        "arn:aws:s3:::ego-raw-prod-886989006633-ap-southeast-1-an/*",
+        "arn:aws:s3:::ego-processed-prod-886989006633-ap-southeast-1-an/*"
+      ]
+    }
+  ]
+}

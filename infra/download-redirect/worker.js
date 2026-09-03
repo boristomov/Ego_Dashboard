@@ -23,12 +23,22 @@
 // It also carries a cron trigger that re-deploys the site (see `scheduled`
 // below), because the same outage had a second cause worth removing.
 //
-// SETUP: see README.md. Secrets / vars required:
-//   AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY  — an IAM user with ONLY
-//     s3:GetObject on the two buckets below
-//   AWS_REGION        — e.g. ap-southeast-1
-//   RAW_BUCKET        — ego-raw-prod-...
-//   PROCESSED_BUCKET  — ego-processed-prod-...
+// The catalogue spans two AWS accounts: the pilot recordings stayed in the
+// original account when collection moved to a new one, rather than being
+// copied. So a request names a *tier* — "<collection>-<raw|processed>", e.g.
+// `pilot-processed` — and this maps it to a bucket plus that account's own
+// credentials. Callers never name a bucket, so this can only ever be pointed
+// at the buckets configured here.
+//
+// SETUP: see README.md. Secrets / vars required, per collection prefix
+// (PILOT_, PROD_):
+//   <P>_AWS_ACCESS_KEY_ID, <P>_AWS_SECRET_ACCESS_KEY  — an IAM user in that
+//     account with ONLY s3:GetObject on its two buckets
+//   <P>_AWS_REGION       — e.g. ap-southeast-1
+//   <P>_RAW_BUCKET       — ego-raw-... / thoth-ego-raw-prod
+//   <P>_PROCESSED_BUCKET — ego-processed-... / thoth-ego-processed-prod
+// Unprefixed AWS_ACCESS_KEY_ID / AWS_REGION / RAW_BUCKET / PROCESSED_BUCKET
+// are used as fallbacks, so a single-account setup needs no prefixes at all.
 //   ALLOWED_ORIGIN    — e.g. https://egodash.aithoth.com (optional)
 //   GITHUB_TOKEN, GITHUB_REPO — optional, enables the cron re-deploy
 
@@ -124,6 +134,32 @@ async function presign({ bucket, key, region, accessKeyId, secretAccessKey, file
   return `https://${host}/${encodeKeyPath(key)}?${canonicalQuery}&X-Amz-Signature=${signature}`;
 }
 
+/**
+ * Map a tier to its bucket and the credentials for the account holding it.
+ *
+ * Accepts "<collection>-<raw|processed>" and bare "raw"/"processed"; the bare
+ * forms keep older links and single-account setups working. Returns null for
+ * anything else, so an unknown collection is a 400 rather than a request
+ * against an undefined bucket name.
+ */
+function resolveTier(which, env) {
+  const m = /^(?:([a-z0-9]+)-)?(raw|processed)$/.exec(String(which));
+  if (!m) return null;
+  const prefix = m[1] ? `${m[1].toUpperCase()}_` : "";
+  const tier = m[2] === "raw" ? "RAW_BUCKET" : "PROCESSED_BUCKET";
+
+  const pick = (name) => env[`${prefix}${name}`] || env[name];
+  const bucket = pick(tier);
+  if (!bucket) return null;
+
+  return {
+    bucket,
+    region: pick("AWS_REGION"),
+    accessKeyId: pick("AWS_ACCESS_KEY_ID"),
+    secretAccessKey: pick("AWS_SECRET_ACCESS_KEY"),
+  };
+}
+
 export default {
   async fetch(request, env) {
     const cors = {
@@ -139,36 +175,44 @@ export default {
 
     const url = new URL(request.url);
     if (url.pathname === "/health") {
-      return new Response(
-        JSON.stringify({ ok: true, buckets: ["raw", "processed"] }),
-        { status: 200, headers: { ...cors, "content-type": "application/json" } },
-      );
+      // Report which tiers actually resolve, so a missing variable shows up
+      // here rather than as a 500 on someone's download.
+      const tiers = {};
+      for (const t of ["raw", "processed", "pilot-raw", "pilot-processed", "prod-raw", "prod-processed"]) {
+        const r = resolveTier(t, env);
+        if (r) tiers[t] = { bucket: r.bucket, signable: !!(r.accessKeyId && r.region) };
+      }
+      return new Response(JSON.stringify({ ok: true, tiers }), {
+        status: 200,
+        headers: { ...cors, "content-type": "application/json" },
+      });
     }
 
     const which = url.searchParams.get("b") || "processed";
     const key = url.searchParams.get("k");
     const fileName = url.searchParams.get("f") || "";
 
-    // Only ever the two known buckets: the caller names a tier, not a bucket,
-    // so this can never be pointed at arbitrary S3.
-    const bucket = which === "raw" ? env.RAW_BUCKET : which === "processed" ? env.PROCESSED_BUCKET : null;
-    if (!bucket) {
-      return new Response("unknown bucket tier", { status: 400, headers: cors });
+    const target = resolveTier(which, env);
+    if (!target) {
+      return new Response(`unknown tier "${which}"`, { status: 400, headers: cors });
     }
     if (!key || key.length > 1024 || key.includes("..")) {
       return new Response("missing or invalid key", { status: 400, headers: cors });
     }
-    if (!env.AWS_ACCESS_KEY_ID || !env.AWS_SECRET_ACCESS_KEY || !env.AWS_REGION) {
-      return new Response("signer not configured", { status: 500, headers: cors });
+    if (!target.accessKeyId || !target.secretAccessKey || !target.region) {
+      return new Response(
+        `signer not configured for "${which}"`,
+        { status: 500, headers: cors },
+      );
     }
 
     try {
       const signed = await presign({
-        bucket,
+        bucket: target.bucket,
         key,
-        region: env.AWS_REGION,
-        accessKeyId: env.AWS_ACCESS_KEY_ID,
-        secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
+        region: target.region,
+        accessKeyId: target.accessKeyId,
+        secretAccessKey: target.secretAccessKey,
         fileName,
       });
       return new Response(null, {

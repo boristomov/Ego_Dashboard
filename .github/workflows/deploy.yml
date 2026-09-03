@@ -72,20 +72,37 @@ jobs:
         uses: actions/cache@v4
         with:
           path: public/thumbs
-          key: ego-thumbs-v1-${{ github.run_id }}
+          # v2: thumbnails are namespaced by collection now that the catalogue
+          # spans two accounts, so the v1 layout is stale.
+          key: ego-thumbs-v2-${{ github.run_id }}
           restore-keys: |
-            ego-thumbs-v1-
+            ego-thumbs-v2-
 
+      # The catalogue spans two AWS accounts. The pilot recordings stayed in
+      # the original account rather than being copied, so each source is read
+      # with its own credentials and neither account grants the other anything.
+      #
+      # PILOT_* falls back to the unprefixed pair, so this keeps working
+      # unchanged until the new account exists. To add it: set AWS_PILOT_*
+      # to today's key, then repoint AWS_ACCESS_KEY_ID at the new account and
+      # set S3_RAW_BUCKET / S3_PROCESSED_BUCKET. The "prod" source stays
+      # inactive while those two are empty.
       - name: Snapshot S3 → public/
         env:
+          AWS_PILOT_ACCESS_KEY_ID: ${{ secrets.AWS_PILOT_ACCESS_KEY_ID }}
+          AWS_PILOT_SECRET_ACCESS_KEY: ${{ secrets.AWS_PILOT_SECRET_ACCESS_KEY }}
+          AWS_PILOT_REGION: ${{ vars.AWS_PILOT_REGION || 'ap-southeast-1' }}
+          S3_PILOT_RAW_BUCKET: ${{ vars.S3_PILOT_RAW_BUCKET || 'ego-raw-prod-886989006633-ap-southeast-1-an' }}
+          S3_PILOT_PROCESSED_BUCKET: ${{ vars.S3_PILOT_PROCESSED_BUCKET || 'ego-processed-prod-886989006633-ap-southeast-1-an' }}
+
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
-          S3_RAW_BUCKET: ${{ vars.S3_RAW_BUCKET || 'ego-raw-prod-886989006633-ap-southeast-1-an' }}
-          S3_PROCESSED_BUCKET: ${{ vars.S3_PROCESSED_BUCKET || 'ego-processed-prod-886989006633-ap-southeast-1-an' }}
+          S3_RAW_BUCKET: ${{ vars.S3_RAW_BUCKET }}
+          S3_PROCESSED_BUCKET: ${{ vars.S3_PROCESSED_BUCKET }}
         run: |
-          if [ -z "${AWS_ACCESS_KEY_ID:-}" ]; then
-            echo "::warning::AWS_ACCESS_KEY_ID secret is not set; skipping snapshot."
+          if [ -z "${AWS_ACCESS_KEY_ID:-}" ] && [ -z "${AWS_PILOT_ACCESS_KEY_ID:-}" ]; then
+            echo "::warning::No AWS credentials set for any source; skipping snapshot."
             mkdir -p public
             echo '{"sessions":[],"count":0}' > public/catalogue.json
             echo '{"generatedAt":"'"$(date -u +%FT%TZ)"'","sessionCount":0,"taskCount":0,"thumbs":{"included":false},"note":"AWS secrets not configured"}' > public/snapshot-meta.json
@@ -119,14 +136,18 @@ jobs:
           fi
 
       # Collect the recording stations' heartbeats. Stations push these to
-      # s3://$S3_RAW_BUCKET/_fleet/ themselves, so this only reads — no extra
-      # credentials beyond the snapshot's, and no station list to maintain.
+      # s3://<raw bucket>/_fleet/ themselves, so this only reads — no extra
+      # credentials, and no station list to maintain.
+      #
+      # Pinned to its own variable rather than following the snapshot's raw
+      # bucket: the rigs keep publishing wherever they are configured to
+      # upload, so this must not move to the new account until they do.
       - name: Collect recording-station heartbeats
         env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_FLEET_ACCESS_KEY_ID || secrets.AWS_PILOT_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_FLEET_SECRET_ACCESS_KEY || secrets.AWS_PILOT_SECRET_ACCESS_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
-          S3_RAW_BUCKET: ${{ vars.S3_RAW_BUCKET || 'ego-raw-prod-886989006633-ap-southeast-1-an' }}
+          S3_FLEET_BUCKET: ${{ vars.S3_FLEET_BUCKET || 'ego-raw-prod-886989006633-ap-southeast-1-an' }}
         run: node scripts/poll-stations.mjs
 
       - name: Build site

@@ -26,6 +26,8 @@ export type FilterState = {
   day: string;
   completeness: Completeness;
   missing: MissingArtifact;
+  /** Collection id, or "" for all. Sessions are listed together by default. */
+  collection: string;
 };
 
 export const EMPTY_FILTERS: FilterState = {
@@ -34,6 +36,7 @@ export const EMPTY_FILTERS: FilterState = {
   day: "",
   completeness: "all",
   missing: "none",
+  collection: "",
 };
 
 const STAGE_OPTIONS: { value: Completeness; label: string }[] = [
@@ -89,12 +92,25 @@ export function CatalogueFilters({
     return Array.from(set).sort().reverse();
   }, [sessions]);
 
+  // Only worth offering once more than one chapter is present — until the new
+  // account has data, a "Collection" dropdown with a single entry is clutter.
+  const collections = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const s of sessions) {
+      if (!seen.has(s.collection)) {
+        seen.set(s.collection, s.collectionLabel || "Current");
+      }
+    }
+    return Array.from(seen, ([value, label]) => ({ value, label }));
+  }, [sessions]);
+
   const dirty =
     value.search !== EMPTY_FILTERS.search ||
     value.task !== EMPTY_FILTERS.task ||
     value.day !== EMPTY_FILTERS.day ||
     value.completeness !== EMPTY_FILTERS.completeness ||
-    value.missing !== EMPTY_FILTERS.missing;
+    value.missing !== EMPTY_FILTERS.missing ||
+    value.collection !== EMPTY_FILTERS.collection;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -138,6 +154,15 @@ export function CatalogueFilters({
         onChange={(v) => onChange({ ...value, missing: v as MissingArtifact })}
         options={missingOptions.map((o) => ({ value: o.value, label: o.label }))}
       />
+
+      {collections.length > 1 && (
+        <FilterSelect
+          label="Collection"
+          value={value.collection}
+          onChange={(v) => onChange({ ...value, collection: v })}
+          options={[{ value: "", label: "All collections" }, ...collections]}
+        />
+      )}
 
       {dirty && (
         <button

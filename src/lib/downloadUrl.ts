@@ -69,13 +69,21 @@ export function urlTimeLeft(url: string, now = Date.now()): number | null {
   return exp == null ? null : exp - now;
 }
 
-/** A never-expiring link through the redirect Worker. */
+/**
+ * A never-expiring link through the redirect Worker.
+ *
+ * The tier is `<collection>-<raw|processed>` because the catalogue spans two
+ * AWS accounts: the pilot data stayed in the original account when collection
+ * moved. The Worker maps each tier to a bucket and its own credentials, so the
+ * caller names a chapter and never a bucket.
+ */
 export function redirectUrl(
+  collection: string,
   bucket: BucketKind,
   key: string,
   fileName?: string,
 ): string {
-  const q = new URLSearchParams({ b: bucket, k: key });
+  const q = new URLSearchParams({ b: `${collection}-${bucket}`, k: key });
   if (fileName) q.set("f", fileName);
   return `${ENDPOINT}/?${q.toString()}`;
 }
@@ -92,15 +100,20 @@ export type Resolved =
  * S3 error page.
  */
 export function resolveDownloadUrl(opts: {
+  collection?: string;
   bucket: BucketKind;
   key?: string;
   baked?: string;
   fileName?: string;
 }): Resolved {
-  const { bucket, key, baked, fileName } = opts;
+  const { collection = "pilot", bucket, key, baked, fileName } = opts;
 
   if (ENDPOINT && key) {
-    return { ok: true, url: redirectUrl(bucket, key, fileName), permanent: true };
+    return {
+      ok: true,
+      url: redirectUrl(collection, bucket, key, fileName),
+      permanent: true,
+    };
   }
   if (baked) {
     return isUrlUsable(baked)

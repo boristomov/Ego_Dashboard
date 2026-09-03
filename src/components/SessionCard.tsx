@@ -77,6 +77,7 @@ export const SessionCard = memo(function SessionCard({
     if (!a.present) return null;
     const baked = download ? a.downloadUrl ?? a.url : a.url;
     const r = resolveDownloadUrl({
+      collection: s.collection,
       bucket: a.bucket,
       key: a.key,
       baked,
@@ -136,7 +137,7 @@ export const SessionCard = memo(function SessionCard({
       >
         {hasThumb ? (
           <img
-            src={thumbUrl(s.taskName, s.sessionId)}
+            src={thumbUrl(s.taskName, s.sessionId, s.collection)}
             alt={s.sessionId}
             loading="lazy"
             decoding="async"
@@ -167,6 +168,20 @@ export const SessionCard = memo(function SessionCard({
             {STAGE_LABEL[s.pipelineStage]}
           </span>
         </div>
+
+        {/* Collection chip, top-right. Only the pilot chapter is labelled —
+            current data is the default and badging it would add noise to
+            every card. */}
+        {s.collectionLabel && (
+          <div className="absolute right-2 top-2">
+            <span
+              className="rounded-md border border-amber-400/40 bg-amber-950/70 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-amber-200 backdrop-blur"
+              title="Recorded during the pilot programme, in the original storage account. Still fully downloadable."
+            >
+              {s.collectionLabel}
+            </span>
+          </div>
+        )}
 
         {/* Duration chip overlaid bottom-right */}
         {s.durationSec != null && s.durationSec > 0 && (
