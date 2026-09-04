@@ -139,15 +139,20 @@ jobs:
       # s3://<raw bucket>/_fleet/ themselves, so this only reads — no extra
       # credentials, and no station list to maintain.
       #
-      # Pinned to its own variable rather than following the snapshot's raw
-      # bucket: the rigs keep publishing wherever they are configured to
-      # upload, so this must not move to the new account until they do.
+      # Pinned to its own bucket and region rather than following the
+      # snapshot's: the rigs publish wherever they are configured to upload,
+      # which is not necessarily where the catalogue is read from. The rigs
+      # moved to the production account, so that is the default here.
+      #
+      # Credentials must belong to that same account. The pilot keys cannot
+      # read it, so the fallbacks below only apply while the fleet secrets are
+      # unset — in which case the poller finds nothing and the page is empty.
       - name: Collect recording-station heartbeats
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_FLEET_ACCESS_KEY_ID || secrets.AWS_PILOT_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_FLEET_SECRET_ACCESS_KEY || secrets.AWS_PILOT_SECRET_ACCESS_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
-          AWS_REGION: ${{ vars.AWS_REGION || 'ap-southeast-1' }}
-          S3_FLEET_BUCKET: ${{ vars.S3_FLEET_BUCKET || 'ego-raw-prod-886989006633-ap-southeast-1-an' }}
+          AWS_REGION: ${{ vars.AWS_FLEET_REGION || 'us-west-2' }}
+          S3_FLEET_BUCKET: ${{ vars.S3_FLEET_BUCKET || 'egodata-raw-prod-854929212137-us-west-2-an' }}
         run: node scripts/poll-stations.mjs
 
       - name: Build site
