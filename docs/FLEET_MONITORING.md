@@ -71,6 +71,9 @@ that is the same condition the upload queue already requires.
 | `FLEET_PREFIX` | `_fleet/` | Key prefix |
 | `FLEET_INTERVAL_SEC` | `60` | Reporting cadence (minimum 15) |
 | `FLEET_PI_METRICS_URL` | `http://10.42.0.1:5000/api/station/metrics` | The Pi across the cable |
+| `BATTERY_CAPACITY_WH` | `0` | Pack rating. Leave `0` to hide the charge estimate |
+| `BATTERY_OVERHEAD_W` | `3.0` | Draw the board sensors cannot see (camera PoC, conversion) |
+| `BATTERY_EFFICIENCY` | `0.90` | Supply conversion efficiency |
 
 The station's identity is `recorder_device_id` from `recorder_identity.json`,
 which persists across reboots, so a rig keeps its panel. Its display name is
@@ -83,11 +86,46 @@ curl -X POST localhost:8000/api/fleet/publish   # returns the key it wrote
 curl localhost:8000/api/fleet/status            # last success / last error
 ```
 
+### Charge estimate
+
+A USB-PD pack reports no state of charge, so there is nothing to read. The
+recorder integrates measured draw between heartbeats instead, against
+`BATTERY_CAPACITY_WH`. Board sensors see only the internal rails, so
+`BATTERY_OVERHEAD_W` and `BATTERY_EFFICIENCY` account for the camera's
+Power-over-Coax draw and supply losses; calibrate them once against the pack's
+own display.
+
+The integral only means anything relative to a known-full pack, so `POST
+/api/battery/full` resets it and must be called on every swap or recharge. An
+estimate nobody resets is worse than no estimate, which is why the gauge stays
+hidden until a capacity is configured. Gaps over five minutes are skipped, on
+the grounds that the rig was off rather than draining silently, and the running
+total survives a restart.
+
+### Screen access
+
+The dashboard runs on HTTPS and cannot reach a raw VNC socket without tripping
+mixed-content blocking. `ThothAI_FRONTEND/deploy/install-novnc.sh` bridges
+`wayvnc` through websockify and fronts it with `tailscale serve`, which
+supplies a real certificate. Serve and HTTPS certificates are tailnet-wide
+features an admin enables once.
+
+The Pi advertises `remote.pi.screenUrl` only when both the bridge and the
+certificate are in place, so the dashboard shows an "Open Pi screen" button
+only when it will work, falling back to the `vnc://` handoff otherwise.
+
 ### Dashboard (CI)
 
-The deploy workflow reuses the snapshot's credentials; no new secrets. Locally
-the poller also falls back to `../Secrets/boristomov_accessKeys.csv`, matching
-`snapshot.mjs`.
+Heartbeat collection has its own credentials and bucket, because the rigs
+publish wherever they are configured to upload, which need not be where the
+catalogue is read from: `AWS_FLEET_ACCESS_KEY_ID`,
+`AWS_FLEET_SECRET_ACCESS_KEY`, `vars.AWS_FLEET_REGION`, `vars.S3_FLEET_BUCKET`.
+The credentials must belong to the account owning the fleet bucket — pilot keys
+cannot read the production one, and the symptom is a page of zero stations
+while the rigs report normally.
+
+Locally the poller falls back to `../Secrets/boristomov_accessKeys.csv`,
+matching `snapshot.mjs`.
 
 ```bash
 S3_RAW_BUCKET=<bucket> node scripts/poll-stations.mjs
