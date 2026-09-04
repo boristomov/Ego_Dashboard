@@ -5,6 +5,7 @@ import { CataloguePage } from "./pages/CataloguePage";
 import { PostprocessingPage } from "./pages/PostprocessingPage";
 import { ClientConnectionsPage } from "./pages/ClientConnectionsPage";
 import { StationsPage } from "./pages/StationsPage";
+import { AdminPage } from "./pages/AdminPage";
 import { WelcomePage } from "./pages/WelcomePage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { AccessProvider } from "./context/AccessGate";
@@ -49,6 +50,7 @@ function AppRoutes() {
         <Route path="/catalogue" element={<CataloguePage />} />
         <Route path="/postprocessing" element={<PostprocessingPage />} />
         {isAdmin && <Route path="/stations" element={<StationsPage />} />}
+        {isAdmin && <Route path="/admin" element={<AdminPage />} />}
         {isAdmin && <Route path="/clients" element={<ClientConnectionsPage />} />}
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

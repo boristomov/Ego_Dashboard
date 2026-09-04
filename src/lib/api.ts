@@ -154,8 +154,40 @@ async function loadSnapshotMeta() {
 
 import type { InstancesSnapshot } from "./instances";
 import type { StationsSnapshot } from "./stations";
+import type { Registry } from "./registry";
 
 export const api = {
+  /**
+   * The production registry: tasks, operators, 3D assets and environments.
+   *
+   * Read-only here. Writes go to the Cloudflare Worker, which owns the
+   * authoritative copy and republishes this file; the dashboard never edits
+   * the JSON it is reading. Distinguishes "no registry yet" from "registry
+   * failed to load", because those look identical on screen -- an empty page --
+   * and mean opposite things.
+   */
+  registry: async (): Promise<Registry | null> => {
+    try {
+      const res = await fetch(
+        bust(`${BASE_URL}registry.json`),
+        STATIC_FETCH_OPTS,
+      );
+      if (res.status === 404) return null;
+      if (!res.ok) {
+        return {
+          ...(await import("./registry")).EMPTY_REGISTRY,
+          error: `Registry unavailable (HTTP ${res.status})`,
+        };
+      }
+      return (await res.json()) as Registry;
+    } catch (e) {
+      return {
+        ...(await import("./registry")).EMPTY_REGISTRY,
+        error: e instanceof Error ? e.message : "Registry fetch failed",
+      };
+    }
+  },
+
   instances: async (): Promise<InstancesSnapshot | null> => {
     // Both modes read the same file path; the dev proxy serves it from the
     // local public/ folder so you can preview the page during development.

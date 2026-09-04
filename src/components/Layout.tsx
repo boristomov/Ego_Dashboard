@@ -10,6 +10,7 @@ import {
   LogOut,
   Sparkles,
   Users,
+  ClipboardList,
   Menu,
   X,
   Info,
@@ -32,6 +33,7 @@ const TEAM_NAV = [
 
 const ADMIN_NAV = [
   { to: "/stations", label: "Recording stations", icon: Radio },
+  { to: "/admin", label: "Data operations", icon: ClipboardList },
   { to: "/clients", label: "Client connections", icon: Users },
 ];
 
