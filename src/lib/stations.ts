@@ -43,7 +43,9 @@ export type StationCamera = {
 export type StationRecorder = {
   state?: string | null;
   taskName?: string | null;
+  operator?: string | null;
   frameCount?: number | null;
+  durationSec?: number | null;
   error?: string | null;
   cameraTask?: Record<string, unknown> | null;
 };
@@ -86,12 +88,42 @@ export type StationPower = {
   note?: string;
 };
 
+/**
+ * Charge cannot be read from a USB-PD pack, so the station integrates measured
+ * draw instead. Absent when no pack capacity is configured.
+ */
+export type StationBattery = {
+  capacityWh: number;
+  consumedWh: number;
+  remainingWh: number;
+  remainingPct: number;
+  drawW?: number | null;
+  runtimeMinRemaining?: number | null;
+  since?: string;
+  estimated?: boolean;
+  note?: string;
+};
+
+/** Whether the station is currently shipping recordings to S3. */
+export type StationUpload = {
+  configured: boolean;
+  active: boolean;
+  running?: number;
+  pending?: number;
+  completed?: number;
+  failed?: number;
+  backlog?: number;
+  error?: string;
+};
+
 /** Everything needed to build an ssh/vnc link for one board. */
 export type RemoteTarget = {
   host?: string | null;
   hostname?: string | null;
   sshUser?: string | null;
   vncPort?: number | null;
+  /** Set only when noVNC is bridged behind an HTTPS cert; see deploy/install-novnc.sh. */
+  screenUrl?: string | null;
 };
 
 export type StationPi = {
@@ -119,6 +151,8 @@ export type StationHeartbeat = {
   library?: StationLibrary;
   disks?: StationDisk[];
   power?: StationPower;
+  battery?: StationBattery | null;
+  upload?: StationUpload | null;
   pi?: StationPi;
   remote?: { recorder?: RemoteTarget | null; pi?: RemoteTarget | null };
 };
@@ -219,5 +253,35 @@ export function remoteLinks(t: RemoteTarget | null | undefined) {
     sshCommand: `ssh ${user}@${t.host}`,
     vncUrl: `vnc://${t.host}:${vncPort}`,
     vncTarget: `${t.host}:${vncPort}`,
+    /** Openable in a browser window; null until noVNC is bridged on the Pi. */
+    screenUrl: t.screenUrl || null,
   };
+}
+
+/** Episode counts and recorded minutes grouped by task, largest first. */
+export function takesByTask(
+  library: StationLibrary | undefined | null,
+): { label: string; takes: number; durationSec: number }[] {
+  const byTask = new Map<string, { takes: number; durationSec: number }>();
+  for (const take of library?.recentTakes || []) {
+    const label = take.taskName || "Unlabelled";
+    const row = byTask.get(label) || { takes: 0, durationSec: 0 };
+    row.takes += 1;
+    row.durationSec += take.durationSec || 0;
+    byTask.set(label, row);
+  }
+  return [...byTask.entries()]
+    .map(([label, v]) => ({ label, ...v }))
+    .sort((a, b) => b.takes - a.takes);
+}
+
+/**
+ * Colour for a charge level. Deliberately generous: the figure is an estimate
+ * from integrated draw, so flagging danger too early would train people to
+ * ignore it.
+ */
+export function batteryTone(pct: number): "ok" | "warn" | "danger" {
+  if (pct <= 15) return "danger";
+  if (pct <= 35) return "warn";
+  return "ok";
 }

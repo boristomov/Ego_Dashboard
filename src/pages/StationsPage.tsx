@@ -7,6 +7,10 @@ import {
   ChevronDown,
   Clock,
   Copy,
+  BatteryCharging,
+  CloudOff,
+  CloudUpload,
+  ExternalLink,
   HardDrive,
   Loader2,
   Monitor,
@@ -14,11 +18,14 @@ import {
   Settings2,
   Terminal,
   Thermometer,
+  User,
   XCircle,
   Zap,
 } from "lucide-react";
+import { BarRows, BatteryMeter, Donut } from "../components/StationCharts";
 import { useStations } from "../hooks/useStations";
 import {
+  batteryTone,
   formatBytes,
   formatDuration,
   freeSpaceWarning,
@@ -27,11 +34,14 @@ import {
   relativeAge,
   remoteLinks,
   stationStatus,
+  takesByTask,
   type RemoteTarget,
+  type StationBattery,
   type StationDay,
   type StationHeartbeat,
   type StationStatus,
   type StationTake,
+  type StationUpload,
 } from "../lib/stations";
 
 export function StationsPage() {
@@ -225,6 +235,8 @@ function StationCard({ station }: { station: StationHeartbeat }) {
         />
       )}
 
+      <LiveNow station={station} status={status} />
+
       {/* Vitals */}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
         <Vital
@@ -260,6 +272,8 @@ function StationCard({ station }: { station: StationHeartbeat }) {
           <Empty>No recordings yet</Empty>
         )}
       </Section>
+
+      <TaskBreakdown station={station} />
 
       {/* Quality */}
       <Section title="Quality">
@@ -345,6 +359,219 @@ function StationCard({ station }: { station: StationHeartbeat }) {
   );
 }
 
+// ---------------- Analytics ----------------
+
+/**
+ * Episodes and recorded time split by task.
+ *
+ * Scoped to the recent takes the heartbeat carries rather than the station's
+ * whole history: the heartbeat is rewritten in place every cycle and has to
+ * stay small, so it ships a recent window, and the chart says so.
+ */
+function TaskBreakdown({ station }: { station: StationHeartbeat }) {
+  const rows = useMemo(() => takesByTask(station.library), [station.library]);
+  if (!rows.length) return null;
+
+  const window = station.library?.recentTakes?.length || 0;
+  const totalMin = rows.reduce((n, r) => n + r.durationSec, 0) / 60;
+
+  return (
+    <Collapsible
+      title="Task breakdown"
+      icon={<Activity size={11} />}
+      badge={`${rows.length} task${rows.length === 1 ? "" : "s"}`}
+      defaultOpen
+    >
+      <div className="flex flex-col gap-4">
+        <Donut
+          slices={rows.map((r) => ({ label: r.label, value: r.takes }))}
+          centreLabel="episodes"
+        />
+        <div>
+          <SectionLabel>Recorded time by task</SectionLabel>
+          <div className="mt-1.5">
+            <BarRows
+              rows={rows.map((r) => ({
+                label: r.label,
+                value: Math.round(r.durationSec / 60),
+                hint: formatDuration(r.durationSec),
+              }))}
+              format={(n) => `${n} min`}
+            />
+          </div>
+        </div>
+        <p className="text-[0.65rem] text-text-dim">
+          Last {window} take{window === 1 ? "" : "s"} · {totalMin.toFixed(0)} min total
+        </p>
+      </div>
+    </Collapsible>
+  );
+}
+
+// ---------------- Live state ----------------
+
+/**
+ * What the station is doing right now, at a glance from across the room.
+ *
+ * Operator and task are set large because they are the two things worth
+ * checking mid-shift; everything else on the card is diagnostic. When the
+ * station is not recording this collapses to a quiet idle row rather than
+ * showing stale names as though they were live.
+ */
+function LiveNow({
+  station,
+  status,
+}: {
+  station: StationHeartbeat;
+  status: StationStatus;
+}) {
+  const rec = station.recorder;
+  const live = status === "recording";
+  const operator = (rec?.operator || "").trim();
+  const task = (rec?.taskName || "").trim();
+
+  return (
+    <div
+      className={`rounded-lg border p-3 ${
+        live ? "border-ok/40 bg-ok/[0.07]" : "border-border bg-input/30"
+      }`}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            {live ? (
+              <>
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ok opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-ok" />
+                </span>
+                <span className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-emerald-300">
+                  Recording now
+                </span>
+              </>
+            ) : (
+              <span className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-text-dim">
+                {status === "offline" ? "Last seen idle" : "Idle — not recording"}
+              </span>
+            )}
+          </div>
+
+          {live && (task || operator) ? (
+            <div className="mt-1.5 min-w-0">
+              <div
+                className="truncate text-[1.35rem] font-semibold leading-tight text-text"
+                title={task || undefined}
+              >
+                {task || "Untitled task"}
+              </div>
+              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[0.8rem]">
+                <span className="inline-flex items-center gap-1.5 text-text-muted">
+                  <User size={13} />
+                  {operator ? (
+                    <span className="font-medium text-text">{operator}</span>
+                  ) : (
+                    <span className="italic text-text-dim">no operator entered</span>
+                  )}
+                </span>
+                {rec?.durationSec != null && (
+                  <span className="font-mono tabular-nums text-emerald-300">
+                    {formatDuration(rec.durationSec)}
+                  </span>
+                )}
+                {rec?.frameCount != null && (
+                  <span className="text-text-dim">
+                    {rec.frameCount.toLocaleString()} frames
+                  </span>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="mt-1 text-[0.78rem] text-text-dim">
+              Nothing in progress on this station.
+            </div>
+          )}
+        </div>
+
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <UploadChip upload={station.upload} />
+          <Battery battery={station.battery} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Cloud upload state. The recorder reports a queue summary; until asynchronous
+ * upload is wired in, that queue simply stays empty and this reads "idle",
+ * which is accurate rather than a placeholder.
+ */
+function UploadChip({ upload }: { upload?: StationUpload | null }) {
+  if (!upload || upload.configured === false) {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-input px-2 py-1 text-[0.68rem] text-text-dim"
+        title={upload?.error || "No upload queue reported by this station."}
+      >
+        <CloudOff size={12} /> Upload off
+      </span>
+    );
+  }
+  if (upload.active) {
+    return (
+      <span
+        className="inline-flex items-center gap-1.5 rounded-md border border-cyan-500/40 bg-cyan-500/15 px-2 py-1 text-[0.68rem] text-cyan-300"
+        title={`${upload.running || 0} uploading, ${upload.pending || 0} queued`}
+      >
+        <CloudUpload size={12} className="animate-pulse" />
+        Uploading {upload.backlog ? `(${upload.backlog})` : ""}
+      </span>
+    );
+  }
+  const failed = upload.failed || 0;
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[0.68rem] ${
+        failed
+          ? "border-warn/40 bg-warn/10 text-amber-300"
+          : "border-border bg-input text-text-muted"
+      }`}
+      title={`${upload.completed || 0} uploaded, ${failed} failed`}
+    >
+      <CloudUpload size={12} />
+      {failed ? `${failed} upload${failed === 1 ? "" : "s"} failed` : "Cloud idle"}
+    </span>
+  );
+}
+
+/**
+ * Charge estimate. Hidden entirely when the station has no pack capacity
+ * configured, since a percentage of an unknown total would be meaningless.
+ */
+function Battery({ battery }: { battery?: StationBattery | null }) {
+  if (!battery) return null;
+  const tone = batteryTone(battery.remainingPct);
+  const runtime = battery.runtimeMinRemaining;
+  return (
+    <div className="w-44" title={battery.note}>
+      <BatteryMeter
+        pct={battery.remainingPct}
+        tone={tone}
+        label={
+          <span className="inline-flex items-center gap-1">
+            <BatteryCharging size={11} /> Battery · est.
+          </span>
+        }
+        caption={
+          runtime
+            ? `~${runtime >= 60 ? `${Math.floor(runtime / 60)} h ${runtime % 60} m` : `${runtime} m`} left at ${battery.drawW ?? "?"} W`
+            : `${battery.remainingWh} of ${battery.capacityWh} Wh`
+        }
+      />
+    </div>
+  );
+}
+
 // ---------------- Remote access ----------------
 
 function RemoteAccess({ station }: { station: StationHeartbeat }) {
@@ -381,21 +608,58 @@ function RemoteAccess({ station }: { station: StationHeartbeat }) {
             hint={pi.sshCommand}
           />
         )}
-        {pi && (
-          <RemoteButton
-            href={pi.vncUrl}
-            copy={pi.vncTarget}
-            icon={<Monitor size={12} />}
-            label="Pi screen"
-            hint={`vncviewer ${pi.vncTarget}`}
-          />
-        )}
+        {/* Falls back to the vnc:// handoff when the Pi has not reported a
+            browser-viewable screen, so the button never silently does nothing. */}
+        {pi &&
+          (pi.screenUrl ? (
+            <ScreenButton url={pi.screenUrl} />
+          ) : (
+            <RemoteButton
+              href={pi.vncUrl}
+              copy={pi.vncTarget}
+              icon={<Monitor size={12} />}
+              label="Pi screen"
+              hint={`vncviewer ${pi.vncTarget}`}
+            />
+          ))}
       </div>
       <p className="text-[0.65rem] text-text-dim">
-        Opens over Tailscale — you must be signed in to the tailnet. Click to
-        launch your local client, or copy the command.
+        Opens over Tailscale — you must be signed in to the tailnet.
+        {pi && !pi.screenUrl && (
+          <>
+            {" "}
+            The Pi screen still needs a local VNC client; run{" "}
+            <code className="rounded bg-input px-1 py-0.5">deploy/install-novnc.sh</code>{" "}
+            on it to open the screen in a browser window instead.
+          </>
+        )}
       </p>
     </div>
+  );
+}
+
+/**
+ * Opens the Pi's screen in a real window.
+ *
+ * A new window rather than an inline frame: the screen is served from the
+ * tailnet host, and cross-origin framing is at the mercy of whatever headers
+ * that host sends. A window sidesteps that and gives a resizable surface,
+ * which is what you want for a remote desktop anyway.
+ */
+function ScreenButton({ url }: { url: string }) {
+  return (
+    <button
+      type="button"
+      onClick={() =>
+        window.open(url, "pi-screen", "width=1280,height=800,noopener,noreferrer")
+      }
+      className="inline-flex items-center gap-1.5 rounded-md border border-accent/50 bg-accent/15 px-2.5 py-1.5 text-[0.72rem] font-medium text-text transition hover:bg-accent/25"
+      title={url}
+    >
+      <Monitor size={12} />
+      Open Pi screen
+      <ExternalLink size={10} className="opacity-60" />
+    </button>
   );
 }
 
@@ -572,15 +836,17 @@ function Collapsible({
   title,
   icon,
   badge,
+  defaultOpen,
   children,
 }: {
   title: string;
   icon?: React.ReactNode;
   badge?: string;
+  defaultOpen?: boolean;
   children: React.ReactNode;
 }) {
   return (
-    <details className="group rounded-md border border-border bg-input/40">
+    <details open={defaultOpen} className="group rounded-md border border-border bg-input/40">
       <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-1.5 text-[0.6rem] font-semibold uppercase tracking-widest text-text-muted transition hover:text-text">
         <ChevronDown
           size={12}
