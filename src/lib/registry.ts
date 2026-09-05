@@ -450,6 +450,16 @@ export type Registry = {
   /** Set when the registry could not be read; the UI says so rather than
    * rendering an empty registry as though everything had been deleted. */
   error?: string | null;
+  /**
+   * Where this copy came from.
+   *
+   * "live" is read through the write API and is current. "snapshot" is the
+   * copy baked at deploy time, which is what everyone sees when the write API
+   * is not configured or nobody is signed in -- and which can be hours old.
+   * Worth distinguishing on screen: an admin who has just saved something and
+   * is looking at a snapshot needs to know why it is not there yet.
+   */
+  source?: "live" | "snapshot";
 };
 
 export const EMPTY_REGISTRY: Registry = {

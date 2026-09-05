@@ -1,0 +1,22 @@
+{
+  "Version": "2012-10-17",
+  "Comment": [
+    "Least privilege for the ego-registry-api Worker.",
+    "Scoped to the single _registry/ prefix, not the bucket: this key sits in a",
+    "Worker that accepts writes, so the blast radius of it leaking should not",
+    "include a petabyte of recordings. It cannot read, overwrite or delete any",
+    "session data.",
+    "s3:GetObject is required in addition to s3:PutObject because AWS demands",
+    "both for If-Match conditional writes, which is how concurrent edits are",
+    "kept from clobbering each other.",
+    "Replace the bucket name if S3_FLEET_BUCKET differs."
+  ],
+  "Statement": [
+    {
+      "Sid": "ReadWriteTheRegistryDocumentOnly",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject"],
+      "Resource": "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an/_registry/*"
+    }
+  ]
+}

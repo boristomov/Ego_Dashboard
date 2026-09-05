@@ -160,13 +160,35 @@ export const api = {
   /**
    * The production registry: tasks, operators, 3D assets and environments.
    *
-   * Read-only here. Writes go to the Cloudflare Worker, which owns the
-   * authoritative copy and republishes this file; the dashboard never edits
-   * the JSON it is reading. Distinguishes "no registry yet" from "registry
-   * failed to load", because those look identical on screen -- an empty page --
-   * and mean opposite things.
+   * Two sources, preferred in order:
+   *
+   *   1. The write API (infra/registry-api), when it is configured and an
+   *      admin is signed in. This is the authoritative copy, so an admin sees
+   *      their own save immediately rather than after the next deploy.
+   *   2. The `registry.json` baked at build time. This is what team users and
+   *      signed-out admins get, and it is what everyone gets before the Worker
+   *      exists — which is why the whole feature degrades to read-only rather
+   *      than breaking when it is not deployed.
+   *
+   * A failure in (1) falls through to (2) instead of erroring: a stale view is
+   * more useful than none, as long as it admits to being stale, which is what
+   * `source` is for.
+   *
+   * Distinguishes "no registry yet" from "registry failed to load", because
+   * those look identical on screen — an empty page — and mean opposite things.
    */
   registry: async (): Promise<Registry | null> => {
+    const { REGISTRY_WRITE_CONFIGURED, isSignedIn, fetchRegistry } =
+      await import("./registryApi");
+
+    if (REGISTRY_WRITE_CONFIGURED && isSignedIn()) {
+      try {
+        return { ...(await fetchRegistry()), source: "live" };
+      } catch {
+        /* fall through to the snapshot */
+      }
+    }
+
     try {
       const res = await fetch(
         bust(`${BASE_URL}registry.json`),
@@ -179,7 +201,7 @@ export const api = {
           error: `Registry unavailable (HTTP ${res.status})`,
         };
       }
-      return (await res.json()) as Registry;
+      return { ...((await res.json()) as Registry), source: "snapshot" };
     } catch (e) {
       return {
         ...(await import("./registry")).EMPTY_REGISTRY,

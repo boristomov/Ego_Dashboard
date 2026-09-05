@@ -9,13 +9,15 @@ so it is reviewable and reproducible instead of existing only in a console.
 | `lifecycle/egodata-raw-prod.json` | Storage lifecycle for the raw bucket. |
 | `lifecycle/egodata-processed-prod.json` | Storage lifecycle for the processed bucket. |
 | `download-redirect/` | Cloudflare Worker that mints S3 presigned URLs at click time, so catalogue links never expire. See its own README. |
+| `registry-api/` | Cloudflare Worker that accepts admin edits to the data operations registry and stores them as one versioned JSON object in S3. Deliberately a separate Worker from `download-redirect`, which holds a read-only key. See its own README. |
 
 ## Buckets
 
 Production data lives in account `854929212137`, region `us-west-2`:
 
 - `egodata-raw-prod-854929212137-us-west-2-an` — SVO2 source footage, capture
-  metadata, thumbnails, and station heartbeats under `_fleet/`.
+  metadata, thumbnails, station heartbeats under `_fleet/`, and the data
+  operations registry under `_registry/`.
 - `egodata-processed-prod-854929212137-us-west-2-an` — MCAP, MP4, CVAT XML and
   annotation ZIPs.
 
