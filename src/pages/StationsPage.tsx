@@ -29,15 +29,18 @@ import {
   formatBytes,
   formatDuration,
   freeSpaceWarning,
+  groupByRig,
   heartbeatAgeMs,
   LATE_AFTER_MS,
+  platformLabel,
   relativeAge,
   remoteLinks,
+  ROLE_LABELS,
   stationStatus,
   takesByTask,
-  type RemoteTarget,
   type StationBattery,
   type StationDay,
+  type StationDevice,
   type StationHeartbeat,
   type StationStatus,
   type StationTake,
@@ -103,11 +106,23 @@ export function StationsPage() {
       {error && <Banner kind="err" title="Could not read heartbeats" body={error} />}
       {!error && !loading && stations.length === 0 && <SetupHint />}
 
-      <div className="grid gap-3 2xl:grid-cols-2">
-        {stations.map((s) => (
-          <StationCard key={s.stationId} station={s} />
-        ))}
-      </div>
+      {groupByRig(stations).map((g) => (
+        <section key={g.rig ?? "unassigned"} className="flex flex-col gap-2">
+          <SectionLabel>
+            {g.rig ? `Rig ${g.rig}` : "Unassigned"}
+            {!g.rig && (
+              <span className="ml-2 normal-case tracking-normal text-text-dim">
+                devices not named &lt;role&gt;-&lt;rig number&gt; on the tailnet
+              </span>
+            )}
+          </SectionLabel>
+          <div className="grid gap-3 2xl:grid-cols-2">
+            {g.stations.map((s) => (
+              <StationCard key={s.stationId} station={s} />
+            ))}
+          </div>
+        </section>
+      ))}
     </div>
   );
 }
@@ -220,11 +235,11 @@ function StationCard({ station }: { station: StationHeartbeat }) {
       {(cam?.warnings?.length || 0) > 0 && (
         <Banner kind="warn" title="Camera warning" body={cam!.warnings!.join(" · ")} />
       )}
-      {station.pi && station.pi.reachable === false && (
+      {station.operator && station.operator.reachable === false && (
         <Banner
           kind="warn"
-          title="Pi unreachable from the recorder"
-          body={station.pi.error || "The operator UI and its screen may be down."}
+          title="Operator screen unreachable from the recorder"
+          body={station.operator.error || "The operator UI and its screen may be down."}
         />
       )}
       {lowDisk && (
@@ -253,7 +268,8 @@ function StationCard({ station }: { station: StationHeartbeat }) {
         <Vital
           icon={<Thermometer size={12} />}
           label="Camera temp"
-          value={cam?.temperatureC != null ? `${cam.temperatureC}°C` : "—"}
+          // The recorder reports 0 rather than null when no camera is attached.
+          value={cam?.temperatureC != null && cam.status === "connected" ? `${cam.temperatureC}°C` : "—"}
           tone={(cam?.temperatureC ?? 0) > 70 ? "warn" : "plain"}
         />
         <Vital
@@ -329,7 +345,7 @@ function StationCard({ station }: { station: StationHeartbeat }) {
       {/* Storage */}
       <Collapsible title="Storage" icon={<HardDrive size={11} />}>
         <div className="flex flex-col gap-1.5">
-          {[...(station.disks || []), ...(station.pi?.disk ? [station.pi.disk] : [])].map(
+          {[...(station.disks || []), ...(station.operator?.disk ? [station.operator.disk] : [])].map(
             (d, i) => (
               <div key={i} className="flex items-center gap-2 text-[0.72rem]">
                 <span className="w-28 flex-shrink-0 truncate font-mono text-text-muted">
@@ -347,7 +363,7 @@ function StationCard({ station }: { station: StationHeartbeat }) {
               </div>
             ),
           )}
-          {!(station.disks || []).length && !station.pi?.disk && (
+          {!(station.disks || []).length && !station.operator?.disk && (
             <Empty>Not reported</Empty>
           )}
         </div>
@@ -574,61 +590,40 @@ function Battery({ battery }: { battery?: StationBattery | null }) {
 
 // ---------------- Remote access ----------------
 
+/**
+ * Every board in the rig, what hardware it is, and a way in.
+ *
+ * Driven by the heartbeat's device list rather than fixed recorder/Pi slots,
+ * so a rig with a different operator board, or more than two devices, needs
+ * no change here.
+ */
 function RemoteAccess({ station }: { station: StationHeartbeat }) {
-  const recorder = remoteLinks(station.remote?.recorder);
-  const pi = remoteLinks(station.remote?.pi as RemoteTarget | null);
-
-  if (!recorder && !pi) {
+  const devices = station.devices || [];
+  if (!devices.length) {
     return (
       <div className="rounded-md border border-dashed border-border bg-input/40 px-3 py-2 text-[0.72rem] text-text-dim">
-        No tailnet address reported — remote access unavailable.
+        No devices reported — remote access unavailable.
       </div>
     );
   }
+  const needsNoVnc = devices.some(
+    (d) => d.role === "operator" && d.remote?.host && !d.remote.screenUrl,
+  );
 
   return (
     <div className="flex flex-col gap-2 border-t border-border pt-3">
-      <SectionLabel>Remote in</SectionLabel>
-      <div className="flex flex-wrap gap-1.5">
-        {recorder && (
-          <RemoteButton
-            href={recorder.sshUrl}
-            copy={recorder.sshCommand}
-            icon={<Terminal size={12} />}
-            label="Recorder shell"
-            hint={recorder.sshCommand}
-          />
-        )}
-        {pi && (
-          <RemoteButton
-            href={pi.sshUrl}
-            copy={pi.sshCommand}
-            icon={<Terminal size={12} />}
-            label="Pi shell"
-            hint={pi.sshCommand}
-          />
-        )}
-        {/* Falls back to the vnc:// handoff when the Pi has not reported a
-            browser-viewable screen, so the button never silently does nothing. */}
-        {pi &&
-          (pi.screenUrl ? (
-            <ScreenButton url={pi.screenUrl} />
-          ) : (
-            <RemoteButton
-              href={pi.vncUrl}
-              copy={pi.vncTarget}
-              icon={<Monitor size={12} />}
-              label="Pi screen"
-              hint={`vncviewer ${pi.vncTarget}`}
-            />
-          ))}
-      </div>
+      <SectionLabel>Devices</SectionLabel>
+      <ul className="flex flex-col gap-1.5">
+        {devices.map((d, i) => (
+          <DeviceRow key={`${d.role}-${d.name || i}`} device={d} />
+        ))}
+      </ul>
       <p className="text-[0.65rem] text-text-dim">
         Opens over Tailscale — you must be signed in to the tailnet.
-        {pi && !pi.screenUrl && (
+        {needsNoVnc && (
           <>
             {" "}
-            The Pi screen still needs a local VNC client; run{" "}
+            The operator screen still needs a local VNC client; run{" "}
             <code className="rounded bg-input px-1 py-0.5">deploy/install-novnc.sh</code>{" "}
             on it to open the screen in a browser window instead.
           </>
@@ -638,8 +633,60 @@ function RemoteAccess({ station }: { station: StationHeartbeat }) {
   );
 }
 
+function DeviceRow({ device }: { device: StationDevice }) {
+  const links = remoteLinks(device.remote);
+  const platform = platformLabel(device.platform);
+  const reachable = device.reachable !== false;
+  return (
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-border/60 bg-input/40 px-2.5 py-2">
+      <span
+        className={`h-2 w-2 flex-shrink-0 rounded-full ${reachable ? "bg-ok" : "bg-err"}`}
+        title={reachable ? "Reachable" : device.error || "Unreachable"}
+      />
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-baseline gap-x-2 text-[0.75rem]">
+          <span className="font-medium text-text">{ROLE_LABELS[device.role]}</span>
+          <span className="font-mono text-text-muted">{device.name || device.hostname || "—"}</span>
+        </div>
+        <div className="truncate text-[0.65rem] text-text-dim" title={device.platform?.model || undefined}>
+          {[platform, device.platform?.os].filter(Boolean).join(" · ") || "Hardware not reported"}
+        </div>
+      </div>
+      <div className="flex flex-wrap gap-1.5">
+        {links ? (
+          <>
+            <RemoteButton
+              href={links.sshUrl}
+              copy={links.sshCommand}
+              icon={<Terminal size={12} />}
+              label="Shell"
+              hint={links.sshCommand}
+            />
+            {/* Falls back to the vnc:// handoff when the board has not reported
+                a browser-viewable screen, so the button never silently does nothing. */}
+            {device.role === "operator" &&
+              (links.screenUrl ? (
+                <ScreenButton url={links.screenUrl} />
+              ) : (
+                <RemoteButton
+                  href={links.vncUrl}
+                  copy={links.vncTarget}
+                  icon={<Monitor size={12} />}
+                  label="Screen"
+                  hint={`vncviewer ${links.vncTarget}`}
+                />
+              ))}
+          </>
+        ) : (
+          <span className="text-[0.65rem] text-text-dim">no tailnet address</span>
+        )}
+      </div>
+    </li>
+  );
+}
+
 /**
- * Opens the Pi's screen in a real window.
+ * Opens the operator device's screen in a real window.
  *
  * A new window rather than an inline frame: the screen is served from the
  * tailnet host, and cross-origin framing is at the mercy of whatever headers
@@ -651,13 +698,13 @@ function ScreenButton({ url }: { url: string }) {
     <button
       type="button"
       onClick={() =>
-        window.open(url, "pi-screen", "width=1280,height=800,noopener,noreferrer")
+        window.open(url, "operator-screen", "width=1280,height=800,noopener,noreferrer")
       }
       className="inline-flex items-center gap-1.5 rounded-md border border-accent/50 bg-accent/15 px-2.5 py-1.5 text-[0.72rem] font-medium text-text transition hover:bg-accent/25"
       title={url}
     >
       <Monitor size={12} />
-      Open Pi screen
+      Open screen
       <ExternalLink size={10} className="opacity-60" />
     </button>
   );

@@ -1,15 +1,19 @@
-// Recording stations (the field rigs: a ZED Box Mini + a Raspberry Pi 5).
+// Recording stations: the field rigs. A rig is one recorder (ZED Box) plus one
+// operator device — a Raspberry Pi 5 on generation 1, a LattePanda Alpha on
+// generation 2. Every device is named `<role>-<rig number>` on the tailnet
+// (zed-box-2 + lattepanda-2 = rig 2), which is how they are paired.
 //
 // Stations sit behind NAT wherever they are deployed, so nothing can poll
-// them. Each one instead pushes a JSON heartbeat to s3://<raw>/_fleet/<id>.json
-// on a timer, and scripts/poll-stations.mjs collects those into
-// public/stations.json at build time.
+// them. Each recorder instead pushes a JSON heartbeat to
+// s3://<raw>/_fleet/<id>.json on a timer, and scripts/poll-stations.mjs
+// collects those into public/stations.json at build time.
 //
 // The shapes below mirror backend/app/fleet.py in the recorder repo
 // (ThothAI---Egocentric-Dataset-Collection). Bump SCHEMA_VERSION on both sides
-// together; the UI tolerates missing fields so an older station still renders.
+// together. Older heartbeats are upgraded by normalizeStation() rather than
+// special-cased in the UI, so a rig on old firmware still renders fully.
 
-export const SUPPORTED_SCHEMA_VERSION = 1;
+export const SUPPORTED_SCHEMA_VERSION = 3;
 
 /** A station is considered offline once its heartbeat is this old. */
 export const STALE_AFTER_MS = 5 * 60 * 1000;
@@ -83,6 +87,10 @@ export type StationLibrary = {
 
 export type StationPower = {
   recorderW?: number | null;
+  operatorW?: number | null;
+  /** Which sensor the operator figure came from: "pmic", "rapl" or "none". */
+  operatorSource?: string | null;
+  /** Schema ≤2 name for operatorW. */
   piW?: number | null;
   totalW?: number | null;
   note?: string;
@@ -119,6 +127,8 @@ export type StationUpload = {
 /** Everything needed to build an ssh/vnc link for one board. */
 export type RemoteTarget = {
   host?: string | null;
+  /** MagicDNS name, e.g. lattepanda-2.tailab5b77.ts.net. */
+  dnsName?: string | null;
   hostname?: string | null;
   sshUser?: string | null;
   vncPort?: number | null;
@@ -126,12 +136,44 @@ export type RemoteTarget = {
   screenUrl?: string | null;
 };
 
-export type StationPi = {
+export type DevicePlatform = {
+  /** Hardware profile id from the operator device, e.g. "rpi5", "lattepanda-alpha". */
+  profile?: string | null;
+  label?: string | null;
+  generation?: number | null;
+  model?: string | null;
+  arch?: string | null;
+  os?: string | null;
+  kernel?: string | null;
+};
+
+export type DeviceRole = "recorder" | "operator" | "other";
+
+/** One board of a rig, with what it is and how to get a shell on it. */
+export type StationDevice = {
+  role: DeviceRole;
+  /** Tailnet name (zed-box-2), falling back to the OS hostname. */
+  name?: string | null;
+  hostname?: string | null;
+  platform?: DevicePlatform | null;
+  reachable?: boolean;
+  error?: string | null;
+  remote?: RemoteTarget | null;
+};
+
+/** The operator device's own report, relayed by the recorder. */
+export type StationOperator = {
   reachable?: boolean;
   error?: string | null;
   hostname?: string | null;
+  device?: {
+    role?: string | null;
+    rig?: string | null;
+    tailnetName?: string | null;
+    platform?: DevicePlatform | null;
+  } | null;
   disk?: StationDisk | null;
-  power?: { totalW?: number | null } | null;
+  power?: { totalW?: number | null; source?: string | null } | null;
   network?: Record<string, unknown> | null;
   kiosk?: { controlEnabled?: boolean; running?: boolean } | null;
   preview?: { lastFrameAgeMs?: number | null } | null;
@@ -153,7 +195,13 @@ export type StationHeartbeat = {
   power?: StationPower;
   battery?: StationBattery | null;
   upload?: StationUpload | null;
-  pi?: StationPi;
+  /** Rig number from the tailnet naming convention; null when unnamed. */
+  rig?: { id?: string | null; source?: string | null } | null;
+  devices?: StationDevice[];
+  operator?: StationOperator;
+  /** Schema ≤2: the operator device, back when it was always a Pi. */
+  pi?: StationOperator;
+  /** Schema ≤2: per-board SSH targets, folded into devices since. */
   remote?: { recorder?: RemoteTarget | null; pi?: RemoteTarget | null };
 };
 
@@ -162,6 +210,102 @@ export type StationsSnapshot = {
   stations: StationHeartbeat[];
   /** Set when the poller could not read S3 at all. */
   error?: string | null;
+};
+
+// ---------- Rigs and devices ----------
+
+const ROLE_PREFIXES: Record<string, DeviceRole> = {
+  "zed-box": "recorder",
+  raspberrypi: "operator",
+  lattepanda: "operator",
+};
+
+/** Split a tailnet name into role and rig number; mirrors backend/app/rig.py. */
+export function parseDeviceName(name: string | null | undefined): {
+  role: DeviceRole;
+  rig: string | null;
+} {
+  const label = (name || "").trim().toLowerCase().split(".")[0];
+  const m = /^([a-z][a-z0-9-]*?)-(\d+)$/.exec(label);
+  if (!m) return { role: "other", rig: null };
+  return { role: ROLE_PREFIXES[m[1]] || "other", rig: m[2] };
+}
+
+/**
+ * Upgrade any heartbeat to the current shape, so the UI reads one schema.
+ *
+ * Schema ≤2 stations are generation-1 rigs whose operator device was always a
+ * Raspberry Pi: it lived under `pi`, its SSH target under `remote.pi`, and no
+ * rig number was published, so one is recovered from the device names where
+ * they follow the convention.
+ */
+export function normalizeStation(s: StationHeartbeat): StationHeartbeat {
+  const operator = s.operator || s.pi;
+  let devices = s.devices;
+  if (!devices) {
+    devices = [];
+    if (s.remote?.recorder) {
+      devices.push({
+        role: "recorder",
+        name: s.remote.recorder.hostname || s.hostname,
+        hostname: s.remote.recorder.hostname || s.hostname,
+        reachable: true,
+        remote: s.remote.recorder,
+      });
+    }
+    const pi = s.remote?.pi || operator?.remote;
+    if (pi || operator) {
+      devices.push({
+        role: "operator",
+        name: pi?.hostname || operator?.hostname,
+        hostname: operator?.hostname || pi?.hostname,
+        platform: { profile: "rpi5", label: "Raspberry Pi 5", generation: 1 },
+        reachable: operator?.reachable !== false,
+        error: operator?.reachable === false ? operator?.error : null,
+        remote: pi || null,
+      });
+    }
+  }
+  let rig = s.rig;
+  if (!rig?.id) {
+    const parsed = devices.map((d) => parseDeviceName(d.name)).find((p) => p.rig);
+    rig = parsed ? { id: parsed.rig, source: "device-name" } : { id: null, source: null };
+  }
+  const power = s.power
+    ? { ...s.power, operatorW: s.power.operatorW ?? s.power.piW ?? null }
+    : s.power;
+  return { ...s, operator, devices, rig, power };
+}
+
+/** Stations grouped by rig number, numerically, with unnamed rigs last. */
+export function groupByRig(stations: StationHeartbeat[]): {
+  rig: string | null;
+  stations: StationHeartbeat[];
+}[] {
+  const groups = new Map<string | null, StationHeartbeat[]>();
+  for (const s of stations) {
+    const key = s.rig?.id ?? null;
+    groups.set(key, [...(groups.get(key) || []), s]);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) =>
+      a === null ? 1 : b === null ? -1 : Number(a) - Number(b) || a.localeCompare(b),
+    )
+    .map(([rig, list]) => ({ rig, stations: list }));
+}
+
+/** "LattePanda Alpha 864s · Gen 2", falling back to whatever the board reported. */
+export function platformLabel(p: DevicePlatform | null | undefined): string | null {
+  if (!p) return null;
+  const name = p.label || p.model || null;
+  const gen = p.generation ? `Gen ${p.generation}` : null;
+  return [name, gen].filter(Boolean).join(" · ") || null;
+}
+
+export const ROLE_LABELS: Record<DeviceRole, string> = {
+  recorder: "Recorder",
+  operator: "Operator screen",
+  other: "Device",
 };
 
 // ---------- Derived state ----------
@@ -185,13 +329,15 @@ export function stationStatus(s: StationHeartbeat, now = Date.now()): StationSta
   const cam = s.camera?.status?.toLowerCase();
   const rec = s.recorder?.state?.toLowerCase();
   if (cam === "error" || (s.camera?.errors?.length ?? 0) > 0) return "degraded";
-  if (s.pi && s.pi.reachable === false) return "degraded";
+  // A rig with no camera cannot record, however healthy the rest of it is.
+  if (cam === "disconnected") return "degraded";
+  if (s.operator && s.operator.reachable === false) return "degraded";
   if (rec === "recording" || rec === "preflight") return "recording";
   return "ready";
 }
 
 export function freeSpaceWarning(s: StationHeartbeat): StationDisk | null {
-  const all = [...(s.disks || []), ...(s.pi?.disk ? [s.pi.disk] : [])];
+  const all = [...(s.disks || []), ...(s.operator?.disk ? [s.operator.disk] : [])];
   const low = all
     .filter((d) => d && d.totalBytes > 0)
     .sort((a, b) => a.freeBytes - b.freeBytes)[0];
@@ -244,16 +390,18 @@ export function relativeAge(ts: number): string {
  */
 export function remoteLinks(t: RemoteTarget | null | undefined) {
   if (!t?.host) return null;
-  const user = t.sshUser || "user";
   const vncPort = t.vncPort || 5900;
+  // No user when the board did not report one (e.g. it is unreachable), so
+  // ssh falls back to the caller's own login name rather than a wrong guess.
+  const target = t.sshUser ? `${t.sshUser}@${t.host}` : t.host;
   return {
     host: t.host,
     hostname: t.hostname || t.host,
-    sshUrl: `ssh://${user}@${t.host}`,
-    sshCommand: `ssh ${user}@${t.host}`,
+    sshUrl: `ssh://${target}`,
+    sshCommand: `ssh ${target}`,
     vncUrl: `vnc://${t.host}:${vncPort}`,
     vncTarget: `${t.host}:${vncPort}`,
-    /** Openable in a browser window; null until noVNC is bridged on the Pi. */
+    /** Openable in a browser window; null until noVNC is bridged on the board. */
     screenUrl: t.screenUrl || null,
   };
 }

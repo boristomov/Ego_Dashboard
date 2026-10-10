@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
-import type { StationsSnapshot } from "../lib/stations";
+import { normalizeStation, type StationsSnapshot } from "../lib/stations";
 
 /**
  * Poll the baked station snapshot.
@@ -23,7 +23,8 @@ export function useStations(pollMs = 60_000) {
     const tick = async () => {
       const s = await api.stations();
       if (!alive) return;
-      setSnapshot(s);
+      // Every consumer reads the current schema; old heartbeats are upgraded here.
+      setSnapshot(s ? { ...s, stations: (s.stations || []).map(normalizeStation) } : s);
       setLoading(false);
       timer = setTimeout(tick, pollMs);
     };

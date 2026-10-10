@@ -1,20 +1,43 @@
 # Recording-station monitoring
 
-Admin-only page at `#/stations` showing one panel per recording station: daily
-yield, quality, the recent task log, current settings, live health, and
-remote-in buttons.
+Admin-only page at `#/stations` showing one panel per recording station,
+grouped by rig: daily yield, quality, the recent task log, current settings,
+live health, and every device in the rig with its hardware and a way in.
 
 Three repositories cooperate:
 
 | Repo | Role |
 |---|---|
 | `ThothAI---Egocentric-Dataset-Collection` (recorder, ZED Box) | Builds and publishes the heartbeat |
-| `ThothAI_FRONTEND` (Pi) | Reports the Pi's own vitals to the recorder |
+| `ThothAI_FRONTEND` (operator device) | Reports its own vitals and hardware to the recorder |
 | `Ego_Dashboard` (this repo) | Collects heartbeats at build time and renders them |
+
+## Rigs, devices and generations
+
+A rig is one recorder plus one operator device (the touchscreen UI and glasses
+display). The operator board has changed between hardware generations:
+
+| Generation | Recorder | Operator device | Tailnet names |
+|---|---|---|---|
+| 1 | ZED Box (Orin NX) | Raspberry Pi 5 | `zed-box-1`, `raspberrypi-1` |
+| 2 | ZED Box (Orin Nano 8GB, no NVENC) + ZED X Mini | LattePanda Alpha | `zed-box-2`, `lattepanda-2` |
+
+Devices are named `<role>-<rig number>` in Tailscale, and **that suffix is what
+pairs them**: the recorder finds its operator device by looking for an online
+tailnet peer with an operator prefix (`raspberrypi`, `lattepanda`) and the same
+number. Adding a rig means naming its two devices consistently, nothing more.
+A new operator board type needs its prefix added to `ROLE_PREFIXES` in the
+recorder's `backend/app/rig.py`, the frontend's `station/identity.py`, and
+`src/lib/stations.ts` here.
+
+The rig number comes from the MagicDNS name, not the OS hostname — ZED Boxes
+ship with factory hostnames such as `GTW-ONX2-D2TMBKEQ`. `RIG_ID` in the
+recorder's environment overrides it. Stations with no rig number are listed
+under "Unassigned".
 
 ## Why stations push
 
-A station is a ZED Box Mini plus a Raspberry Pi, deployed on whatever network
+A station is a ZED Box plus an operator device, deployed on whatever network
 the site happens to have, behind NAT. Nothing can poll it, and this dashboard
 in particular is a **static site on GitHub Pages** — there is no server to
 receive a POST.
@@ -41,10 +64,10 @@ telemetry. If you need second-resolution data, open the station's own UI.
 ## Data flow
 
 ```
-ZED Box (recorder)                     Pi (receiver)
+ZED Box (recorder)                     Operator device (receiver, :5000)
   app/fleet.py                           GET /api/station/metrics
-  every 60s:                                ^  disk, power, network,
-    collect camera + recorder state         |  kiosk, tailnet address
+  every 60s:                                ^  hardware profile, disk, power,
+    collect camera + recorder state         |  network, kiosk, tailnet address
     summarise recordings/ ------------------+
     PUT s3://<raw-bucket>/_fleet/<stationId>.json
                        |
@@ -70,7 +93,8 @@ that is the same condition the upload queue already requires.
 | `FLEET_BUCKET` | `$S3_RAW_BUCKET` | Override the destination bucket |
 | `FLEET_PREFIX` | `_fleet/` | Key prefix |
 | `FLEET_INTERVAL_SEC` | `60` | Reporting cadence (minimum 15) |
-| `FLEET_PI_METRICS_URL` | `http://10.42.0.1:5000/api/station/metrics` | The Pi across the cable |
+| `FLEET_OPERATOR_METRICS_URL` | — | Pin the operator device's metrics URL (`FLEET_PI_METRICS_URL` is still honoured). Unset: same-rig tailnet peers, then the legacy cable address `10.42.0.1` |
+| `RIG_ID` | from tailnet name | Override the rig number |
 | `BATTERY_CAPACITY_WH` | `0` | Pack rating. Leave `0` to hide the charge estimate |
 | `BATTERY_OVERHEAD_W` | `3.0` | Draw the board sensors cannot see (camera PoC, conversion) |
 | `BATTERY_EFFICIENCY` | `0.90` | Supply conversion efficiency |
@@ -110,8 +134,8 @@ mixed-content blocking. `ThothAI_FRONTEND/deploy/install-novnc.sh` bridges
 supplies a real certificate. Serve and HTTPS certificates are tailnet-wide
 features an admin enables once.
 
-The Pi advertises `remote.pi.screenUrl` only when both the bridge and the
-certificate are in place, so the dashboard shows an "Open Pi screen" button
+The operator device advertises `remote.screenUrl` only when both the bridge and
+the certificate are in place, so the dashboard shows an "Open screen" button
 only when it will work, falling back to the `vnc://` handoff otherwise.
 
 ### Dashboard (CI)
@@ -168,8 +192,18 @@ bucket.
 
 `backend/app/fleet.py` builds it; `src/lib/stations.ts` types it. Bump
 `SCHEMA_VERSION` / `SUPPORTED_SCHEMA_VERSION` together when the shape changes.
-The UI tolerates missing fields, so a station on older firmware still renders —
-add fields rather than repurposing them.
+Prefer adding fields to repurposing them. When a shape does change, upgrade the
+old one in `normalizeStation()` so the rest of the UI only reads the current
+schema; rigs are updated one at a time, so several versions are live at once.
+
+| Version | Change |
+|---|---|
+| 2 | `pi` (operator vitals) and `remote.{recorder,pi}` (SSH targets) |
+| 3 | `rig`, `devices[]` (role, name, platform, remote per board); `pi` → `operator`; `power.piW` → `operatorW` + `operatorSource`; `remote` folded into `devices` |
+
+A schema-2 heartbeat is assumed to be generation 1 (its operator device was
+always a Pi). It carries OS hostnames rather than tailnet names, so it shows
+under "Unassigned" until its recorder is updated.
 
 Keep the payload small. It is rewritten every 60 seconds and describes *now*,
 so bounded summaries belong here and history belongs in the catalogue.
