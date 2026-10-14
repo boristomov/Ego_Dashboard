@@ -178,6 +178,12 @@ jobs:
           # Live station heartbeats (infra/station-heartbeats). Unset → the
           # stations page shows only the snapshot collected above.
           VITE_STATIONS_ENDPOINT: ${{ vars.VITE_STATIONS_ENDPOINT }}
+          # Data operations writes (infra/registry-api). Unset → /admin is a
+          # read-only view of the build-time snapshot.
+          VITE_REGISTRY_ENDPOINT: ${{ vars.VITE_REGISTRY_ENDPOINT }}
+          # Monitoring previews (infra/monitoring). Unset → /monitoring says
+          # it is not deployed.
+          VITE_MONITOR_ENDPOINT: ${{ vars.VITE_MONITOR_ENDPOINT }}
         run: npm run build
 
       - name: Setup Pages

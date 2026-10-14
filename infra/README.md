@@ -10,15 +10,17 @@ so it is reviewable and reproducible instead of existing only in a console.
 | `lifecycle/egodata-processed-prod.json` | Storage lifecycle for the processed bucket. |
 | `download-redirect/` | Cloudflare Worker that mints S3 presigned URLs at click time, so catalogue links never expire. See its own README. |
 | `station-heartbeats/` | Cloudflare Worker that serves the stations' `_fleet/` heartbeats live, so the stations page is not limited to the deploy cadence. Its key can only list and read `_fleet/`. See its own README. |
-| `registry-api/` | Cloudflare Worker that accepts admin edits to the data operations registry and stores them as one versioned JSON object in S3. Deliberately a separate Worker from `download-redirect`, which holds a read-only key. See its own README. |
+| `registry-api/` | Cloudflare Worker that accepts admin edits to the data operations registry (tasks, staff, assignments) and stores them as one versioned JSON object in S3, with staff login codes in a separate object. Deliberately a separate Worker from `download-redirect`, which holds a read-only key. See its own README. |
+| `monitoring/` | Cloudflare Worker behind the Monitoring page: lists the `_monitor/` preview index and signs short-lived clip URLs. Its key can only read the index and the 15 s preview clips. Accepts the registry sign-in. See its own README. |
 
 ## Buckets
 
 Production data lives in account `854929212137`, region `us-west-2`:
 
 - `egodata-raw-prod-854929212137-us-west-2-an` — SVO2 source footage, capture
-  metadata, thumbnails, station heartbeats under `_fleet/`, and the data
-  operations registry under `_registry/`.
+  metadata, thumbnails, station heartbeats under `_fleet/`, the data
+  operations registry under `_registry/`, and the Monitoring preview index
+  under `_monitor/` (each take's 15 s preview clip sits beside the take).
 - `egodata-processed-prod-854929212137-us-west-2-an` — MCAP, MP4, CVAT XML and
   annotation ZIPs.
 

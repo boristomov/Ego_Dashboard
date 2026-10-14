@@ -1,0 +1,29 @@
+{
+  "Version": "2012-10-17",
+  "Comment": [
+    "Least privilege for the ego-monitor Worker.",
+    "It can list the monitoring index, read index entries, and read the 15 s",
+    "monitor_clip.webm cut from each take. It cannot read the takes themselves",
+    "(SVO, MP4, MCAP), metadata, the registry, staff codes or heartbeats, and",
+    "it cannot write anything.",
+    "Replace the bucket name if the raw bucket differs."
+  ],
+  "Statement": [
+    {
+      "Sid": "ListTheMonitoringIndexOnly",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an",
+      "Condition": { "StringLike": { "s3:prefix": ["_monitor/*"] } }
+    },
+    {
+      "Sid": "ReadIndexEntriesAndClips",
+      "Effect": "Allow",
+      "Action": "s3:GetObject",
+      "Resource": [
+        "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an/_monitor/*",
+        "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an/*/monitor_clip.webm"
+      ]
+    }
+  ]
+}

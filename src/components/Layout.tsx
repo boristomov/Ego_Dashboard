@@ -16,6 +16,7 @@ import {
   Info,
   ExternalLink,
   AlertTriangle,
+  MonitorPlay,
 } from "lucide-react";
 import { useHealth } from "../hooks/useHealth";
 import { DATA_SOURCE } from "../lib/api";
@@ -33,6 +34,7 @@ const TEAM_NAV = [
 
 const ADMIN_NAV = [
   { to: "/stations", label: "Recording stations", icon: Radio },
+  { to: "/monitoring", label: "Monitoring", icon: MonitorPlay },
   { to: "/admin", label: "Data operations", icon: ClipboardList },
   { to: "/clients", label: "Client connections", icon: Users },
 ];
