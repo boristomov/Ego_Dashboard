@@ -58,9 +58,14 @@ crashed, the uplink dropped, or the rig lost power — and the UI derives
 `offline` from the age of `reportedAt`. One mechanism covers every failure
 mode, including the ones we did not anticipate.
 
-A consequence worth knowing: the freshest a panel can be is the station's
-reporting interval (60s) plus the deploy cron (5 min). This is monitoring, not
-telemetry. If you need second-resolution data, open the station's own UI.
+A consequence worth knowing: from the baked file, the freshest a panel can be
+is the station's reporting interval (60s) plus the time since the last deploy,
+and GitHub honours the 5-minute cron so unevenly that this reached six hours on
+2026-10-13, with live rigs shown offline throughout. With
+`VITE_STATIONS_ENDPOINT` set, the page instead reads the heartbeats live
+through `infra/station-heartbeats` (about a minute old) and keeps the baked
+file as its fallback. Either way this is monitoring, not telemetry; for
+second-resolution data, open the station's own UI.
 
 ## Data flow
 
@@ -73,10 +78,11 @@ ZED Box (recorder)                     Operator device (receiver, :5000)
     PUT s3://<raw-bucket>/_fleet/<stationId>.json
                        |
                        v
-GitHub Actions (every 5 min)
-  scripts/poll-stations.mjs  ->  public/stations.json
-                       |
-                       v
+GitHub Actions (every 5 min, nominally)    infra/station-heartbeats Worker
+  scripts/poll-stations.mjs                  GET /stations, read at request time
+    -> public/stations.json (fallback)         (when VITE_STATIONS_ENDPOINT is set)
+                       |                          |
+                       v                          v
   StationsPage  <-  useStations  <-  api.stations()
 ```
 

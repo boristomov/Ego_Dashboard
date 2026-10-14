@@ -15,6 +15,7 @@ type ViteEnv = {
     VITE_API_BASE?: string;
     VITE_DATA_SOURCE?: "static" | "proxy";
     VITE_BUILD_ID?: string;
+    VITE_STATIONS_ENDPOINT?: string;
     PROD?: boolean;
     BASE_URL?: string;
   };
@@ -27,6 +28,10 @@ export const DATA_SOURCE: "static" | "proxy" =
   VITE_ENV.VITE_DATA_SOURCE || (VITE_ENV.PROD ? "static" : "proxy");
 
 const API_BASE = VITE_ENV.VITE_API_BASE || "/api";
+
+// The live heartbeat Worker (infra/station-heartbeats). Unset, the stations
+// page reads only the snapshot baked at deploy time.
+const STATIONS_ENDPOINT = (VITE_ENV.VITE_STATIONS_ENDPOINT || "").replace(/\/+$/, "");
 
 // Cache buster for static-snapshot fetches. The workflow injects a fresh
 // VITE_BUILD_ID on every deploy so a new build immediately invalidates the
@@ -225,8 +230,18 @@ export const api = {
     }
   },
 
-  /** Recording-station heartbeats, collected from S3 by scripts/poll-stations.mjs. */
+  /** Recording-station heartbeats: live from the stations Worker when one is
+   *  configured, else (or when it fails) as collected by scripts/poll-stations.mjs
+   *  at deploy time, which can be hours old. */
   stations: async (): Promise<StationsSnapshot | null> => {
+    if (STATIONS_ENDPOINT) {
+      try {
+        const res = await fetch(`${STATIONS_ENDPOINT}/stations`, { cache: "no-store" });
+        if (res.ok) return (await res.json()) as StationsSnapshot;
+      } catch {
+        // The baked snapshot below is the fallback.
+      }
+    }
     try {
       const res = await fetch(
         bust(`${BASE_URL}stations.json`),

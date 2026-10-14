@@ -9,6 +9,7 @@ so it is reviewable and reproducible instead of existing only in a console.
 | `lifecycle/egodata-raw-prod.json` | Storage lifecycle for the raw bucket. |
 | `lifecycle/egodata-processed-prod.json` | Storage lifecycle for the processed bucket. |
 | `download-redirect/` | Cloudflare Worker that mints S3 presigned URLs at click time, so catalogue links never expire. See its own README. |
+| `station-heartbeats/` | Cloudflare Worker that serves the stations' `_fleet/` heartbeats live, so the stations page is not limited to the deploy cadence. Its key can only list and read `_fleet/`. See its own README. |
 | `registry-api/` | Cloudflare Worker that accepts admin edits to the data operations registry and stores them as one versioned JSON object in S3. Deliberately a separate Worker from `download-redirect`, which holds a read-only key. See its own README. |
 
 ## Buckets

@@ -175,6 +175,9 @@ jobs:
           # variables to activate it. Non-secret values.
           VITE_TURNSTILE_SITE_KEY: ${{ vars.VITE_TURNSTILE_SITE_KEY }}
           VITE_CAPTCHA_ENDPOINT: ${{ vars.VITE_CAPTCHA_ENDPOINT }}
+          # Live station heartbeats (infra/station-heartbeats). Unset → the
+          # stations page shows only the snapshot collected above.
+          VITE_STATIONS_ENDPOINT: ${{ vars.VITE_STATIONS_ENDPOINT }}
         run: npm run build
 
       - name: Setup Pages

@@ -210,6 +210,10 @@ export type StationsSnapshot = {
   stations: StationHeartbeat[];
   /** Set when the poller could not read S3 at all. */
   error?: string | null;
+  /** "live" when served by infra/station-heartbeats; absent in the baked file. */
+  source?: "live";
+  /** Heartbeats the live Worker could not read or had to leave out. */
+  warnings?: string[];
 };
 
 // ---------- Rigs and devices ----------
