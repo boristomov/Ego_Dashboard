@@ -30,7 +30,7 @@ export const REGISTRY_WRITE_CONFIGURED = !!ENDPOINT;
 
 const TOKEN_KEY = "ego_registry_token";
 
-export type RegistryKind = "task" | "operator" | "asset" | "environment";
+export type RegistryKind = "task" | "operator" | "asset" | "environment" | "assignment";
 
 export class RegistryApiError extends Error {
   status: number;
@@ -47,6 +47,9 @@ function token(): string | null {
     return null;
   }
 }
+
+/** The session token, for other Workers that accept it (infra/monitoring). */
+export const registryToken = token;
 
 export function isSignedIn(): boolean {
   return !!token();
@@ -183,10 +186,22 @@ export function fetchRegistry(): Promise<Registry> {
  * a copy of the document it has just read, so a browser tab left open since
  * this morning cannot revert whatever else has been saved in the meantime.
  */
+export type SaveResult<T> = {
+  ok: true;
+  record: T;
+  created: boolean;
+  /** Assignments retired because this one took over their station or person. */
+  replaced?: string[];
+  /** A new person's login code, returned once, on creation. */
+  pin?: string;
+  /** Set when the person saved but their code could not be issued. */
+  pinError?: string;
+};
+
 export function saveRecord<T extends { id: string }>(
   kind: RegistryKind,
   record: T,
-): Promise<{ ok: true; record: T; created: boolean }> {
+): Promise<SaveResult<T>> {
   return req(`/registry/${kind}/${encodeURIComponent(record.id)}`, {
     method: "PUT",
     headers: { "content-type": "application/json" },
@@ -213,10 +228,30 @@ export function deleteRecord(
   );
 }
 
+export type StaffCodes = {
+  /** Operator id → 4-digit login code. */
+  pins: Record<string, string>;
+  issued: Record<string, { at: string; by: string }>;
+};
+
+/**
+ * Every person's login code. Admins only, and never part of the registry
+ * document, which is the kind of thing that ends up in a public bundle.
+ */
+export function fetchStaffCodes(): Promise<StaffCodes> {
+  return req<StaffCodes>("/staff/codes");
+}
+
+/** Issue a fresh code, invalidating the old one at the next station sync. */
+export function regenerateStaffCode(operatorId: string): Promise<{ pin: string }> {
+  return req(`/staff/${encodeURIComponent(operatorId)}/code`, { method: "POST" });
+}
+
 export type RegistryHealth = {
   ok: boolean;
   schemaVersion: number;
   store: string | null;
+  staffCodes?: string | null;
   signable: boolean;
   auth: {
     cloudflareAccess: boolean;

@@ -4,16 +4,21 @@ import {
   Boxes,
   ClipboardList,
   Layers,
+  Link2,
   Link2Off,
   Loader2,
   Package,
+  Pencil,
+  Plus,
   ScanLine,
   Trophy,
   Users,
 } from "lucide-react";
 import { useRegistry } from "../hooks/useRegistry";
 import { useCatalogue } from "../hooks/useCatalogue";
+import { useStations } from "../hooks/useStations";
 import {
+  activeAssignments,
   assetReadiness,
   environmentsUsingAsset,
   MIN_TAKES_FOR_YIELD,
@@ -24,38 +29,72 @@ import {
   type Environment3D,
   type LifecycleState,
   type Operator,
+  type AssignmentTarget,
   type TakeRecord,
   type TaskDefinition,
 } from "../lib/registry";
+import { AssignmentsBoard } from "../components/admin/AssignmentsBoard";
+import { StaffTab } from "../components/admin/StaffTab";
+import {
+  RegistryAuthBar,
+  useRegistryAuth,
+} from "../components/admin/RegistryAuthBar";
+import {
+  AssetEditor,
+  AssignmentEditor,
+  EnvironmentEditor,
+  OperatorEditor,
+  TaskEditor,
+} from "../components/admin/RecordEditors";
 
 /**
  * Data operations admin panel.
  *
- * Read-only for now, on purpose. The dashboard is a static site with no
- * backend, so the write path has to go through the Cloudflare Worker, and
- * shipping the reader first means the schema gets exercised against real
- * screens before anything is persisted in it. Every "Add" affordance below is
- * therefore deliberately absent rather than disabled-and-lying.
+ * Editing is gated on the registry write API being deployed and signed in to,
+ * and the page is a complete reader without it. That is not a fallback so much
+ * as the normal state for anyone who is not authoring: the write path is a
+ * separate Cloudflare Worker holding the only credential that can change
+ * anything, and this bundle is static and public.
  */
 
-type Tab = "tasks" | "operators" | "assets" | "environments" | "performance";
+type Tab = "assignments" | "tasks" | "staff" | "assets" | "environments" | "performance";
 
 const TABS: { id: Tab; label: string; icon: typeof ClipboardList }[] = [
+  { id: "assignments", label: "Assignments", icon: Link2 },
   { id: "tasks", label: "Tasks", icon: ClipboardList },
-  { id: "operators", label: "Operators", icon: Users },
+  { id: "staff", label: "Staff", icon: Users },
   { id: "assets", label: "3D assets", icon: Package },
   { id: "environments", label: "Environments", icon: Layers },
-  { id: "performance", label: "Staff performance", icon: Trophy },
+  { id: "performance", label: "Performance", icon: Trophy },
 ];
 
+/** Which record is open in an editor. `null` id means "new". */
+type Editing =
+  | { kind: "task"; record: TaskDefinition | null }
+  | { kind: "operator"; record: Operator | null }
+  | { kind: "asset"; record: Asset3D | null }
+  | { kind: "environment"; record: Environment3D | null }
+  | { kind: "assignment"; target?: AssignmentTarget }
+  | null;
+
 export function AdminPage() {
-  const { registry, assetsById, warnings, loading, missing, error } =
+  const { registry, assetsById, warnings, loading, missing, error, reload } =
     useRegistry();
-  const [tab, setTab] = useState<Tab>("tasks");
+  const { stations, referenceMs } = useStations();
+  const [tab, setTab] = useState<Tab>("assignments");
+  const { canEdit, signedIn, setSignedIn } = useRegistryAuth();
+  const [editing, setEditing] = useState<Editing>(null);
+  const [saves, setSaves] = useState(0);
+  const onSaved = () => {
+    reload();
+    setSaves((n) => n + 1);
+  };
+  const stationNumbers = stations.flatMap((s) => (s.rig?.id ? [s.rig.id] : []));
 
   const counts: Record<Tab, number> = {
+    assignments: activeAssignments(registry).length,
     tasks: registry.tasks.length,
-    operators: registry.operators.length,
+    staff: registry.operators.filter((o) => o.state !== "retired").length,
     assets: registry.assets.length,
     environments: registry.environments.length,
     performance: registry.operators.length,
@@ -65,22 +104,27 @@ export function AdminPage() {
     <div className="flex flex-col gap-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            <span className="brand-grad">Data operations</span>{" "}
-            <span className="text-text-muted">admin</span>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            <span className="brand-grad">Data operations</span>
           </h1>
-          <p className="mt-1 max-w-3xl text-[0.78rem] text-text-muted">
-            Task descriptions, operators, and the 3D assets and environments
-            recordings are reconstructed into. Stations pull this registry, so
-            what is written here is what operators see on the rig.
+          <p className="mt-1 max-w-3xl text-sm text-text-muted">
+            Who records what, where. Stations sync this within a minute, so a
+            task assigned here is what the operator sees on the rig.
           </p>
         </div>
         {loading && (
-          <span className="flex items-center gap-1.5 text-[0.7rem] text-text-muted">
+          <span className="flex items-center gap-1.5 text-sm text-text-muted">
             <Loader2 size={12} className="animate-spin" /> Loading
           </span>
         )}
       </div>
+
+      <RegistryAuthBar
+        signedIn={signedIn}
+        setSignedIn={setSignedIn}
+        source={registry.source}
+        onChanged={reload}
+      />
 
       {error && (
         <Banner
@@ -89,47 +133,167 @@ export function AdminPage() {
           body={`${error} — the lists below are empty because nothing loaded, not because nothing exists.`}
         />
       )}
-      {missing && !loading && <NotPublishedYet />}
+      {missing && !loading && <NotPublishedYet canEdit={canEdit} />}
       {warnings.length > 0 && <WarningList warnings={warnings} />}
 
-      <div className="flex flex-wrap gap-1.5 border-b border-border pb-2">
+      <div className="flex flex-wrap items-center gap-2 border-b border-border pb-2.5">
         {TABS.map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
             className={[
-              "flex items-center gap-2 rounded-md px-3 py-1.5 text-[0.78rem] font-medium transition",
+              "flex items-center gap-2 rounded-lg px-3.5 py-2 text-[0.95rem] font-medium transition",
               tab === t.id
                 ? "border border-accent/40 bg-accent/10 text-accent-hover"
                 : "border border-transparent text-text-muted hover:border-border hover:bg-panel-hover hover:text-text",
             ].join(" ")}
           >
-            <t.icon size={14} />
+            <t.icon size={17} />
             {t.label}
-            <span className="rounded-full bg-input px-1.5 py-0.5 text-[0.6rem] text-text-dim">
+            <span className="rounded-full bg-input px-2 py-0.5 text-xs text-text-dim">
               {counts[t.id]}
             </span>
           </button>
         ))}
+
+        {canEdit && NEW_ACTION[tab] && (
+          <button
+            className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-accent/50 bg-accent/15 px-3.5 py-2 text-sm font-semibold text-accent-hover transition hover:bg-accent/25"
+            onClick={() =>
+              setEditing(
+                tab === "assignments"
+                  ? { kind: "assignment" }
+                  : ({
+                      kind:
+                        tab === "tasks"
+                          ? "task"
+                          : tab === "staff"
+                            ? "operator"
+                            : tab === "assets"
+                              ? "asset"
+                              : "environment",
+                      record: null,
+                    } as Editing),
+              )
+            }
+          >
+            <Plus size={16} /> {NEW_ACTION[tab]}
+          </button>
+        )}
       </div>
 
-      {tab === "tasks" && (
-        <TasksTab tasks={registry.tasks} assetsById={assetsById} />
+      {tab === "assignments" && (
+        <AssignmentsBoard
+          registry={registry}
+          stations={stations}
+          referenceMs={referenceMs}
+          canEdit={canEdit}
+          onAssign={(target) => setEditing({ kind: "assignment", target })}
+          onChanged={onSaved}
+        />
       )}
-      {tab === "operators" && <OperatorsTab operators={registry.operators} />}
+      {tab === "tasks" && (
+        <TasksTab
+          tasks={registry.tasks}
+          assetsById={assetsById}
+          onEdit={canEdit ? (r) => setEditing({ kind: "task", record: r }) : undefined}
+        />
+      )}
+      {tab === "staff" && (
+        <StaffTab
+          registry={registry}
+          stations={stations}
+          referenceMs={referenceMs}
+          canEdit={canEdit}
+          refreshKey={saves}
+          onEdit={(r) => setEditing({ kind: "operator", record: r })}
+        />
+      )}
       {tab === "assets" && (
-        <AssetsTab assets={registry.assets} environments={registry.environments} />
+        <AssetsTab
+          assets={registry.assets}
+          environments={registry.environments}
+          onEdit={canEdit ? (r) => setEditing({ kind: "asset", record: r }) : undefined}
+        />
       )}
       {tab === "environments" && (
         <EnvironmentsTab
           environments={registry.environments}
           assetsById={assetsById}
+          onEdit={
+            canEdit ? (r) => setEditing({ kind: "environment", record: r }) : undefined
+          }
         />
       )}
       {tab === "performance" && (
         <PerformanceTab operators={registry.operators} />
       )}
+
+      {editing?.kind === "task" && (
+        <TaskEditor
+          existing={editing.record}
+          registry={registry}
+          onSaved={onSaved}
+          onClose={() => setEditing(null)}
+        />
+      )}
+      {editing?.kind === "operator" && (
+        <OperatorEditor
+          existing={editing.record}
+          registry={registry}
+          onSaved={onSaved}
+          onClose={() => setEditing(null)}
+        />
+      )}
+      {editing?.kind === "asset" && (
+        <AssetEditor
+          existing={editing.record}
+          registry={registry}
+          onSaved={onSaved}
+          onClose={() => setEditing(null)}
+        />
+      )}
+      {editing?.kind === "environment" && (
+        <EnvironmentEditor
+          existing={editing.record}
+          registry={registry}
+          onSaved={onSaved}
+          onClose={() => setEditing(null)}
+        />
+      )}
+      {editing?.kind === "assignment" && (
+        <AssignmentEditor
+          registry={registry}
+          stations={stationNumbers}
+          initialTarget={editing.target}
+          onSaved={onSaved}
+          onClose={() => setEditing(null)}
+        />
+      )}
     </div>
+  );
+}
+
+const NEW_ACTION: Record<Tab, string> = {
+  assignments: "Assign a task",
+  tasks: "New task",
+  staff: "Add staff member",
+  assets: "New asset",
+  environments: "New environment",
+  performance: "",
+};
+
+/** Edit affordance shared by the card tabs. */
+function EditButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      className="btn flex-shrink-0 !px-2.5 !py-1.5"
+      onClick={onClick}
+      title="Edit"
+      aria-label="Edit"
+    >
+      <Pencil size={15} />
+    </button>
   );
 }
 
@@ -138,9 +302,11 @@ export function AdminPage() {
 function TasksTab({
   tasks,
   assetsById,
+  onEdit,
 }: {
   tasks: TaskDefinition[];
   assetsById: Map<string, Asset3D>;
+  onEdit?: (t: TaskDefinition) => void;
 }) {
   if (!tasks.length) {
     return (
@@ -160,32 +326,32 @@ function TasksTab({
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="truncate text-[0.95rem] font-semibold">
+                  <h3 className="truncate text-lg font-semibold">
                     {t.name}
                   </h3>
                   <StateChip state={t.state} />
                   <span
-                    className="rounded-full bg-input px-1.5 py-0.5 text-[0.6rem] text-text-dim"
+                    className="rounded-full bg-input px-2 py-0.5 text-xs text-text-dim"
                     title="Recordings pin the version in force when they were made"
                   >
                     v{t.version}
                   </span>
                 </div>
-                <code className="text-[0.65rem] text-text-dim">{t.slug}</code>
+                <code className="text-sm text-text-dim">{t.slug}</code>
               </div>
-              {!ready && (
-                <AlertTriangle
-                  size={15}
-                  className="mt-0.5 flex-shrink-0 text-amber-300"
-                />
-              )}
+              <div className="flex flex-shrink-0 items-center gap-1.5">
+                {!ready && (
+                  <AlertTriangle size={15} className="text-amber-300" />
+                )}
+                {onEdit && <EditButton onClick={() => onEdit(t)} />}
+              </div>
             </div>
 
             {/* What the operator reads in large type on the rig. */}
-            <p className="mt-2 text-[0.85rem] font-medium text-text">
+            <p className="mt-2 text-base font-medium text-text">
               {t.headline}
             </p>
-            <p className="mt-1 line-clamp-3 text-[0.75rem] leading-relaxed text-text-muted">
+            <p className="mt-1 line-clamp-3 text-sm leading-relaxed text-text-muted">
               {t.description}
             </p>
 
@@ -200,7 +366,7 @@ function TasksTab({
               </div>
             )}
 
-            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[0.68rem] text-text-dim">
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-text-dim">
               {t.sites?.length ? (
                 <span>Sites: {t.sites.join(", ")}</span>
               ) : (
@@ -213,7 +379,7 @@ function TasksTab({
             </div>
 
             {problems.length > 0 && (
-              <ul className="mt-2 flex flex-col gap-0.5 rounded-md border border-warn/30 bg-warn/10 px-2.5 py-2 text-[0.68rem] text-amber-200">
+              <ul className="mt-2 flex flex-col gap-0.5 rounded-md border border-warn/30 bg-warn/10 px-3 py-2 text-sm text-amber-200">
                 {problems.map((p) => (
                   <li key={p}>{p}</li>
                 ))}
@@ -243,7 +409,7 @@ function ObjectChip({
   const label = objectRefLabel(objectRef, assetsById);
   if (objectRef.kind === "described") {
     return (
-      <span className="rounded-full border border-border bg-input px-2 py-0.5 text-[0.68rem] text-text-muted">
+      <span className="rounded-full border border-border bg-input px-2.5 py-1 text-sm text-text-muted">
         {label}
       </span>
     );
@@ -251,7 +417,7 @@ function ObjectChip({
   const known = assetsById.has(objectRef.assetId);
   return (
     <span
-      className={`flex items-center gap-1 rounded-full border px-2 py-0.5 text-[0.68rem] ${
+      className={`flex items-center gap-1 rounded-full border px-2.5 py-1 text-sm ${
         known
           ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
           : "border-err/40 bg-err/10 text-red-300"
@@ -264,43 +430,16 @@ function ObjectChip({
   );
 }
 
-// ---------------- Operators ----------------
-
-function OperatorsTab({ operators }: { operators: Operator[] }) {
-  if (!operators.length) {
-    return (
-      <Empty
-        icon={Users}
-        title="No operators registered"
-        body="Operators registered here can be selected on the rig, so recordings carry a stable code instead of a typed name."
-      />
-    );
-  }
-  return (
-    <Card className="!p-0 overflow-hidden">
-      <Table
-        head={["Operator", "Code", "Site", "Stations", "Since", "Status"]}
-        rows={operators.map((o) => [
-          <span className="font-medium text-text">{o.name}</span>,
-          <code className="text-[0.7rem] text-cyan-300">{o.code}</code>,
-          o.site,
-          o.stationIds?.length ? o.stationIds.join(", ") : "—",
-          o.startedAt ? new Date(o.startedAt).toLocaleDateString() : "—",
-          <StateChip state={o.state} />,
-        ])}
-      />
-    </Card>
-  );
-}
-
 // ---------------- Assets ----------------
 
 function AssetsTab({
   assets,
   environments,
+  onEdit,
 }: {
   assets: Asset3D[];
   environments: Environment3D[];
+  onEdit?: (a: Asset3D) => void;
 }) {
   if (!assets.length) {
     return (
@@ -325,7 +464,10 @@ function AssetsTab({
                   <span className="text-[0.65rem] text-text-dim">{a.category}</span>
                 )}
               </div>
-              <StateChip state={a.state} />
+              <div className="flex flex-shrink-0 items-center gap-1.5">
+                <StateChip state={a.state} />
+                {onEdit && <EditButton onClick={() => onEdit(a)} />}
+              </div>
             </div>
 
             {a.description && (
@@ -380,9 +522,11 @@ function AssetsTab({
 function EnvironmentsTab({
   environments,
   assetsById,
+  onEdit,
 }: {
   environments: Environment3D[];
   assetsById: Map<string, Asset3D>;
+  onEdit?: (e: Environment3D) => void;
 }) {
   if (!environments.length) {
     return (
@@ -411,7 +555,10 @@ function EnvironmentsTab({
                   {env.splatFormat ? ` · .${env.splatFormat}` : ""}
                 </span>
               </div>
-              <StateChip state={env.state} />
+              <div className="flex flex-shrink-0 items-center gap-1.5">
+                <StateChip state={env.state} />
+                {onEdit && <EditButton onClick={() => onEdit(env)} />}
+              </div>
             </div>
 
             {env.description && (
@@ -624,7 +771,7 @@ function Card({
 
 function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="text-[0.6rem] font-semibold uppercase tracking-[0.16em] text-text-dim">
+    <span className="text-xs font-semibold uppercase tracking-[0.14em] text-text-dim">
       {children}
     </span>
   );
@@ -648,7 +795,7 @@ const STATE_STYLES: Record<LifecycleState, string> = {
 function StateChip({ state }: { state: LifecycleState }) {
   return (
     <span
-      className={`rounded-full border px-1.5 py-0.5 text-[0.6rem] uppercase tracking-wider ${STATE_STYLES[state]}`}
+      className={`rounded-full border px-2 py-0.5 text-xs font-semibold uppercase tracking-wider ${STATE_STYLES[state]}`}
     >
       {state}
     </span>
@@ -735,17 +882,29 @@ function WarningList({ warnings }: { warnings: string[] }) {
   );
 }
 
-function NotPublishedYet() {
+function NotPublishedYet({ canEdit }: { canEdit: boolean }) {
   return (
     <div className="rounded-lg border border-border bg-panel/60 px-4 py-4 text-[0.78rem] text-text-muted">
       <div className="font-semibold text-text">No registry published yet</div>
       <p className="mt-1 max-w-3xl leading-relaxed">
-        Nothing has been authored, which is expected before the write path is
-        connected. Editing needs an authenticated endpoint, since this site is
-        static and cannot persist anything itself — the plan is to extend the
-        existing download Worker with authenticated writes and have it
-        republish <code className="text-text">registry.json</code> for stations
-        to pull.
+        {canEdit ? (
+          <>
+            Nothing has been authored yet. Start with a{" "}
+            <strong className="text-text">3D asset</strong> or an{" "}
+            <strong className="text-text">operator</strong> — tasks can then
+            reference them, though a task needs neither to be written. New
+            records are drafts until you set them active, so nothing reaches a
+            rig before you mean it to.
+          </>
+        ) : (
+          <>
+            Nothing has been authored, which is expected before the write API is
+            deployed. This site is static and cannot persist anything itself, so
+            editing goes through a separate Cloudflare Worker that holds the only
+            credential able to change the registry. Setup is in{" "}
+            <code className="text-text">infra/registry-api</code>.
+          </>
+        )}
       </p>
     </div>
   );

@@ -17,6 +17,10 @@ import {
   validateRecord,
   signS3Request,
   HttpError,
+  isWeakPin,
+  generatePin,
+  applyPinIssue,
+  applyPinRemove,
 } from "./worker.js";
 
 let passed = 0;
@@ -401,6 +405,105 @@ await checkAsync("the slash between key segments is not escaped", async () => {
   if (!url.endsWith("/_registry/nested/deep.json")) {
     throw new Error(`path was mangled: ${url}`);
   }
+});
+
+// ---------------------------------------------------------------------------
+// Assignments — what locks a station to a task
+// ---------------------------------------------------------------------------
+
+const staffed = () => {
+  let r = applyUpsert(base(), "task", task(), "boris", T0).registry;
+  r = applyUpsert(r, "task", task({ id: "task-fold", slug: "fold", name: "Fold", state: "draft" }), "boris", T0).registry;
+  r = applyUpsert(r, "operator", { id: "op-ana", name: "Ana", code: "OP-001", site: "Malaysia", state: "active" }, "boris", T0).registry;
+  return r;
+};
+const assign = (over = {}) => ({
+  id: "as-1",
+  taskId: "task-tea",
+  target: { kind: "station", station: "3" },
+  ...over,
+});
+
+check("an assignment is active and locked unless told otherwise", () => {
+  const { record } = applyUpsert(staffed(), "assignment", assign(), "boris", T1);
+  eq([record.state, record.locked], ["active", true], "state/locked");
+});
+
+check("assigning a station again retires its previous assignment", () => {
+  const one = applyUpsert(staffed(), "assignment", assign(), "boris", T0).registry;
+  const two = applyUpsert(one, "assignment", assign({ id: "as-2" }), "sara", T1);
+  eq(two.replaced, ["as-1"], "replaced");
+  eq(two.registry.assignments.map((a) => [a.id, a.state]), [["as-1", "retired"], ["as-2", "active"]], "states");
+  eq(two.registry.assignments[0].provenance.updatedBy, "sara", "who retired it");
+});
+
+check("a person's assignment does not displace a station's", () => {
+  const one = applyUpsert(staffed(), "assignment", assign(), "boris", T0).registry;
+  const two = applyUpsert(one, "assignment", assign({ id: "as-2", target: { kind: "operator", operatorId: "op-ana" } }), "boris", T1);
+  eq(two.replaced, [], "replaced");
+});
+
+check("assignments must point at an active task, a real person, a station number", () => {
+  rejects(() => applyUpsert(staffed(), "assignment", assign({ taskId: "nope" }), "b", T0), 400, "unknown task");
+  rejects(() => applyUpsert(staffed(), "assignment", assign({ taskId: "task-fold" }), "b", T0), 400, "make it active");
+  rejects(() => applyUpsert(staffed(), "assignment", assign({ target: { kind: "operator", operatorId: "ghost" } }), "b", T0), 400, "unknown person");
+  rejects(() => applyUpsert(staffed(), "assignment", assign({ target: { kind: "station", station: "zed-box-3" } }), "b", T0), 400, "station number");
+  rejects(() => applyUpsert(staffed(), "assignment", assign({ target: { kind: "site" } }), "b", T0), 400, "station|operator");
+});
+
+check("a task or person with assignment history cannot be hard-deleted", () => {
+  let r = applyUpsert(staffed(), "assignment", assign({ target: { kind: "operator", operatorId: "op-ana" } }), "b", T0).registry;
+  rejects(() => applyDelete(r, "task", "task-tea", "b", T1, true), 409, "assignment as-1");
+  rejects(() => applyDelete(r, "operator", "op-ana", "b", T1, true), 409, "assignment as-1");
+  r = applyDelete(r, "assignment", "as-1", "b", T1, false);
+  eq(r.assignments[0].state, "retired", "unassign retires");
+});
+
+check("a v1 document without assignments still takes an assignment", () => {
+  const r = staffed();
+  delete r.assignments;
+  r.assignments = r.assignments || [];
+  const { registry } = applyUpsert(r, "assignment", assign(), "b", T0);
+  eq(registry.schemaVersion, 2, "schema bumped on write");
+});
+
+// ---------------------------------------------------------------------------
+// Staff codes
+// ---------------------------------------------------------------------------
+
+check("guessable codes are refused", () => {
+  for (const p of ["0000", "7777", "1234", "6789", "9876", "3210", "1212", "1122", "1999", "2026"]) {
+    if (!isWeakPin(p)) throw new Error(`${p} passed as strong`);
+  }
+  for (const p of ["4831", "0592", "7306"]) {
+    if (isWeakPin(p)) throw new Error(`${p} rejected as weak`);
+  }
+});
+
+check("issued codes are unique, and reissuing replaces only that person's", () => {
+  const seq = [1234, 4831, 4831, 592];
+  let i = 0;
+  const rand = () => seq[i++ % seq.length];
+  let access = { pins: {}, issued: {} };
+  const a = applyPinIssue(access, "op-ana", "boris", T0, rand);
+  eq(a.pin, "4831", "skips the weak 1234");
+  const b = applyPinIssue(a.access, "op-ben", "boris", T0, rand);
+  eq(b.pin, "0592", "skips the code Ana has");
+  const c = applyPinIssue(b.access, "op-ana", "sara", T1, () => 7306);
+  eq(c.access.pins, { "op-ana": "7306", "op-ben": "0592" }, "pins");
+  eq(c.access.issued["op-ana"].by, "sara", "who reissued");
+  const d = applyPinRemove(c.access, "op-ben", T1);
+  eq(Object.keys(d.pins), ["op-ana"], "removed");
+});
+
+check("a full code space says so instead of looping", () => {
+  rejects(() => generatePin(new Set(), () => 1111), 507, "no unused staff codes");
+});
+
+check("random codes are well spread", () => {
+  const seen = new Set();
+  for (let n = 0; n < 300; n++) seen.add(generatePin(seen));
+  eq(seen.size, 300, "300 distinct codes");
 });
 
 // ---------------------------------------------------------------------------

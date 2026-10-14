@@ -53,8 +53,32 @@ altogether and is the better option.)
 | `GET` | `/registry` | yes | The live document |
 | `PUT` | `/registry/<kind>/<id>` | yes | Create or update one record |
 | `DELETE` | `/registry/<kind>/<id>` | yes | Retire it (`?hard=1` to remove) |
+| `GET` | `/staff/codes` | yes | Every person's 4-digit login code, and when it was issued |
+| `POST` | `/staff/<id>/code` | yes | Issue a new code for one person (the old one stops working) |
 
-`<kind>` is `task`, `operator`, `asset` or `environment`.
+`<kind>` is `task`, `operator`, `asset`, `environment` or `assignment`.
+
+### Staff login codes
+
+Creating a person (`PUT /registry/operator/<new id>`) also issues their code
+and returns it once as `pin` in the response, so whoever added them can hand
+it over on the spot. Codes live in `_registry/access.json`, **not** in the
+registry document — the dashboard bakes the registry into its public site,
+and codes must never ride along. Codes are unique across staff and skip the
+guessable ones (`0000`, `1234`, `1111`, years). A hard delete removes the
+code; retiring a person keeps it on file, but the rigs refuse anyone whose
+state is not `active`.
+
+### Assignments
+
+An assignment binds an existing task to a target, either a station
+(`{"kind":"station","station":"3"}`) or a person
+(`{"kind":"operator","operatorId":"op-…"}`), optionally `locked`. Saving one
+retires any other active assignment to the same target and reports it as
+`replaced`, so there is only ever one per target and the history is kept.
+The rig resolves its task station first, then person: a station's setup (the
+objects on the table) outranks what the person was assigned elsewhere. A
+locked assignment hides task selection on the operator screen.
 
 ### What the server enforces
 
@@ -168,10 +192,18 @@ deploying the frontend before the Worker cannot break anything.
 
 ### 6. Let the rigs read it
 
-Stations read `s3://<bucket>/_registry/registry.json` directly with the
-credentials they already use for `_fleet/` heartbeats — no Worker dependency
-and no auth on the read path, so an outage here cannot stop a rig recording.
-Add `s3:GetObject` on `_registry/*` to the station role.
+Stations read `s3://<bucket>/_registry/registry.json` and
+`_registry/access.json` directly with the credentials they already use for
+`_fleet/` heartbeats — no Worker dependency and no auth on the read path, so
+an outage here cannot stop a rig recording. Each polls once a minute with
+`If-None-Match` and keeps the last good copy on disk (mode 600), so a station
+that boots without signal still knows its staff and assignments. Add
+`s3:GetObject` on `_registry/*` to the station role.
+
+### 7. Share the session secret with Monitoring
+
+`infra/monitoring` accepts the tokens this Worker issues, so the Monitoring
+page needs no second sign-in. Give `ego-monitor` the same `SESSION_SECRET`.
 
 ## Verifying
 
@@ -190,7 +222,7 @@ rather than as a 500 on somebody's first save.
 ## Tests
 
 ```bash
-node infra/registry-api/selftest.mjs      # 29 checks, no deploy, no AWS
+node infra/registry-api/selftest.mjs      # 39 checks, no deploy, no AWS
 ```
 
 Covers the merge and validation rules above, plus the SigV4 signing. Signing
@@ -211,10 +243,11 @@ on hard delete each produce exactly one failure.
 
 ## Not done yet
 
-- **Editing forms.** The endpoints and the client (`src/lib/registryApi.ts`)
-  exist; `/admin` still renders read-only.
 - **Rate limiting on `/auth`.** Brute force is bounded by the client-side KDF
   making each attempt cost ~300 ms of the attacker's own CPU, which is weak
   protection. Cloudflare Access removes the concern entirely.
 - **Operator emails are in the document the rigs read.** Fine while the rigs
   are ours; worth splitting a public projection if that changes.
+- **Staff codes are readable by every station key.** A 4-digit code unlocks a
+  rig for a shift, not data, and the rig's keypad is rate-limited. If codes
+  ever gate anything more, hash them in `access.json` instead.

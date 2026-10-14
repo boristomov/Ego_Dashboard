@@ -41,8 +41,9 @@ export const COLLECTION_SITES = [
 
 export type CollectionSite = (typeof COLLECTION_SITES)[number];
 
-/** Bump together with the writer; readers tolerate older payloads. */
-export const REGISTRY_SCHEMA_VERSION = 1;
+/** Bump together with the writer; readers tolerate older payloads.
+ *  v2 added `assignments`. */
+export const REGISTRY_SCHEMA_VERSION = 2;
 
 /**
  * Audit trail. Every registry record carries one, because the first question
@@ -275,6 +276,47 @@ export type TaskDefinition = {
   provenance: Provenance;
 };
 
+/**
+ * Fields whose edit means operators are being told something new.
+ *
+ * Must stay in sync with TASK_CONTENT_FIELDS in infra/registry-api/worker.js,
+ * which is the one that actually decides. This copy exists so the editor can
+ * warn "saving this publishes v3" *before* the save, rather than leaving the
+ * admin to discover the bump afterwards; the server remains authoritative.
+ *
+ * Cosmetic fields are deliberately absent. Recordings pin the version, so
+ * bumping on a typo fix in the admin-only display name would churn them for a
+ * change no operator could observe.
+ */
+export const TASK_CONTENT_FIELDS = [
+  "headline",
+  "description",
+  "steps",
+  "pitfalls",
+  "objects",
+  "environmentIds",
+] as const;
+
+export function taskContentChanged(
+  before: Partial<TaskDefinition>,
+  after: Partial<TaskDefinition>,
+): boolean {
+  return TASK_CONTENT_FIELDS.some(
+    (f) => JSON.stringify(before[f] ?? null) !== JSON.stringify(after[f] ?? null),
+  );
+}
+
+/** What the version will be after saving `after` over `before`. */
+export function nextTaskVersion(
+  before: TaskDefinition | null,
+  after: Partial<TaskDefinition>,
+): number {
+  if (!before) return 1;
+  return taskContentChanged(before, after)
+    ? (before.version || 1) + 1
+    : before.version || 1;
+}
+
 /** Only active tasks with somewhere to happen should reach a rig. */
 export function tasksForStation(
   tasks: TaskDefinition[],
@@ -328,6 +370,70 @@ export type Operator = {
   state: LifecycleState;
   provenance: Provenance;
 };
+
+/** Next free `OP-001`-style staff ID. Editable; this is only the default. */
+export function nextOperatorCode(operators: Operator[]): string {
+  const used = new Set(operators.map((o) => o.code));
+  let n = 1 + Math.max(0, ...operators.map((o) => Number(/^OP-(\d+)$/.exec(o.code)?.[1] || 0)));
+  while (used.has(`OP-${String(n).padStart(3, "0")}`)) n++;
+  return `OP-${String(n).padStart(3, "0")}`;
+}
+
+// ---------------------------------------------------------------------------
+// Assignments
+// ---------------------------------------------------------------------------
+
+export type AssignmentTarget =
+  | { kind: "station"; station: string }
+  | { kind: "operator"; operatorId: string };
+
+/**
+ * A task handed to a station or a person.
+ *
+ * Locked (the default) means the station records that task and nothing else
+ * until it is unassigned. When a station and the person logged in to it both
+ * have one, the station's wins: it reflects how the station is physically set
+ * up. Unassigning retires rather than deletes, so the list doubles as the
+ * history of who was on what.
+ *
+ * Mirrors resolve_assignment() in the recorder's app/shift.py.
+ */
+export type Assignment = {
+  id: string;
+  taskId: string;
+  target: AssignmentTarget;
+  locked: boolean;
+  note?: string;
+  state: LifecycleState;
+  provenance: Provenance;
+};
+
+export function activeAssignments(reg: Registry): Assignment[] {
+  return (reg.assignments || []).filter((a) => a.state === "active");
+}
+
+export function assignmentFor(reg: Registry, target: AssignmentTarget): Assignment | null {
+  return (
+    activeAssignments(reg)
+      .filter((a) =>
+        a.target.kind === "station" && target.kind === "station"
+          ? a.target.station === target.station
+          : a.target.kind === "operator" && target.kind === "operator"
+            ? a.target.operatorId === target.operatorId
+            : false,
+      )
+      .sort((a, b) => stamp(b).localeCompare(stamp(a)))[0] || null
+  );
+}
+
+function stamp(a: Assignment): string {
+  return a.provenance?.updatedAt || a.provenance?.createdAt || "";
+}
+
+export function describeTarget(t: AssignmentTarget, operators: Operator[]): string {
+  if (t.kind === "station") return `Station ${t.station}`;
+  return operators.find((o) => o.id === t.operatorId)?.name || "Unknown person";
+}
 
 // ---------------------------------------------------------------------------
 // Staff performance
@@ -447,6 +553,8 @@ export type Registry = {
   operators: Operator[];
   assets: Asset3D[];
   environments: Environment3D[];
+  /** Absent in v1 documents. */
+  assignments?: Assignment[];
   /** Set when the registry could not be read; the UI says so rather than
    * rendering an empty registry as though everything had been deleted. */
   error?: string | null;
@@ -469,6 +577,7 @@ export const EMPTY_REGISTRY: Registry = {
   operators: [],
   assets: [],
   environments: [],
+  assignments: [],
 };
 
 export function indexAssets(assets: Asset3D[]): Map<string, Asset3D> {
@@ -494,6 +603,16 @@ export function registryWarnings(reg: Registry): string[] {
     }
     if (env.state === "active" && !env.splatUri) {
       out.push(`Environment "${env.name}" is active but has no splat uploaded`);
+    }
+  }
+  const tasks = new Map(reg.tasks.map((t) => [t.id, t]));
+  for (const a of activeAssignments(reg)) {
+    const t = tasks.get(a.taskId);
+    if (!t || t.state !== "active") {
+      out.push(
+        `${describeTarget(a.target, reg.operators)} is assigned "${t?.name ?? a.taskId}", ` +
+          "which is not active, so the station ignores it",
+      );
     }
   }
   const codes = new Map<string, number>();

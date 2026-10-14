@@ -43,8 +43,13 @@
 //
 // SETUP: see README.md.
 
-const SCHEMA_VERSION = 1;
+// v2 adds `assignments`. Readers tolerate v1 documents (no assignments).
+const SCHEMA_VERSION = 2;
 const REGISTRY_KEY_DEFAULT = "_registry/registry.json";
+// Staff login codes. A separate object from the registry, because the
+// registry is the kind of document that ends up baked into a public site, and
+// these must never ride along. Rigs read both; only admins see this one.
+const ACCESS_KEY_DEFAULT = "_registry/access.json";
 const TOKEN_TTL_SECONDS = 12 * 3600;
 const MAX_CAS_ATTEMPTS = 5;
 const MAX_BODY_BYTES = 512 * 1024;
@@ -54,10 +59,14 @@ const KINDS = {
   operator: "operators",
   asset: "assets",
   environment: "environments",
+  assignment: "assignments",
 };
 
 /** Editing any of these means operators would be told something new, so the
- *  task version has to move. Cosmetic fields (name, tags, targets) do not. */
+ *  task version has to move. Cosmetic fields (name, tags, targets) do not.
+ *
+ *  Mirrored in src/lib/registry.ts so the editor can warn about the bump
+ *  before the save. This copy is the one that decides; keep them in step. */
 const TASK_CONTENT_FIELDS = [
   "headline",
   "description",
@@ -225,11 +234,11 @@ async function s3Fetch(opts) {
   });
 }
 
-function s3Config(env) {
+function s3Config(env, key) {
   return {
     bucket: env.REGISTRY_BUCKET,
     region: env.REGISTRY_REGION || env.AWS_REGION,
-    key: env.REGISTRY_KEY || REGISTRY_KEY_DEFAULT,
+    key: key || env.REGISTRY_KEY || REGISTRY_KEY_DEFAULT,
     accessKeyId: env.AWS_ACCESS_KEY_ID,
     secretAccessKey: env.AWS_SECRET_ACCESS_KEY,
   };
@@ -242,7 +251,10 @@ const EMPTY_REGISTRY = {
   operators: [],
   assets: [],
   environments: [],
+  assignments: [],
 };
+
+const EMPTY_ACCESS = { schemaVersion: 1, generatedAt: "", pins: {}, issued: {} };
 
 /**
  * Read the document and the ETag that a later write must match.
@@ -274,11 +286,27 @@ async function readRegistry(env) {
       `stored registry is schema v${registry.schemaVersion}, this Worker speaks v${SCHEMA_VERSION}`,
     );
   }
+  registry.assignments = registry.assignments || [];
   return { registry, etag };
 }
 
-async function writeRegistry(env, registry, etag) {
-  const cfg = s3Config(env);
+async function readAccess(env) {
+  const cfg = s3Config(env, env.ACCESS_KEY || ACCESS_KEY_DEFAULT);
+  const res = await s3Fetch({ method: "GET", ...cfg });
+  if (res.status === 404) return { access: structuredClone(EMPTY_ACCESS), etag: null };
+  if (!res.ok) throw new HttpError(502, `staff codes read failed (S3 ${res.status})`);
+  try {
+    const access = JSON.parse(await res.text());
+    access.pins = access.pins || {};
+    access.issued = access.issued || {};
+    return { access, etag: res.headers.get("etag") };
+  } catch {
+    throw new HttpError(500, "stored staff codes are not valid JSON; restore a prior S3 version");
+  }
+}
+
+async function writeRegistry(env, registry, etag, key) {
+  const cfg = s3Config(env, key);
   const body = JSON.stringify(registry, null, 2);
   return s3Fetch({
     method: "PUT",
@@ -384,9 +412,43 @@ export function validateRecord(kind, record, registry) {
     }
   }
 
+  if (kind === "assignment") {
+    const task = registry.tasks.find((t) => t.id === record.taskId);
+    if (!task) throw new HttpError(400, `assignment references unknown task "${record.taskId}"`);
+    // A rig ignores assignments to tasks that are not active, so accepting
+    // one would look like it worked and lock nothing.
+    if ((record.state || "active") === "active" && task.state !== "active") {
+      throw new HttpError(400, `task "${task.name}" is ${task.state}; make it active before assigning it`);
+    }
+    const t = record.target || {};
+    if (t.kind === "station") {
+      if (!/^\d{1,4}$/.test(String(t.station || ""))) {
+        throw new HttpError(400, `station must be a station number, got "${t.station}"`);
+      }
+    } else if (t.kind === "operator") {
+      const op = registry.operators.find((o) => o.id === t.operatorId);
+      if (!op) throw new HttpError(400, `assignment references unknown person "${t.operatorId}"`);
+      if (op.state === "retired") throw new HttpError(400, `${op.name} is retired`);
+    } else {
+      throw new HttpError(400, "assignment target kind must be station|operator");
+    }
+    if (record.locked !== undefined && typeof record.locked !== "boolean") {
+      throw new HttpError(400, "locked must be true or false");
+    }
+  }
+
   if (record.state && !["draft", "active", "retired"].includes(record.state)) {
     throw new HttpError(400, `invalid state "${record.state}"`);
   }
+}
+
+function sameTarget(a, b) {
+  const x = a?.target || {};
+  const y = b?.target || {};
+  if (x.kind !== y.kind) return false;
+  return x.kind === "station"
+    ? String(x.station) === String(y.station)
+    : x.operatorId === y.operatorId;
 }
 
 function contentChanged(before, after) {
@@ -415,11 +477,15 @@ export function applyUpsert(registry, kind, record, actor, nowIso) {
     ? { ...before.provenance, updatedAt: nowIso, updatedBy: actor }
     : { createdAt: nowIso, createdBy: actor };
 
+  // Assignments are live the moment they are made: an assignment saved as a
+  // draft would be a station that looks assigned on the dashboard and is not.
+  const defaultState = kind === "assignment" ? "active" : "draft";
   let merged = {
     ...record,
-    state: record.state || before?.state || "draft",
+    state: record.state || before?.state || defaultState,
     provenance,
   };
+  if (kind === "assignment") merged.locked = record.locked !== false;
 
   if (kind === "task") {
     if (!before) {
@@ -444,9 +510,25 @@ export function applyUpsert(registry, kind, record, actor, nowIso) {
   if (idx >= 0) next[KINDS[kind]][idx] = merged;
   else next[KINDS[kind]].push(merged);
 
+  // One live assignment per station and per person. Assigning again is
+  // reassigning: the previous one is retired, which keeps it as history of
+  // what the station was doing when, rather than deleting it.
+  const replaced = [];
+  if (kind === "assignment" && merged.state === "active") {
+    next.assignments = next.assignments.map((a) => {
+      if (a.id === merged.id || a.state === "retired" || !sameTarget(a, merged)) return a;
+      replaced.push(a.id);
+      return {
+        ...a,
+        state: "retired",
+        provenance: { ...a.provenance, updatedAt: nowIso, updatedBy: actor },
+      };
+    });
+  }
+
   next.schemaVersion = SCHEMA_VERSION;
   next.generatedAt = nowIso;
-  return { registry: next, record: merged, created: !before };
+  return { registry: next, record: merged, created: !before, replaced };
 }
 
 /**
@@ -473,6 +555,14 @@ export function findReferences(registry, kind, id) {
   if (kind === "environment") {
     for (const t of registry.tasks) {
       if ((t.environmentIds || []).includes(id)) refs.push(`task "${t.name}"`);
+    }
+  }
+  // Retired assignments count too: they are the record of which task a
+  // station or person was on, and deleting their target orphans that.
+  for (const a of registry.assignments || []) {
+    if (kind === "task" && a.taskId === id) refs.push(`assignment ${a.id}`);
+    if (kind === "operator" && a.target?.kind === "operator" && a.target.operatorId === id) {
+      refs.push(`assignment ${a.id}`);
     }
   }
   return refs;
@@ -508,6 +598,101 @@ export function applyDelete(registry, kind, id, actor, nowIso, hard) {
   next.schemaVersion = SCHEMA_VERSION;
   next.generatedAt = nowIso;
   return next;
+}
+
+// ---------------------------------------------------------------------------
+// Staff login codes
+// ---------------------------------------------------------------------------
+//
+// A 4-digit code is what someone types on a touchscreen at the start of a
+// shift, so it has to be short; that makes it a convenience lock, not a
+// secret. The rig rate-limits guesses (see shift.py in the recorder). Here the
+// job is just to hand out codes that are unique, random, and not the ones
+// people guess first.
+
+const PIN_SPACE = 10000;
+
+/** Codes that are tried first by anyone guessing: repeats, runs, and pairs. */
+export function isWeakPin(pin) {
+  if (!/^\d{4}$/.test(pin)) return true;
+  const d = [...pin].map(Number);
+  if (d.every((x) => x === d[0])) return true; // 0000, 7777
+  const steps = [d[1] - d[0], d[2] - d[1], d[3] - d[2]];
+  if (steps.every((s) => s === 1) || steps.every((s) => s === -1)) return true; // 1234, 9876
+  if (d[0] === d[2] && d[1] === d[3]) return true; // 1212, 4545
+  if (d[0] === d[1] && d[2] === d[3]) return true; // 1122, 9900
+  if (/^(19|20)\d\d$/.test(pin)) return true; // years
+  return false;
+}
+
+function randomIndex() {
+  // Rejection sampling, so every code is equally likely: 2^32 is not a
+  // multiple of 10,000, and a plain modulo slightly favours the low ones.
+  const limit = Math.floor(0x100000000 / PIN_SPACE) * PIN_SPACE;
+  const buf = new Uint32Array(1);
+  for (;;) {
+    crypto.getRandomValues(buf);
+    if (buf[0] < limit) return buf[0] % PIN_SPACE;
+  }
+}
+
+export function generatePin(used, rand = randomIndex) {
+  for (let i = 0; i < 500; i++) {
+    const pin = String(rand()).padStart(4, "0");
+    if (!used.has(pin) && !isWeakPin(pin)) return pin;
+  }
+  throw new HttpError(507, "no unused staff codes left; retire people who have left");
+}
+
+/** Give one person a new code, retiring their old one. Pure, for the tests. */
+export function applyPinIssue(access, operatorId, actor, nowIso, rand) {
+  const pins = { ...(access.pins || {}) };
+  const used = new Set(Object.entries(pins).filter(([id]) => id !== operatorId).map(([, p]) => p));
+  const pin = generatePin(used, rand);
+  pins[operatorId] = pin;
+  return {
+    access: {
+      ...access,
+      schemaVersion: 1,
+      generatedAt: nowIso,
+      pins,
+      issued: { ...(access.issued || {}), [operatorId]: { at: nowIso, by: actor } },
+    },
+    pin,
+  };
+}
+
+export function applyPinRemove(access, operatorId, nowIso) {
+  const pins = { ...(access.pins || {}) };
+  const issued = { ...(access.issued || {}) };
+  delete pins[operatorId];
+  delete issued[operatorId];
+  return { ...access, generatedAt: nowIso, pins, issued };
+}
+
+/** Read-modify-write on the codes object, with the registry's CAS loop. */
+async function casAccess(env, mutate) {
+  const key = env.ACCESS_KEY || ACCESS_KEY_DEFAULT;
+  let lastStatus = 0;
+  for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
+    const { access, etag } = await readAccess(env);
+    const { next, result } = mutate(access);
+    const put = await writeRegistry(env, next, etag, key);
+    if (put.ok) return result;
+    lastStatus = put.status;
+    if (put.status !== 412 && put.status !== 409) {
+      throw new HttpError(502, `store rejected staff codes write (S3 ${put.status})`);
+    }
+    await new Promise((r) => setTimeout(r, 40 * (attempt + 1) + Math.random() * 40));
+  }
+  throw new HttpError(503, `staff codes too contended (last S3 ${lastStatus})`);
+}
+
+function issuePin(env, operatorId, actor) {
+  return casAccess(env, (access) => {
+    const { access: next, pin } = applyPinIssue(access, operatorId, actor, new Date().toISOString());
+    return { next, result: pin };
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -665,11 +850,12 @@ export default {
       // as a 500 on somebody's first save.
       if (path === "/health") {
         const cfg = s3Config(env);
-        return json(
-          {
-            ok: true,
-            schemaVersion: SCHEMA_VERSION,
-            store: cfg.bucket ? `s3://${cfg.bucket}/${cfg.key}` : null,
+          return json(
+            {
+              ok: true,
+              schemaVersion: SCHEMA_VERSION,
+              store: cfg.bucket ? `s3://${cfg.bucket}/${cfg.key}` : null,
+              staffCodes: cfg.bucket ? `s3://${cfg.bucket}/${env.ACCESS_KEY || ACCESS_KEY_DEFAULT}` : null,
             signable: !!(cfg.accessKeyId && cfg.secretAccessKey && cfg.region),
             auth: {
               cloudflareAccess: !!(env.CF_ACCESS_TEAM_DOMAIN && env.CF_ACCESS_AUD),
@@ -721,7 +907,23 @@ export default {
         return json(registry, 200, cors, { etag: etag || "" });
       }
 
-      const m = /^\/registry\/(task|operator|asset|environment)\/(.+)$/.exec(path);
+      // Staff codes: admins only, never in the registry document.
+      if (path === "/staff/codes" && request.method === "GET") {
+        const { access } = await readAccess(env);
+        return json({ pins: access.pins, issued: access.issued }, 200, cors);
+      }
+      const pm = /^\/staff\/([^/]+)\/code$/.exec(path);
+      if (pm && request.method === "POST") {
+        const operatorId = decodeURIComponent(pm[1]);
+        const { registry } = await readRegistry(env);
+        const op = registry.operators.find((o) => o.id === operatorId);
+        if (!op) return json({ error: `no person with id "${operatorId}"` }, 404, cors);
+        if (op.state === "retired") return json({ error: `${op.name} is retired` }, 409, cors);
+        const pin = await issuePin(env, operatorId, actor);
+        return json({ ok: true, operatorId, pin }, 200, cors);
+      }
+
+      const m = /^\/registry\/(task|operator|asset|environment|assignment)\/(.+)$/.exec(path);
       if (m && (request.method === "PUT" || request.method === "DELETE")) {
         const [, kind, id] = m;
 
@@ -759,10 +961,33 @@ export default {
 
           const put = await writeRegistry(env, next, etag);
           if (put.ok) {
+            const extra = {};
+            // A new person gets their login code with the save, so whoever
+            // added them can hand it over straight away. A failure here
+            // leaves the person saved and codeless, which the staff table
+            // shows with a "Generate code" button, rather than failing a
+            // save that did land.
+            if (kind === "operator" && request.method === "PUT" && result.created) {
+              try {
+                extra.pin = await issuePin(env, result.record.id, actor);
+              } catch (e) {
+                extra.pinError = e instanceof HttpError ? e.message : String(e);
+              }
+            }
+            if (kind === "operator" && request.method === "DELETE" && hard) {
+              try {
+                await casAccess(env, (access) => ({
+                  next: applyPinRemove(access, decodeURIComponent(id), nowIso),
+                  result: null,
+                }));
+              } catch (e) {
+                extra.pinError = e instanceof HttpError ? e.message : String(e);
+              }
+            }
             return json(
               request.method === "PUT"
-                ? { ok: true, record: result.record, created: result.created }
-                : { ok: true, deleted: decodeURIComponent(id), hard },
+                ? { ok: true, record: result.record, created: result.created, replaced: result.replaced, ...extra }
+                : { ok: true, deleted: decodeURIComponent(id), hard, ...extra },
               request.method === "PUT" && result.created ? 201 : 200,
               cors,
             );
