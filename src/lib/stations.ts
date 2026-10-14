@@ -180,6 +180,31 @@ export type StationOperator = {
   remote?: RemoteTarget | null;
 };
 
+/** Who is logged in at the back display, and what the station is assigned. */
+export type StationShift = {
+  station?: string | null;
+  loginRequired?: boolean;
+  operatorId?: string | null;
+  operatorName?: string | null;
+  operatorCode?: string | null;
+  /** Epoch seconds. */
+  since?: number | null;
+  assignment?: {
+    id: string;
+    taskId?: string | null;
+    taskName: string;
+    taskVersion?: number | null;
+    locked: boolean;
+    source: "station" | "operator";
+  } | null;
+  registry?: {
+    loaded?: boolean;
+    generatedAt?: string | null;
+    source?: string | null;
+    error?: string | null;
+  } | null;
+};
+
 export type StationHeartbeat = {
   schemaVersion: number;
   stationId: string;
@@ -203,6 +228,8 @@ export type StationHeartbeat = {
   pi?: StationOperator;
   /** Schema ≤2: per-board SSH targets, folded into devices since. */
   remote?: { recorder?: RemoteTarget | null; pi?: RemoteTarget | null };
+  /** Absent on recorders that predate staff login. */
+  shift?: StationShift | null;
 };
 
 export type StationsSnapshot = {
@@ -273,7 +300,11 @@ export function normalizeStation(s: StationHeartbeat): StationHeartbeat {
   let rig = s.rig;
   if (!rig?.id) {
     const parsed = devices.map((d) => parseDeviceName(d.name)).find((p) => p.rig);
-    rig = parsed ? { id: parsed.rig, source: "device-name" } : { id: null, source: null };
+    if (parsed) rig = { id: parsed.rig, source: "device-name" };
+    // Generation 1 was a single rig whose boards kept factory hostnames, so a
+    // pre-rig-number heartbeat can only be station 1.
+    else if ((s.schemaVersion || 0) <= 2) rig = { id: "1", source: "generation-1" };
+    else rig = { id: null, source: null };
   }
   const power = s.power
     ? { ...s.power, operatorW: s.power.operatorW ?? s.power.piW ?? null }
@@ -298,6 +329,19 @@ export function groupByRig(stations: StationHeartbeat[]): {
     .map(([rig, list]) => ({ rig, stations: list }));
 }
 
+/** A station is named by its rig number: rig 3 is "Station 3". */
+export function stationLabel(s: StationHeartbeat): string {
+  return s.rig?.id ? `Station ${s.rig.id}` : s.name || s.hostname || "Unnamed station";
+}
+
+/** Numeric rig order, unnamed stations last. */
+export function compareStations(a: StationHeartbeat, b: StationHeartbeat): number {
+  const ra = a.rig?.id ? Number(a.rig.id) : Number.POSITIVE_INFINITY;
+  const rb = b.rig?.id ? Number(b.rig.id) : Number.POSITIVE_INFINITY;
+  if (ra !== rb) return ra - rb;
+  return (a.name || "").localeCompare(b.name || "");
+}
+
 /** "LattePanda Alpha 864s · Gen 2", falling back to whatever the board reported. */
 export function platformLabel(p: DevicePlatform | null | undefined): string | null {
   if (!p) return null;
@@ -314,11 +358,37 @@ export const ROLE_LABELS: Record<DeviceRole, string> = {
 
 // ---------- Derived state ----------
 
-export type StationStatus = "recording" | "ready" | "degraded" | "offline";
+/**
+ * Health, kept apart from whether a take is running: a station recording
+ * with its operator screen unreachable is both, and one word cannot say so.
+ */
+export type StationStatus = "online" | "attention" | "offline";
 
 export function heartbeatAgeMs(s: StationHeartbeat, now = Date.now()): number {
   const t = Date.parse(s.reportedAt);
   return Number.isNaN(t) ? Number.POSITIVE_INFINITY : Math.max(0, now - t);
+}
+
+/**
+ * The instant a snapshot describes.
+ *
+ * A live read describes now. The baked file describes the moment the deploy
+ * ran, which can be hours ago. Judging a baked heartbeat against the wall
+ * clock declares every station offline whenever a deploy is late, which says
+ * nothing about the stations; judging it against the snapshot asks the right
+ * question ("was it reporting then?"), and the page separately says how old
+ * "then" is.
+ */
+export function snapshotReferenceMs(snap: StationsSnapshot | null | undefined): number {
+  if (!snap || snap.source === "live") return Date.now();
+  const t = Date.parse(snap.generatedAt);
+  return Number.isNaN(t) ? Date.now() : Math.min(t, Date.now());
+}
+
+export function isRecording(s: StationHeartbeat, now = Date.now()): boolean {
+  if (heartbeatAgeMs(s, now) > STALE_AFTER_MS) return false;
+  const rec = s.recorder?.state?.toLowerCase();
+  return rec === "recording" || rec === "preflight";
 }
 
 /**
@@ -330,14 +400,24 @@ export function heartbeatAgeMs(s: StationHeartbeat, now = Date.now()): number {
  */
 export function stationStatus(s: StationHeartbeat, now = Date.now()): StationStatus {
   if (heartbeatAgeMs(s, now) > STALE_AFTER_MS) return "offline";
+  return attentionReasons(s).length ? "attention" : "online";
+}
+
+/** Why a reporting station needs a look, in the words the card shows. */
+export function attentionReasons(s: StationHeartbeat): string[] {
+  const out: string[] = [];
   const cam = s.camera?.status?.toLowerCase();
-  const rec = s.recorder?.state?.toLowerCase();
-  if (cam === "error" || (s.camera?.errors?.length ?? 0) > 0) return "degraded";
-  // A rig with no camera cannot record, however healthy the rest of it is.
-  if (cam === "disconnected") return "degraded";
-  if (s.operator && s.operator.reachable === false) return "degraded";
-  if (rec === "recording" || rec === "preflight") return "recording";
-  return "ready";
+  if (cam === "error" || (s.camera?.errors?.length ?? 0) > 0) {
+    out.push(s.camera?.errors?.[0] || "Camera error");
+  } else if (cam === "disconnected") {
+    // A rig with no camera cannot record, however healthy the rest of it is.
+    out.push("No camera detected");
+  }
+  if (s.operator && s.operator.reachable === false) out.push("Operator screen unreachable");
+  if (s.recorder?.error) out.push(s.recorder.error);
+  const low = freeSpaceWarning(s);
+  if (low) out.push(`Low disk: ${formatBytes(low.freeBytes)} free`);
+  return out;
 }
 
 export function freeSpaceWarning(s: StationHeartbeat): StationDisk | null {

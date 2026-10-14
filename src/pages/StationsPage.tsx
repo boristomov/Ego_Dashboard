@@ -2,40 +2,46 @@ import { useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
+  BatteryCharging,
   Camera,
   CheckCircle2,
   ChevronDown,
+  ChevronsDownUp,
+  ChevronsUpDown,
   Clock,
-  Copy,
-  BatteryCharging,
   CloudOff,
   CloudUpload,
+  Copy,
   ExternalLink,
   HardDrive,
+  ListChecks,
   Loader2,
+  Lock,
+  Maximize2,
+  Minimize2,
   Monitor,
-  Radio,
   Settings2,
   Terminal,
   Thermometer,
   User,
-  XCircle,
   Zap,
 } from "lucide-react";
 import { BarRows, BatteryMeter, Donut } from "../components/StationCharts";
 import { useStations } from "../hooks/useStations";
 import {
+  attentionReasons,
   batteryTone,
   formatBytes,
   formatDuration,
-  freeSpaceWarning,
-  groupByRig,
   heartbeatAgeMs,
+  isRecording,
   LATE_AFTER_MS,
   platformLabel,
   relativeAge,
   remoteLinks,
   ROLE_LABELS,
+  STALE_AFTER_MS,
+  stationLabel,
   stationStatus,
   takesByTask,
   type StationBattery,
@@ -47,335 +53,525 @@ import {
   type StationUpload,
 } from "../lib/stations";
 
+/** Past this, a baked snapshot is old enough that the page should say so. */
+const SNAPSHOT_OLD_MS = 10 * 60 * 1000;
+
 export function StationsPage() {
-  const { snapshot, stations, error, loading } = useStations();
+  const { snapshot, stations, error, loading, live, referenceMs, dataAgeMs } = useStations();
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
   const summary = useMemo(() => {
     const by = (s: StationStatus) =>
-      stations.filter((st) => stationStatus(st) === s).length;
-    const takesToday = stations.reduce(
-      (n, s) => n + (s.library?.today?.takes || 0),
-      0,
-    );
-    const minutesToday = stations.reduce(
-      (n, s) => n + (s.library?.today?.durationSec || 0),
-      0,
-    );
+      stations.filter((st) => stationStatus(st, referenceMs) === s).length;
     return {
       total: stations.length,
-      recording: by("recording"),
-      ready: by("ready"),
-      degraded: by("degraded"),
+      online: by("online"),
+      attention: by("attention"),
       offline: by("offline"),
-      takesToday,
-      minutesToday,
+      recording: stations.filter((s) => isRecording(s, referenceMs)).length,
+      takesToday: stations.reduce((n, s) => n + (s.library?.today?.takes || 0), 0),
+      secToday: stations.reduce((n, s) => n + (s.library?.today?.durationSec || 0), 0),
     };
-  }, [stations]);
+  }, [stations, referenceMs]);
+
+  const toggle = (id: string) =>
+    setExpanded((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const allOpen = stations.length > 0 && stations.every((s) => expanded.has(s.stationId));
 
   return (
     <div className="flex flex-col gap-5">
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight">
             <span className="brand-grad">Recording</span>{" "}
             <span className="text-text-muted">stations</span>
           </h1>
-          <p className="mt-1 max-w-3xl text-[0.78rem] text-text-muted">
-            Every rig in the field, as it last reported. Stations push a
-            heartbeat to S3 about once a minute; this page is rebuilt every
-            five, so treat these as recent rather than live.
+          <p className="mt-1 max-w-3xl text-sm text-text-muted">
+            Every station in the field. A station that is powered on reports
+            about once a minute; tap a station for its full detail.
           </p>
         </div>
-        <SnapshotBadge generatedAt={snapshot?.generatedAt} loading={loading} />
+        <div className="flex items-center gap-2">
+          {stations.length > 1 && (
+            <button
+              type="button"
+              onClick={() =>
+                setExpanded(allOpen ? new Set() : new Set(stations.map((s) => s.stationId)))
+              }
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-panel px-3 py-2 text-sm text-text-muted transition hover:text-text"
+            >
+              {allOpen ? <ChevronsDownUp size={15} /> : <ChevronsUpDown size={15} />}
+              {allOpen ? "Collapse all" : "Expand all"}
+            </button>
+          )}
+          <FreshnessBadge
+            loading={loading}
+            live={live}
+            generatedAt={snapshot?.generatedAt}
+            ageMs={dataAgeMs}
+          />
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-6">
+      {!loading && !live && snapshot?.generatedAt && dataAgeMs > SNAPSHOT_OLD_MS && (
+        <Banner
+          kind="warn"
+          title={`Showing the snapshot from ${relativeAge(referenceMs)}.`}
+          body={
+            "Each station's status is as of that moment, not now. This page " +
+            "updates live once the station-heartbeats Worker is deployed " +
+            "(infra/station-heartbeats); until then it refreshes on each site deploy."
+          }
+        />
+      )}
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="Stations" value={summary.total} accent="slate" />
-        <Stat label="Recording" value={summary.recording} accent="ok" />
-        <Stat label="Ready" value={summary.ready} accent="cyan" />
-        <Stat label="Needs attention" value={summary.degraded} accent="warn" />
+        <Stat label="Online" value={summary.online + summary.attention} accent="ok" />
+        <Stat label="Recording" value={summary.recording} accent="rec" />
+        <Stat label="Need attention" value={summary.attention} accent="warn" />
         <Stat label="Offline" value={summary.offline} accent="err" />
         <Stat
           label="Takes today"
           value={summary.takesToday}
-          sub={formatDuration(summary.minutesToday)}
+          sub={formatDuration(summary.secToday)}
           accent="slate"
         />
       </div>
 
-      {error && <Banner kind="err" title="Could not read heartbeats" body={error} />}
+      {error && <Banner kind="err" title="Could not read heartbeats." body={error} />}
       {!error && !loading && stations.length === 0 && <SetupHint />}
 
-      {groupByRig(stations).map((g) => (
-        <section key={g.rig ?? "unassigned"} className="flex flex-col gap-2">
-          <SectionLabel>
-            {g.rig ? `Rig ${g.rig}` : "Unassigned"}
-            {!g.rig && (
-              <span className="ml-2 normal-case tracking-normal text-text-dim">
-                devices not named &lt;role&gt;-&lt;rig number&gt; on the tailnet
-              </span>
-            )}
-          </SectionLabel>
-          <div className="grid gap-3 2xl:grid-cols-2">
-            {g.stations.map((s) => (
-              <StationCard key={s.stationId} station={s} />
-            ))}
-          </div>
-        </section>
-      ))}
+      <div className="grid grid-flow-row-dense grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+        {stations.map((s) => (
+          <StationTile
+            key={s.stationId}
+            station={s}
+            referenceMs={referenceMs}
+            stale={!live && dataAgeMs > SNAPSHOT_OLD_MS}
+            open={expanded.has(s.stationId)}
+            onToggle={() => toggle(s.stationId)}
+          />
+        ))}
+      </div>
     </div>
   );
 }
 
-// ---------------- Station card ----------------
+// ---------------- Station tile ----------------
 
-const STATUS_STYLES: Record<
-  StationStatus,
-  { ring: string; chip: string; icon: string; label: string }
-> = {
-  recording: {
-    ring: "border-ok/50 hover:border-ok/80",
+const STATUS_STYLES: Record<StationStatus, { ring: string; chip: string; dot: string; label: string }> = {
+  online: {
+    ring: "border-ok/40 hover:border-ok/70",
     chip: "border-ok/50 bg-ok/15 text-emerald-300",
-    icon: "text-emerald-300",
-    label: "Recording",
+    dot: "bg-ok",
+    label: "Online",
   },
-  ready: {
-    ring: "border-cyan-500/40 hover:border-cyan-500/70",
-    chip: "border-cyan-500/40 bg-cyan-500/15 text-cyan-300",
-    icon: "text-cyan-300",
-    label: "Ready",
-  },
-  degraded: {
+  attention: {
     ring: "border-warn/50 hover:border-warn/80",
     chip: "border-warn/50 bg-warn/15 text-amber-300",
-    icon: "text-amber-300",
+    dot: "bg-warn",
     label: "Needs attention",
   },
   offline: {
-    ring: "border-err/40 hover:border-err/70",
+    ring: "border-err/30 hover:border-err/60",
     chip: "border-err/50 bg-err/15 text-red-300",
-    icon: "text-red-300",
+    dot: "bg-err",
     label: "Offline",
   },
 };
 
-function StationCard({ station }: { station: StationHeartbeat }) {
-  const status = stationStatus(station);
+function StationTile({
+  station,
+  referenceMs,
+  stale,
+  open,
+  onToggle,
+}: {
+  station: StationHeartbeat;
+  referenceMs: number;
+  stale: boolean;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  const status = stationStatus(station, referenceMs);
+  const recording = isRecording(station, referenceMs);
   const style = STATUS_STYLES[status];
-  const age = heartbeatAgeMs(station);
-  const lowDisk = freeSpaceWarning(station);
-  const cam = station.camera;
-  const lib = station.library;
+  const age = heartbeatAgeMs(station, referenceMs);
+  const reasons = status === "offline" ? [] : attentionReasons(station);
 
   return (
-    <div className={`panel flex flex-col gap-3 border-2 p-4 ${style.ring} transition`}>
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <div
-          className={`grid h-10 w-10 place-items-center rounded-lg border ${style.chip}`}
-          title={style.label}
-        >
-          {status === "recording" ? (
-            <Radio size={16} className={style.icon} />
-          ) : status === "ready" ? (
-            <CheckCircle2 size={16} className={style.icon} />
-          ) : status === "degraded" ? (
-            <AlertTriangle size={16} className={style.icon} />
-          ) : (
-            <XCircle size={16} className={style.icon} />
-          )}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="text-[0.95rem] font-semibold">{station.name}</div>
-            <span
-              className={`rounded-md border px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider ${style.chip}`}
-            >
-              {style.label}
-            </span>
-            {/* Only while the station is actually reporting: a task name from a
-                stale heartbeat reads as "recording now", which is the one thing
-                we know it is not. */}
-            {status === "recording" && station.recorder?.taskName && (
-              <span className="truncate text-[0.72rem] text-emerald-300">
-                {station.recorder.taskName}
-              </span>
-            )}
-          </div>
-          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[0.7rem] text-text-muted">
-            <span className="font-mono">{station.hostname || station.stationId}</span>
-            {cam?.model && (
-              <>
-                <span className="text-text-dim">·</span>
-                <span>{cam.model}</span>
-              </>
-            )}
-            {cam?.serialNumber && (
-              <>
-                <span className="text-text-dim">·</span>
-                <span className="font-mono">S/N {cam.serialNumber}</span>
-              </>
-            )}
-          </div>
-        </div>
-        <HeartbeatBadge ageMs={age} reportedAt={station.reportedAt} />
-      </div>
-
-      {status === "offline" && (
-        <Banner
-          kind="err"
-          title="No heartbeat"
-          body={`Last reported ${relativeAge(Date.parse(station.reportedAt))}. The rig, its uplink, or the recorder process is down — everything below is from that last report.`}
-        />
-      )}
-
-      {(cam?.errors?.length || 0) > 0 && (
-        <Banner kind="err" title="Camera error" body={cam!.errors!.join(" · ")} />
-      )}
-      {(cam?.warnings?.length || 0) > 0 && (
-        <Banner kind="warn" title="Camera warning" body={cam!.warnings!.join(" · ")} />
-      )}
-      {station.operator && station.operator.reachable === false && (
-        <Banner
-          kind="warn"
-          title="Operator screen unreachable from the recorder"
-          body={station.operator.error || "The operator UI and its screen may be down."}
-        />
-      )}
-      {lowDisk && (
-        <Banner
-          kind="warn"
-          title="Low disk space"
-          body={`${formatBytes(lowDisk.freeBytes)} free on ${lowDisk.label || lowDisk.path} (${lowDisk.usedPct ?? "?"}% used).`}
-        />
-      )}
-
-      <LiveNow station={station} status={status} />
-
-      {/* Vitals */}
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-        <Vital
-          icon={<Camera size={12} />}
-          label="Camera"
-          value={cam?.status || "—"}
-          tone={cam?.status === "connected" ? "ok" : cam?.status ? "err" : "dim"}
-        />
-        <Vital
-          icon={<Activity size={12} />}
-          label="FPS"
-          value={cam?.fps != null ? String(cam.fps) : "—"}
-        />
-        <Vital
-          icon={<Thermometer size={12} />}
-          label="Camera temp"
-          // The recorder reports 0 rather than null when no camera is attached.
-          value={cam?.temperatureC != null && cam.status === "connected" ? `${cam.temperatureC}°C` : "—"}
-          tone={(cam?.temperatureC ?? 0) > 70 ? "warn" : "plain"}
-        />
-        <Vital
-          icon={<Zap size={12} />}
-          label="Power"
-          value={station.power?.totalW != null ? `${station.power.totalW} W` : "—"}
-          title={station.power?.note}
-        />
-      </div>
-
-      {/* Daily yield */}
-      <Section title="Daily yield">
-        {lib?.days?.length ? (
-          <YieldBars days={lib.days} />
-        ) : (
-          <Empty>No recordings yet</Empty>
-        )}
-      </Section>
-
-      <TaskBreakdown station={station} />
-
-      {/* Quality */}
-      <Section title="Quality">
-        {lib && lib.totalTakes > 0 ? (
-          <div className="flex flex-wrap items-center gap-2 text-[0.75rem]">
-            <QualityPill ok count={lib.okTakes} total={lib.totalTakes} />
-            {lib.degradedTakes > 0 && (
-              <span className="inline-flex items-center gap-1 rounded-md border border-warn/40 bg-warn/10 px-2 py-1 text-amber-300">
-                <AlertTriangle size={11} /> {lib.degradedTakes} degraded
-              </span>
-            )}
-            <span className="text-text-muted">
-              across {lib.totalTakes} take{lib.totalTakes === 1 ? "" : "s"}
-            </span>
-          </div>
-        ) : (
-          <Empty>Nothing recorded yet</Empty>
-        )}
-      </Section>
-
-      {/* Task log */}
-      <Collapsible
-        title="Recent takes"
-        badge={lib?.recentTakes?.length ? String(lib.recentTakes.length) : undefined}
+    <article
+      className={`panel flex flex-col border-2 transition ${style.ring} ${
+        recording ? "shadow-[0_0_0_1px_rgba(239,68,68,0.35)]" : ""
+      } ${open ? "md:col-span-2 xl:col-span-3 2xl:col-span-4" : ""}`}
+    >
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full flex-col gap-3 p-4 text-left"
       >
-        {lib?.recentTakes?.length ? (
-          <ul className="flex flex-col gap-1">
-            {lib.recentTakes.map((t) => (
-              <TakeRow key={t.episodeId} take={t} />
-            ))}
-          </ul>
-        ) : (
-          <Empty>No takes recorded</Empty>
-        )}
-      </Collapsible>
-
-      {/* Settings */}
-      <Collapsible title="Current settings" icon={<Settings2 size={11} />}>
-        {station.settings && Object.keys(station.settings).length > 0 ? (
-          <dl className="grid grid-cols-2 gap-x-3 gap-y-1 text-[0.72rem]">
-            {Object.entries(station.settings).map(([k, v]) => (
-              <div key={k} className="flex items-baseline justify-between gap-2">
-                <dt className="truncate text-text-muted">{humanise(k)}</dt>
-                <dd className="flex-shrink-0 font-mono text-text">{String(v)}</dd>
-              </div>
-            ))}
-          </dl>
-        ) : (
-          <Empty>Not reported</Empty>
-        )}
-      </Collapsible>
-
-      {/* Storage */}
-      <Collapsible title="Storage" icon={<HardDrive size={11} />}>
-        <div className="flex flex-col gap-1.5">
-          {[...(station.disks || []), ...(station.operator?.disk ? [station.operator.disk] : [])].map(
-            (d, i) => (
-              <div key={i} className="flex items-center gap-2 text-[0.72rem]">
-                <span className="w-28 flex-shrink-0 truncate font-mono text-text-muted">
-                  {d.label || d.path}
-                </span>
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-input">
-                  <div
-                    className={`h-full ${(d.usedPct ?? 0) > 85 ? "bg-err" : "bg-accent"}`}
-                    style={{ width: `${Math.min(100, d.usedPct ?? 0)}%` }}
-                  />
-                </div>
-                <span className="w-24 flex-shrink-0 text-right text-text-muted">
-                  {formatBytes(d.freeBytes)} free
-                </span>
-              </div>
-            ),
-          )}
-          {!(station.disks || []).length && !station.operator?.disk && (
-            <Empty>Not reported</Empty>
-          )}
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-xl font-semibold leading-tight text-text">
+                {stationLabel(station)}
+              </h2>
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-semibold ${style.chip}`}
+              >
+                <span className={`h-2 w-2 rounded-full ${style.dot}`} />
+                {style.label}
+              </span>
+              {recording && <RecBadge seconds={station.recorder?.durationSec} />}
+            </div>
+            <div className="mt-0.5 truncate font-mono text-xs text-text-dim">
+              {station.name}
+              {station.hostname && station.hostname !== station.name ? ` · ${station.hostname}` : ""}
+            </div>
+          </div>
+          <span
+            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-lg border border-border bg-input/60 px-2.5 py-1.5 text-sm text-text-muted"
+            title={open ? "Collapse" : "Show everything about this station"}
+          >
+            {open ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            {open ? "Less" : "Details"}
+          </span>
         </div>
-      </Collapsible>
 
-      {/* Remote in */}
-      <RemoteAccess station={station} />
+        <div className={open ? "grid gap-3 lg:grid-cols-2" : "contents"}>
+          <WhoAndWhat station={station} status={status} recording={recording} />
+          <div className="grid grid-cols-3 gap-2">
+            <Vital
+              icon={<Camera size={13} />}
+              label="Camera"
+              value={cameraWord(station)}
+              tone={station.camera?.status === "connected" ? "ok" : station.camera?.status ? "err" : "dim"}
+            />
+            <Vital
+              icon={<ListChecks size={13} />}
+              label="Today"
+              value={`${station.library?.today?.takes ?? 0} takes`}
+              sub={formatDuration(station.library?.today?.durationSec ?? 0)}
+            />
+            <BatteryVital battery={station.battery} upload={station.upload} />
+          </div>
+        </div>
+
+        {reasons.length > 0 && (
+          <ul className="flex flex-col gap-1">
+            {reasons.slice(0, open ? 10 : 2).map((r) => (
+              <li key={r} className="flex items-start gap-1.5 text-sm text-amber-300">
+                <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
+                <span className="min-w-0 break-words">{r}</span>
+              </li>
+            ))}
+            {!open && reasons.length > 2 && (
+              <li className="text-xs text-text-dim">+{reasons.length - 2} more in details</li>
+            )}
+          </ul>
+        )}
+
+        <div className="flex items-center justify-between gap-2 text-xs text-text-dim">
+          <HeartbeatBadge ageMs={age} reportedAt={station.reportedAt} />
+          {stale && <span title="Status is judged as of the snapshot">as of snapshot</span>}
+        </div>
+      </button>
+
+      {open && <StationDetail station={station} status={status} referenceMs={referenceMs} />}
+    </article>
+  );
+}
+
+function cameraWord(s: StationHeartbeat): string {
+  const st = s.camera?.status;
+  if (!st) return "—";
+  if (st === "connected") return s.camera?.fps ? `${s.camera.fps} fps` : "OK";
+  if (st === "disconnected") return "None";
+  return st[0].toUpperCase() + st.slice(1);
+}
+
+function RecBadge({ seconds }: { seconds?: number | null }) {
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-md border border-red-500/60 bg-red-500/15 px-2 py-0.5 text-xs font-bold tracking-wider text-red-300">
+      <span className="relative flex h-2.5 w-2.5">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-75" />
+        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-red-500" />
+      </span>
+      REC
+      {seconds != null && <span className="font-mono font-semibold">{formatDuration(seconds)}</span>}
+    </span>
+  );
+}
+
+/**
+ * Who is on the station and what it is set to record, set large because those
+ * are the two things worth checking from across the room.
+ *
+ * The person comes from the shift login when the station has one, falling
+ * back to the name typed on the operator screen. A task name is only shown as
+ * "now" while a take is running; otherwise it is the assignment, labelled as
+ * such, so a stale task never reads as live.
+ */
+function WhoAndWhat({
+  station,
+  status,
+  recording,
+}: {
+  station: StationHeartbeat;
+  status: StationStatus;
+  recording: boolean;
+}) {
+  const shift = station.shift;
+  const person = (shift?.operatorName || station.recorder?.operator || "").trim();
+  const assignment = shift?.assignment;
+  const task = recording ? (station.recorder?.taskName || "").trim() : "";
+  const sinceSec = shift?.since ? shift.since * 1000 : null;
+
+  return (
+    <div
+      className={`grid gap-2 rounded-lg border p-3 ${
+        recording ? "border-red-500/30 bg-red-500/[0.06]" : "border-border bg-input/30"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <User size={16} className="flex-shrink-0 text-text-muted" />
+        {person ? (
+          <span className="truncate text-base font-semibold text-text">{person}</span>
+        ) : (
+          <span className="text-base italic text-text-dim">
+            {status === "offline" ? "—" : shift?.loginRequired ? "No one logged in" : "No operator set"}
+          </span>
+        )}
+        {person && shift?.operatorCode && (
+          <span className="font-mono text-xs text-text-dim">{shift.operatorCode}</span>
+        )}
+        {sinceSec && status !== "offline" && (
+          <span className="ml-auto flex-shrink-0 text-xs text-text-dim">
+            on shift {relativeAge(sinceSec).replace(" ago", "")}
+          </span>
+        )}
+      </div>
+      <div className="flex min-w-0 items-center gap-2">
+        <Activity size={16} className={`flex-shrink-0 ${recording ? "text-red-300" : "text-text-muted"}`} />
+        {task ? (
+          <span className="truncate text-base font-medium text-text" title={task}>
+            {task}
+          </span>
+        ) : assignment ? (
+          <span className="truncate text-base text-text" title={assignment.taskName}>
+            {assignment.taskName}
+          </span>
+        ) : (
+          <span className="text-base italic text-text-dim">
+            {status === "offline" ? "—" : "No task assigned"}
+          </span>
+        )}
+        {assignment && (
+          <span
+            className="ml-auto inline-flex flex-shrink-0 items-center gap-1 rounded border border-accent/40 bg-accent/10 px-1.5 py-0.5 text-xs text-text-muted"
+            title={
+              assignment.source === "station"
+                ? "Assigned to this station"
+                : "Assigned to the person logged in"
+            }
+          >
+            {assignment.locked && <Lock size={11} />}
+            {assignment.source === "station" ? "Station task" : "Personal task"}
+          </span>
+        )}
+      </div>
     </div>
   );
 }
 
-// ---------------- Analytics ----------------
+function BatteryVital({
+  battery,
+  upload,
+}: {
+  battery?: StationBattery | null;
+  upload?: StationUpload | null;
+}) {
+  if (battery) {
+    const tone = batteryTone(battery.remainingPct);
+    return (
+      <Vital
+        icon={<BatteryCharging size={13} />}
+        label="Battery"
+        value={`${Math.round(battery.remainingPct)}%`}
+        sub={
+          battery.runtimeMinRemaining
+            ? `~${formatDuration(battery.runtimeMinRemaining * 60)} left`
+            : "estimate"
+        }
+        tone={tone === "danger" ? "err" : tone === "warn" ? "warn" : "plain"}
+        title={battery.note}
+      />
+    );
+  }
+  const backlog = upload?.backlog || 0;
+  return (
+    <Vital
+      icon={<CloudUpload size={13} />}
+      label="Upload"
+      value={!upload || upload.configured === false ? "Off" : upload.active ? "Sending" : "Idle"}
+      sub={backlog ? `${backlog} queued` : upload?.failed ? `${upload.failed} failed` : undefined}
+      tone={upload?.failed ? "warn" : "plain"}
+    />
+  );
+}
+
+// ---------------- Expanded detail ----------------
+
+function StationDetail({
+  station,
+  status,
+  referenceMs,
+}: {
+  station: StationHeartbeat;
+  status: StationStatus;
+  referenceMs: number;
+}) {
+  const cam = station.camera;
+  const lib = station.library;
+  return (
+    <div className="flex flex-col gap-4 border-t border-border p-4">
+      {status === "offline" && (
+        <Banner
+          kind="err"
+          title="Not reporting."
+          body={`Its last heartbeat was ${relativeAge(Date.parse(station.reportedAt))}${
+            referenceMs < Date.now() - 60_000 ? `, ${formatDuration(heartbeatAgeMs(station, referenceMs) / 1000)} before this snapshot` : ""
+          }. The station, its uplink, or the recorder process is down; everything below is from that last report.`}
+        />
+      )}
+      {(cam?.warnings?.length || 0) > 0 && (
+        <Banner kind="warn" title="Camera warning." body={cam!.warnings!.join(" · ")} />
+      )}
+
+      <div className="grid gap-4 lg:grid-cols-3">
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-2">
+            <Vital
+              icon={<Activity size={13} />}
+              label="Frame rate"
+              value={cam?.fps != null ? `${cam.fps} fps` : "—"}
+            />
+            <Vital
+              icon={<Thermometer size={13} />}
+              label="Camera temp"
+              // The recorder reports 0 rather than null when no camera is attached.
+              value={cam?.temperatureC != null && cam.status === "connected" ? `${cam.temperatureC}°C` : "—"}
+              tone={(cam?.temperatureC ?? 0) > 70 ? "warn" : "plain"}
+            />
+            <Vital
+              icon={<Zap size={13} />}
+              label="Power draw"
+              value={station.power?.totalW != null ? `${station.power.totalW} W` : "—"}
+              title={station.power?.note}
+            />
+            <Vital
+              icon={<Camera size={13} />}
+              label="Camera"
+              value={cam?.model || cam?.status || "—"}
+              sub={cam?.serialNumber ? `S/N ${cam.serialNumber}` : undefined}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <UploadChip upload={station.upload} />
+            <Battery battery={station.battery} />
+          </div>
+          <Section title="Daily yield">
+            {lib?.days?.length ? <YieldBars days={lib.days} /> : <Empty>No recordings yet</Empty>}
+          </Section>
+          <Section title="Quality">
+            {lib && lib.totalTakes > 0 ? (
+              <div className="flex flex-wrap items-center gap-2 text-sm">
+                <QualityPill count={lib.okTakes} total={lib.totalTakes} />
+                {lib.degradedTakes > 0 && (
+                  <span className="inline-flex items-center gap-1 rounded-md border border-warn/40 bg-warn/10 px-2 py-1 text-amber-300">
+                    <AlertTriangle size={13} /> {lib.degradedTakes} degraded
+                  </span>
+                )}
+                <span className="text-text-muted">
+                  across {lib.totalTakes} take{lib.totalTakes === 1 ? "" : "s"}
+                </span>
+              </div>
+            ) : (
+              <Empty>Nothing recorded yet</Empty>
+            )}
+          </Section>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <TaskBreakdown station={station} />
+          <Collapsible
+            title="Recent takes"
+            badge={lib?.recentTakes?.length ? String(lib.recentTakes.length) : undefined}
+            defaultOpen
+          >
+            {lib?.recentTakes?.length ? (
+              <ul className="flex max-h-96 flex-col gap-1.5 overflow-y-auto">
+                {lib.recentTakes.map((t) => (
+                  <TakeRow key={t.episodeId} take={t} />
+                ))}
+              </ul>
+            ) : (
+              <Empty>No takes recorded</Empty>
+            )}
+          </Collapsible>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <RemoteAccess station={station} />
+          <Collapsible title="Current settings" icon={<Settings2 size={13} />}>
+            {station.settings && Object.keys(station.settings).length > 0 ? (
+              <dl className="grid grid-cols-1 gap-x-3 gap-y-1 text-sm sm:grid-cols-2">
+                {Object.entries(station.settings).map(([k, v]) => (
+                  <div key={k} className="flex items-baseline justify-between gap-2">
+                    <dt className="truncate text-text-muted">{humanise(k)}</dt>
+                    <dd className="flex-shrink-0 font-mono text-text">{String(v)}</dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <Empty>Not reported</Empty>
+            )}
+          </Collapsible>
+          <Collapsible title="Storage" icon={<HardDrive size={13} />} defaultOpen>
+            <div className="flex flex-col gap-2">
+              {[...(station.disks || []), ...(station.operator?.disk ? [station.operator.disk] : [])].map(
+                (d, i) => (
+                  <div key={i} className="flex items-center gap-2 text-sm">
+                    <span className="w-32 flex-shrink-0 truncate font-mono text-text-muted">
+                      {d.label || d.path}
+                    </span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-input">
+                      <div
+                        className={`h-full ${(d.usedPct ?? 0) > 85 ? "bg-err" : "bg-accent"}`}
+                        style={{ width: `${Math.min(100, d.usedPct ?? 0)}%` }}
+                      />
+                    </div>
+                    <span className="w-24 flex-shrink-0 text-right text-text-muted">
+                      {formatBytes(d.freeBytes)} free
+                    </span>
+                  </div>
+                ),
+              )}
+              {!(station.disks || []).length && !station.operator?.disk && <Empty>Not reported</Empty>}
+            </div>
+          </Collapsible>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 /**
  * Episodes and recorded time split by task.
@@ -394,15 +590,12 @@ function TaskBreakdown({ station }: { station: StationHeartbeat }) {
   return (
     <Collapsible
       title="Task breakdown"
-      icon={<Activity size={11} />}
+      icon={<Activity size={13} />}
       badge={`${rows.length} task${rows.length === 1 ? "" : "s"}`}
       defaultOpen
     >
       <div className="flex flex-col gap-4">
-        <Donut
-          slices={rows.map((r) => ({ label: r.label, value: r.takes }))}
-          centreLabel="episodes"
-        />
+        <Donut slices={rows.map((r) => ({ label: r.label, value: r.takes }))} centreLabel="episodes" />
         <div>
           <SectionLabel>Recorded time by task</SectionLabel>
           <div className="mt-1.5">
@@ -416,7 +609,7 @@ function TaskBreakdown({ station }: { station: StationHeartbeat }) {
             />
           </div>
         </div>
-        <p className="text-[0.65rem] text-text-dim">
+        <p className="text-xs text-text-dim">
           Last {window} take{window === 1 ? "" : "s"} · {totalMin.toFixed(0)} min total
         </p>
       </div>
@@ -424,122 +617,29 @@ function TaskBreakdown({ station }: { station: StationHeartbeat }) {
   );
 }
 
-// ---------------- Live state ----------------
-
 /**
- * What the station is doing right now, at a glance from across the room.
- *
- * Operator and task are set large because they are the two things worth
- * checking mid-shift; everything else on the card is diagnostic. When the
- * station is not recording this collapses to a quiet idle row rather than
- * showing stale names as though they were live.
- */
-function LiveNow({
-  station,
-  status,
-}: {
-  station: StationHeartbeat;
-  status: StationStatus;
-}) {
-  const rec = station.recorder;
-  const live = status === "recording";
-  const operator = (rec?.operator || "").trim();
-  const task = (rec?.taskName || "").trim();
-
-  return (
-    <div
-      className={`rounded-lg border p-3 ${
-        live ? "border-ok/40 bg-ok/[0.07]" : "border-border bg-input/30"
-      }`}
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            {live ? (
-              <>
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-ok opacity-75" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-ok" />
-                </span>
-                <span className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-emerald-300">
-                  Recording now
-                </span>
-              </>
-            ) : (
-              <span className="text-[0.62rem] font-semibold uppercase tracking-[0.14em] text-text-dim">
-                {status === "offline" ? "Last seen idle" : "Idle — not recording"}
-              </span>
-            )}
-          </div>
-
-          {live && (task || operator) ? (
-            <div className="mt-1.5 min-w-0">
-              <div
-                className="truncate text-[1.35rem] font-semibold leading-tight text-text"
-                title={task || undefined}
-              >
-                {task || "Untitled task"}
-              </div>
-              <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[0.8rem]">
-                <span className="inline-flex items-center gap-1.5 text-text-muted">
-                  <User size={13} />
-                  {operator ? (
-                    <span className="font-medium text-text">{operator}</span>
-                  ) : (
-                    <span className="italic text-text-dim">no operator entered</span>
-                  )}
-                </span>
-                {rec?.durationSec != null && (
-                  <span className="font-mono tabular-nums text-emerald-300">
-                    {formatDuration(rec.durationSec)}
-                  </span>
-                )}
-                {rec?.frameCount != null && (
-                  <span className="text-text-dim">
-                    {rec.frameCount.toLocaleString()} frames
-                  </span>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="mt-1 text-[0.78rem] text-text-dim">
-              Nothing in progress on this station.
-            </div>
-          )}
-        </div>
-
-        <div className="flex shrink-0 flex-col items-end gap-2">
-          <UploadChip upload={station.upload} />
-          <Battery battery={station.battery} />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-/**
- * Cloud upload state. The recorder reports a queue summary; until asynchronous
- * upload is wired in, that queue simply stays empty and this reads "idle",
- * which is accurate rather than a placeholder.
+ * Cloud upload state. The recorder reports a queue summary; an empty queue
+ * reads "idle", which is accurate rather than a placeholder.
  */
 function UploadChip({ upload }: { upload?: StationUpload | null }) {
+  const base = "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm";
   if (!upload || upload.configured === false) {
     return (
       <span
-        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-input px-2 py-1 text-[0.68rem] text-text-dim"
+        className={`${base} border-border bg-input text-text-dim`}
         title={upload?.error || "No upload queue reported by this station."}
       >
-        <CloudOff size={12} /> Upload off
+        <CloudOff size={14} /> Upload off
       </span>
     );
   }
   if (upload.active) {
     return (
       <span
-        className="inline-flex items-center gap-1.5 rounded-md border border-cyan-500/40 bg-cyan-500/15 px-2 py-1 text-[0.68rem] text-cyan-300"
+        className={`${base} border-cyan-500/40 bg-cyan-500/15 text-cyan-300`}
         title={`${upload.running || 0} uploading, ${upload.pending || 0} queued`}
       >
-        <CloudUpload size={12} className="animate-pulse" />
+        <CloudUpload size={14} className="animate-pulse" />
         Uploading {upload.backlog ? `(${upload.backlog})` : ""}
       </span>
     );
@@ -547,14 +647,10 @@ function UploadChip({ upload }: { upload?: StationUpload | null }) {
   const failed = upload.failed || 0;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 text-[0.68rem] ${
-        failed
-          ? "border-warn/40 bg-warn/10 text-amber-300"
-          : "border-border bg-input text-text-muted"
-      }`}
+      className={`${base} ${failed ? "border-warn/40 bg-warn/10 text-amber-300" : "border-border bg-input text-text-muted"}`}
       title={`${upload.completed || 0} uploaded, ${failed} failed`}
     >
-      <CloudUpload size={12} />
+      <CloudUpload size={14} />
       {failed ? `${failed} upload${failed === 1 ? "" : "s"} failed` : "Cloud idle"}
     </span>
   );
@@ -569,13 +665,13 @@ function Battery({ battery }: { battery?: StationBattery | null }) {
   const tone = batteryTone(battery.remainingPct);
   const runtime = battery.runtimeMinRemaining;
   return (
-    <div className="w-44" title={battery.note}>
+    <div className="w-52" title={battery.note}>
       <BatteryMeter
         pct={battery.remainingPct}
         tone={tone}
         label={
           <span className="inline-flex items-center gap-1">
-            <BatteryCharging size={11} /> Battery · est.
+            <BatteryCharging size={12} /> Battery · est.
           </span>
         }
         caption={
@@ -600,32 +696,26 @@ function Battery({ battery }: { battery?: StationBattery | null }) {
 function RemoteAccess({ station }: { station: StationHeartbeat }) {
   const devices = station.devices || [];
   if (!devices.length) {
-    return (
-      <div className="rounded-md border border-dashed border-border bg-input/40 px-3 py-2 text-[0.72rem] text-text-dim">
-        No devices reported — remote access unavailable.
-      </div>
-    );
+    return <Empty>No devices reported, so remote access is unavailable.</Empty>;
   }
-  const needsNoVnc = devices.some(
-    (d) => d.role === "operator" && d.remote?.host && !d.remote.screenUrl,
-  );
+  const needsNoVnc = devices.some((d) => d.role === "operator" && d.remote?.host && !d.remote.screenUrl);
 
   return (
-    <div className="flex flex-col gap-2 border-t border-border pt-3">
+    <div className="flex flex-col gap-2">
       <SectionLabel>Devices</SectionLabel>
-      <ul className="flex flex-col gap-1.5">
+      <ul className="flex flex-col gap-2">
         {devices.map((d, i) => (
           <DeviceRow key={`${d.role}-${d.name || i}`} device={d} />
         ))}
       </ul>
-      <p className="text-[0.65rem] text-text-dim">
-        Opens over Tailscale — you must be signed in to the tailnet.
+      <p className="text-xs text-text-dim">
+        Opens over Tailscale; you must be signed in to the tailnet.
         {needsNoVnc && (
           <>
             {" "}
             The operator screen still needs a local VNC client; run{" "}
-            <code className="rounded bg-input px-1 py-0.5">deploy/install-novnc.sh</code>{" "}
-            on it to open the screen in a browser window instead.
+            <code className="rounded bg-input px-1 py-0.5">deploy/install-novnc.sh</code> on it to
+            open the screen in a browser window instead.
           </>
         )}
       </p>
@@ -638,17 +728,17 @@ function DeviceRow({ device }: { device: StationDevice }) {
   const platform = platformLabel(device.platform);
   const reachable = device.reachable !== false;
   return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-md border border-border/60 bg-input/40 px-2.5 py-2">
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border/60 bg-input/40 px-3 py-2.5">
       <span
-        className={`h-2 w-2 flex-shrink-0 rounded-full ${reachable ? "bg-ok" : "bg-err"}`}
+        className={`h-2.5 w-2.5 flex-shrink-0 rounded-full ${reachable ? "bg-ok" : "bg-err"}`}
         title={reachable ? "Reachable" : device.error || "Unreachable"}
       />
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-baseline gap-x-2 text-[0.75rem]">
+        <div className="flex flex-wrap items-baseline gap-x-2 text-sm">
           <span className="font-medium text-text">{ROLE_LABELS[device.role]}</span>
           <span className="font-mono text-text-muted">{device.name || device.hostname || "—"}</span>
         </div>
-        <div className="truncate text-[0.65rem] text-text-dim" title={device.platform?.model || undefined}>
+        <div className="truncate text-xs text-text-dim" title={device.platform?.model || undefined}>
           {[platform, device.platform?.os].filter(Boolean).join(" · ") || "Hardware not reported"}
         </div>
       </div>
@@ -658,7 +748,7 @@ function DeviceRow({ device }: { device: StationDevice }) {
             <RemoteButton
               href={links.sshUrl}
               copy={links.sshCommand}
-              icon={<Terminal size={12} />}
+              icon={<Terminal size={14} />}
               label="Shell"
               hint={links.sshCommand}
             />
@@ -671,14 +761,14 @@ function DeviceRow({ device }: { device: StationDevice }) {
                 <RemoteButton
                   href={links.vncUrl}
                   copy={links.vncTarget}
-                  icon={<Monitor size={12} />}
+                  icon={<Monitor size={14} />}
                   label="Screen"
                   hint={`vncviewer ${links.vncTarget}`}
                 />
               ))}
           </>
         ) : (
-          <span className="text-[0.65rem] text-text-dim">no tailnet address</span>
+          <span className="text-xs text-text-dim">no tailnet address</span>
         )}
       </div>
     </li>
@@ -697,15 +787,13 @@ function ScreenButton({ url }: { url: string }) {
   return (
     <button
       type="button"
-      onClick={() =>
-        window.open(url, "operator-screen", "width=1280,height=800,noopener,noreferrer")
-      }
-      className="inline-flex items-center gap-1.5 rounded-md border border-accent/50 bg-accent/15 px-2.5 py-1.5 text-[0.72rem] font-medium text-text transition hover:bg-accent/25"
+      onClick={() => window.open(url, "operator-screen", "width=1280,height=800,noopener,noreferrer")}
+      className="inline-flex items-center gap-1.5 rounded-md border border-accent/50 bg-accent/15 px-3 py-1.5 text-sm font-medium text-text transition hover:bg-accent/25"
       title={url}
     >
-      <Monitor size={12} />
+      <Monitor size={14} />
       Open screen
-      <ExternalLink size={10} className="opacity-60" />
+      <ExternalLink size={12} className="opacity-60" />
     </button>
   );
 }
@@ -728,7 +816,7 @@ function RemoteButton({
     <span className="inline-flex overflow-hidden rounded-md border border-border bg-input">
       <a
         href={href}
-        className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-[0.72rem] text-text transition hover:bg-panel"
+        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm text-text transition hover:bg-panel"
         title={hint}
       >
         {icon}
@@ -741,10 +829,10 @@ function RemoteButton({
           setCopied(true);
           setTimeout(() => setCopied(false), 1500);
         }}
-        className="border-l border-border px-2 text-text-muted transition hover:bg-panel hover:text-text"
+        className="border-l border-border px-2.5 text-text-muted transition hover:bg-panel hover:text-text"
         title={`Copy: ${copy}`}
       >
-        {copied ? <CheckCircle2 size={12} className="text-emerald-300" /> : <Copy size={12} />}
+        {copied ? <CheckCircle2 size={14} className="text-emerald-300" /> : <Copy size={14} />}
       </button>
     </span>
   );
@@ -764,24 +852,16 @@ function YieldBars({ days }: { days: StationDay[] }) {
         const pct = Math.max(8, (d.takes / peak) * 100);
         const allOk = d.okTakes === d.takes;
         return (
-          <div
-            key={d.date}
-            className="flex min-w-0 flex-1 flex-col items-center gap-1 sm:max-w-[56px]"
-          >
+          <div key={d.date} className="flex min-w-0 flex-1 flex-col items-center gap-1 sm:max-w-[64px]">
             <div
               className="flex w-full items-end justify-center rounded-t bg-input"
-              style={{ height: 46 }}
+              style={{ height: 56 }}
               title={`${d.date}: ${d.takes} takes, ${formatDuration(d.durationSec)}, ${formatBytes(d.bytes)}, ${d.okTakes}/${d.takes} clean`}
             >
-              <div
-                className={`w-full rounded-t ${allOk ? "bg-accent" : "bg-warn"}`}
-                style={{ height: `${pct}%` }}
-              />
+              <div className={`w-full rounded-t ${allOk ? "bg-accent" : "bg-warn"}`} style={{ height: `${pct}%` }} />
             </div>
-            <span className="text-[0.6rem] tabular-nums text-text">{d.takes}</span>
-            <span className="truncate text-[0.55rem] text-text-dim">
-              {d.date.slice(5)}
-            </span>
+            <span className="text-xs tabular-nums text-text">{d.takes}</span>
+            <span className="truncate text-[0.7rem] text-text-dim">{d.date.slice(5)}</span>
           </div>
         );
       })}
@@ -792,25 +872,20 @@ function YieldBars({ days }: { days: StationDay[] }) {
 function TakeRow({ take }: { take: StationTake }) {
   const ok = take.qualityOk;
   return (
-    <li className="flex items-start gap-2 rounded-md border border-border/60 bg-input/40 px-2 py-1.5 text-[0.72rem]">
+    <li className="flex items-start gap-2 rounded-md border border-border/60 bg-input/40 px-2.5 py-2 text-sm">
       <span className="mt-0.5">
         {ok ? (
-          <CheckCircle2 size={12} className="text-emerald-300" />
+          <CheckCircle2 size={14} className="text-emerald-300" />
         ) : (
-          <AlertTriangle size={12} className="text-amber-300" />
+          <AlertTriangle size={14} className="text-amber-300" />
         )}
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-baseline gap-x-2">
-          <span className="truncate font-medium text-text">
-            {take.taskName || "—"}
-          </span>
-          {take.operator && (
-            <span className="text-[0.65rem] text-text-muted">{take.operator}</span>
-          )}
+          <span className="truncate font-medium text-text">{take.taskName || "—"}</span>
+          {take.operator && <span className="text-xs text-text-muted">{take.operator}</span>}
         </div>
-        <div className="flex flex-wrap gap-x-2 font-mono text-[0.62rem] text-text-dim">
-          <span>{take.episodeId}</span>
+        <div className="flex flex-wrap gap-x-2 font-mono text-xs text-text-dim">
           <span>{formatDuration(take.durationSec)}</span>
           <span>{take.frameCount ?? "—"}f</span>
           <span>{formatBytes(take.bytes)}</span>
@@ -818,23 +893,17 @@ function TakeRow({ take }: { take: StationTake }) {
         </div>
       </div>
       {take.startedAt && (
-        <span className="flex-shrink-0 font-mono text-[0.6rem] text-text-dim">
-          {relativeAge(Date.parse(take.startedAt))}
-        </span>
+        <span className="flex-shrink-0 text-xs text-text-dim">{relativeAge(Date.parse(take.startedAt))}</span>
       )}
     </li>
   );
 }
 
-function QualityPill({ ok, count, total }: { ok: boolean; count: number; total: number }) {
+function QualityPill({ count, total }: { count: number; total: number }) {
   const pct = total ? Math.round((count / total) * 100) : 0;
   return (
-    <span
-      className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 ${
-        ok ? "border-ok/40 bg-ok/10 text-emerald-300" : "border-border bg-input text-text-muted"
-      }`}
-    >
-      <CheckCircle2 size={11} /> {pct}% clean
+    <span className="inline-flex items-center gap-1 rounded-md border border-ok/40 bg-ok/10 px-2 py-1 text-emerald-300">
+      <CheckCircle2 size={13} /> {pct}% clean
     </span>
   );
 }
@@ -843,12 +912,14 @@ function Vital({
   icon,
   label,
   value,
+  sub,
   tone = "plain",
   title,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
+  sub?: string;
   tone?: "ok" | "warn" | "err" | "dim" | "plain";
   title?: string;
 }) {
@@ -860,12 +931,13 @@ function Vital({
     plain: "text-text",
   }[tone];
   return (
-    <div className="rounded-md border border-border bg-input/50 px-2.5 py-1.5" title={title}>
-      <div className="flex items-center gap-1 text-[0.58rem] font-semibold uppercase tracking-wider text-text-muted">
+    <div className="min-w-0 rounded-lg border border-border bg-input/50 px-3 py-2" title={title}>
+      <div className="flex items-center gap-1.5 text-xs font-medium text-text-muted">
         {icon}
         {label}
       </div>
-      <div className={`mt-0.5 truncate text-[0.85rem] font-semibold ${color}`}>{value}</div>
+      <div className={`mt-0.5 truncate text-base font-semibold ${color}`}>{value}</div>
+      {sub && <div className="truncate text-xs text-text-dim">{sub}</div>}
     </div>
   );
 }
@@ -893,60 +965,41 @@ function Collapsible({
   children: React.ReactNode;
 }) {
   return (
-    <details open={defaultOpen} className="group rounded-md border border-border bg-input/40">
-      <summary className="flex cursor-pointer list-none items-center gap-1.5 px-3 py-1.5 text-[0.6rem] font-semibold uppercase tracking-widest text-text-muted transition hover:text-text">
-        <ChevronDown
-          size={12}
-          className="transition group-open:rotate-180"
-        />
+    <details open={defaultOpen} className="group rounded-lg border border-border bg-input/40">
+      <summary className="flex cursor-pointer list-none items-center gap-2 px-3 py-2.5 text-sm font-semibold text-text-muted transition hover:text-text">
+        <ChevronDown size={15} className="transition group-open:rotate-180" />
         {icon}
         {title}
         {badge && (
-          <span className="ml-auto rounded bg-panel px-1.5 py-0.5 font-mono text-[0.6rem] normal-case tracking-normal text-text-muted">
+          <span className="ml-auto rounded bg-panel px-1.5 py-0.5 font-mono text-xs font-normal text-text-muted">
             {badge}
           </span>
         )}
       </summary>
-      <div className="border-t border-border px-3 py-2">{children}</div>
+      <div className="border-t border-border px-3 py-2.5">{children}</div>
     </details>
   );
 }
 
 function SectionLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="text-[0.6rem] font-semibold uppercase tracking-widest text-text-muted">
-      {children}
-    </div>
-  );
+  return <div className="text-xs font-semibold uppercase tracking-wider text-text-muted">{children}</div>;
 }
 
 function Empty({ children }: { children: React.ReactNode }) {
   return (
-    <div className="rounded-md border border-dashed border-border bg-input/40 px-3 py-2 text-[0.72rem] text-text-dim">
+    <div className="rounded-lg border border-dashed border-border bg-input/40 px-3 py-2.5 text-sm text-text-dim">
       {children}
     </div>
   );
 }
 
-function Banner({
-  kind,
-  title,
-  body,
-}: {
-  kind: "err" | "warn";
-  title: string;
-  body: string;
-}) {
-  const cls =
-    kind === "err"
-      ? "border-err/30 bg-err/10 text-red-300"
-      : "border-warn/30 bg-warn/10 text-amber-200/90";
+function Banner({ kind, title, body }: { kind: "err" | "warn"; title: string; body: string }) {
+  const cls = kind === "err" ? "border-err/30 bg-err/10 text-red-300" : "border-warn/30 bg-warn/10 text-amber-200/90";
   return (
-    <div className={`flex items-start gap-2 rounded-md border p-2 text-[0.75rem] ${cls}`}>
-      <AlertTriangle size={13} className="mt-0.5 flex-shrink-0" />
+    <div className={`flex items-start gap-2.5 rounded-lg border p-3 text-sm ${cls}`}>
+      <AlertTriangle size={16} className="mt-0.5 flex-shrink-0" />
       <div className="min-w-0">
-        <span className="font-semibold">{title}</span>{" "}
-        <span className="break-words opacity-90">{body}</span>
+        <span className="font-semibold">{title}</span> <span className="break-words opacity-90">{body}</span>
       </div>
     </div>
   );
@@ -961,114 +1014,112 @@ function Stat({
   label: string;
   value: number;
   sub?: string;
-  accent: "ok" | "cyan" | "err" | "warn" | "slate";
+  accent: "ok" | "rec" | "err" | "warn" | "slate";
 }) {
   const tint = {
     ok: "from-ok/15",
-    cyan: "from-cyan-500/15",
-    err: "from-err/15",
+    rec: "from-red-500/15",
+    err: "from-err/10",
     warn: "from-warn/15",
     slate: "from-text-muted/15",
   }[accent];
   const text = {
     ok: "text-emerald-300",
-    cyan: "text-cyan-300",
+    rec: "text-red-300",
     err: "text-red-300",
     warn: "text-amber-300",
     slate: "text-text",
   }[accent];
   return (
     <div className={`panel relative overflow-hidden bg-gradient-to-br ${tint} to-transparent px-4 py-3`}>
-      <div className="text-[0.62rem] font-semibold uppercase tracking-widest text-text-muted">
-        {label}
-      </div>
-      <div className={`mt-1 text-2xl font-bold tabular-nums ${text}`}>{value}</div>
-      {sub && <div className="text-[0.62rem] text-text-muted">{sub}</div>}
+      <div className="text-xs font-semibold uppercase tracking-wider text-text-muted">{label}</div>
+      <div className={`mt-1 text-3xl font-bold tabular-nums ${text}`}>{value}</div>
+      {sub && <div className="text-xs text-text-muted">{sub}</div>}
     </div>
   );
 }
 
 function HeartbeatBadge({ ageMs, reportedAt }: { ageMs: number; reportedAt: string }) {
   const tone =
-    ageMs > 5 * 60 * 1000
+    ageMs > STALE_AFTER_MS
       ? "border-err/40 bg-err/10 text-red-300"
       : ageMs > LATE_AFTER_MS
         ? "border-warn/40 bg-warn/10 text-amber-300"
         : "border-ok/40 bg-ok/10 text-emerald-300";
   return (
-    <div
-      className={`inline-flex flex-shrink-0 items-center gap-1 rounded-md border px-2 py-0.5 text-[0.6rem] ${tone}`}
+    <span
+      className={`inline-flex flex-shrink-0 items-center gap-1.5 rounded-md border px-2 py-1 text-xs ${tone}`}
       title={`Last heartbeat: ${new Date(reportedAt).toLocaleString()}`}
     >
-      <Clock size={10} />
-      {relativeAge(Date.parse(reportedAt))}
-    </div>
+      <Clock size={12} />
+      reported {relativeAge(Date.parse(reportedAt))}
+    </span>
   );
 }
 
-function SnapshotBadge({
-  generatedAt,
+function FreshnessBadge({
   loading,
+  live,
+  generatedAt,
+  ageMs,
 }: {
-  generatedAt?: string;
   loading: boolean;
+  live: boolean;
+  generatedAt?: string;
+  ageMs: number;
 }) {
+  const base = "inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm";
   if (loading) {
     return (
-      <div className="inline-flex items-center gap-1.5 rounded-md border border-border bg-panel px-2.5 py-1 text-[0.7rem] text-text-muted">
-        <Loader2 size={12} className="animate-spin" /> loading
-      </div>
+      <span className={`${base} border-border bg-panel text-text-muted`}>
+        <Loader2 size={15} className="animate-spin" /> Loading
+      </span>
     );
   }
   if (!generatedAt) {
+    return <span className={`${base} border-warn/40 bg-warn/10 text-amber-300`}>No data</span>;
+  }
+  if (live) {
     return (
-      <div className="inline-flex items-center gap-1.5 rounded-md border border-warn/40 bg-warn/10 px-2.5 py-1 text-[0.7rem] text-amber-300">
-        no data
-      </div>
+      <span className={`${base} border-ok/40 bg-ok/10 text-emerald-300`} title={new Date(generatedAt).toLocaleString()}>
+        <span className="h-2 w-2 animate-pulse rounded-full bg-ok" /> Live
+      </span>
     );
   }
   return (
-    <div
-      className="inline-flex items-center gap-1.5 rounded-md border border-border bg-panel px-2.5 py-1 text-[0.7rem] text-text-muted"
+    <span
+      className={`${base} ${ageMs > SNAPSHOT_OLD_MS ? "border-warn/40 bg-warn/10 text-amber-300" : "border-border bg-panel text-text-muted"}`}
       title={new Date(generatedAt).toLocaleString()}
     >
-      collected {relativeAge(Date.parse(generatedAt))}
-    </div>
+      <Clock size={15} /> Snapshot from {relativeAge(Date.parse(generatedAt))}
+    </span>
   );
 }
 
 function SetupHint() {
   return (
-    <div className="flex items-start gap-3 rounded-xl border border-warn/30 bg-warn/5 p-4 text-[0.82rem] text-amber-200/90">
+    <div className="flex items-start gap-3 rounded-xl border border-warn/30 bg-warn/5 p-4 text-sm text-amber-200/90">
       <AlertTriangle size={18} className="mt-0.5 flex-shrink-0 text-amber-300" />
       <div className="space-y-2">
         <div>
-          <span className="font-semibold">No stations reporting yet.</span> Each
-          rig publishes its own heartbeat — there is no list to edit here.
+          <span className="font-semibold">No stations reporting yet.</span> Each rig publishes its
+          own heartbeat, so there is no list to edit here.
         </div>
         <ol className="ml-4 list-decimal space-y-1 text-text-muted">
           <li>
             On the recorder, set{" "}
-            <code className="rounded bg-input px-1.5 py-0.5 text-amber-200">
-              S3_RAW_BUCKET
-            </code>{" "}
-            (fleet reporting reuses it) and restart{" "}
-            <code className="rounded bg-input px-1.5 py-0.5 text-text">
-              thoth-recorder
-            </code>
-            .
+            <code className="rounded bg-input px-1.5 py-0.5 text-amber-200">S3_RAW_BUCKET</code> (fleet
+            reporting reuses it) and restart{" "}
+            <code className="rounded bg-input px-1.5 py-0.5 text-text">thoth-recorder</code>.
           </li>
           <li>
             Verify with{" "}
             <code className="rounded bg-input px-1.5 py-0.5 text-text">
               curl -X POST localhost:8000/api/fleet/publish
-            </code>{" "}
-            — it returns the key it wrote.
+            </code>
+            ; it returns the key it wrote.
           </li>
-          <li>
-            The next deploy picks it up; stations appear automatically within
-            about five minutes.
-          </li>
+          <li>Stations appear automatically once their first heartbeat is read.</li>
         </ol>
       </div>
     </div>

@@ -1,19 +1,25 @@
 import { useEffect, useState } from "react";
 import { api } from "../lib/api";
-import { normalizeStation, type StationsSnapshot } from "../lib/stations";
+import {
+  compareStations,
+  normalizeStation,
+  snapshotReferenceMs,
+  type StationsSnapshot,
+} from "../lib/stations";
 
 /**
- * Poll the baked station snapshot.
+ * Poll station heartbeats: the live Worker when configured, else the baked
+ * snapshot.
  *
  * Unlike useInstances there is no configured list to merge against: stations
  * announce themselves by writing a heartbeat, so the fleet is whatever is in
  * the bucket. Adding a rig means deploying the agent, not editing this repo.
  *
- * The default interval is deliberately shorter than the 5-minute deploy cron
- * so a fresh snapshot is picked up soon after it lands, without the page
- * needing a reload.
+ * Live data is re-read every 15 s (the Worker caches for 20 s, so this costs
+ * S3 nothing extra); the baked file only changes on deploy, so once a minute
+ * is plenty to pick a new one up without a reload.
  */
-export function useStations(pollMs = 60_000) {
+export function useStations() {
   const [snapshot, setSnapshot] = useState<StationsSnapshot | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -24,29 +30,40 @@ export function useStations(pollMs = 60_000) {
       const s = await api.stations();
       if (!alive) return;
       // Every consumer reads the current schema; old heartbeats are upgraded here.
-      setSnapshot(s ? { ...s, stations: (s.stations || []).map(normalizeStation) } : s);
+      setSnapshot(
+        s
+          ? { ...s, stations: (s.stations || []).map(normalizeStation).sort(compareStations) }
+          : s,
+      );
       setLoading(false);
-      timer = setTimeout(tick, pollMs);
+      timer = setTimeout(tick, s?.source === "live" ? 15_000 : 60_000);
     };
     tick();
     return () => {
       alive = false;
       if (timer) clearTimeout(timer);
     };
-  }, [pollMs]);
+  }, []);
 
   // Re-render on a timer even when the data has not changed, so the relative
   // ages ("2m ago") and the derived offline state stay honest between polls.
   const [, force] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => force((n) => n + 1), 20_000);
+    const t = setInterval(() => force((n) => n + 1), 10_000);
     return () => clearInterval(t);
   }, []);
 
+  const live = snapshot?.source === "live";
+  const referenceMs = snapshotReferenceMs(snapshot);
   return {
     snapshot,
     stations: snapshot?.stations || [],
     error: snapshot?.error || null,
     loading,
+    live,
+    /** The instant the data describes; judge staleness against this. */
+    referenceMs,
+    /** How old that instant is. Zero for live data. */
+    dataAgeMs: live ? 0 : Math.max(0, Date.now() - referenceMs),
   };
 }
