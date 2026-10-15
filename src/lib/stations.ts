@@ -213,6 +213,8 @@ export type StationAudio = {
   available: boolean;
   problem?: string;
   levelDbfs?: number | null;
+  /** Only steady noise for 30 s: likely an empty jack (the jack sensor can't tell). */
+  flat?: boolean;
   lastTake?: { take: string; ok: boolean; error?: string | null } | null;
 };
 
@@ -433,6 +435,8 @@ export function attentionReasons(s: StationHeartbeat): string[] {
     out.push(`No take audio: ${s.audio.problem || "microphone not answering"}`);
   } else if (s.audio?.enabled && s.audio.lastTake && !s.audio.lastTake.ok) {
     out.push(`Last take has no audio: ${s.audio.lastTake.error || "unknown error"}`);
+  } else if (s.audio?.enabled && s.audio.flat) {
+    out.push("Mic hears only steady noise: is a microphone plugged in?");
   }
   const low = freeSpaceWarning(s);
   if (low) out.push(`Low disk: ${formatBytes(low.freeBytes)} free`);

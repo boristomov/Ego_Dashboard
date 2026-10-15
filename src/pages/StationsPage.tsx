@@ -321,6 +321,7 @@ function micLine(audio: StationHeartbeat["audio"]): string {
   if (audio.state === "off") return "Off: takes record video only.";
   if (audio.state === "unavailable") return `No audio: ${audio.problem || "microphone not answering"}`;
   if (audio.lastTake && !audio.lastTake.ok) return `Mic ready, but the last take has no audio: ${audio.lastTake.error || "unknown error"}`;
+  if (audio.flat) return `Hears only steady noise${level}: is a microphone plugged in? Turn audio off here if this station has none.`;
   return `Mic ready${level}`;
 }
 
