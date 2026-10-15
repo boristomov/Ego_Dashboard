@@ -127,6 +127,23 @@ aws iam put-user-policy --user-name ego-registry-writer \
 aws iam create-access-key --user-name ego-registry-writer
 ```
 
+Then create both documents empty. Without `s3:ListBucket`, S3 answers a read
+of a missing key with 403 rather than 404, so the Worker cannot tell "not
+created yet" from "not allowed" and refuses to start from nothing. Granting
+`ListBucket` would let this key enumerate every recording, so seed instead:
+
+```bash
+B=egodata-raw-prod-854929212137-us-west-2-an
+echo '{"schemaVersion":2,"generatedAt":"","tasks":[],"operators":[],"assets":[],"environments":[],"assignments":[]}' > /tmp/registry.json
+echo '{"schemaVersion":1,"generatedAt":"","pins":{},"issued":{}}' > /tmp/access.json
+aws s3api put-object --bucket $B --key _registry/registry.json --body /tmp/registry.json \
+  --content-type application/json --if-none-match '*'
+aws s3api put-object --bucket $B --key _registry/access.json --body /tmp/access.json \
+  --content-type application/json --if-none-match '*'
+```
+
+`--if-none-match '*'` makes this a no-op against a registry that already exists.
+
 ### 3. Deploy the Worker
 
 Cloudflare dashboard → **Workers & Pages** → **Create** → name it
