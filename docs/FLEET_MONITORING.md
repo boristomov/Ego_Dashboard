@@ -22,6 +22,7 @@ display). The operator board has changed between hardware generations:
 | 1 | ZED Box (Orin NX) | Raspberry Pi 5 | `zed-box-1`, `raspberrypi-1` |
 | 2 | ZED Box (Orin Nano 8GB, no NVENC) + ZED X Mini | LattePanda Alpha | `zed-box-2`, `lattepanda-2` |
 | 2 | ZED Box (Orin NX 8GB) | LattePanda Alpha | `zed-box-3`, `lattepanda-3` |
+| 2 | ZED Box (Orin Nano 8GB, no NVENC) + ZED X Mini | LattePanda Alpha | `zed-box-4`, `lattepanda-4` |
 
 Devices are named `<role>-<rig number>` in Tailscale, and **that suffix is what
 pairs them**: the recorder finds its operator device by looking for an online
