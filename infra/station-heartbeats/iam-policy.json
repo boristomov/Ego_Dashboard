@@ -1,19 +1,16 @@
 {
   "Version": "2012-10-17",
-  "Comment": [
-    "Least privilege for the ego-stations Worker.",
-    "It serves its answer unauthenticated, so its key must reach nothing that",
-    "stations.json does not already publish: list and read the heartbeats under",
-    "_fleet/, nothing else in the bucket and no writes anywhere.",
-    "Replace the bucket name if S3_FLEET_BUCKET differs."
-  ],
   "Statement": [
     {
       "Sid": "ListTheHeartbeatPrefixOnly",
       "Effect": "Allow",
       "Action": "s3:ListBucket",
       "Resource": "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an",
-      "Condition": { "StringLike": { "s3:prefix": "_fleet/*" } }
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": "_fleet/*"
+        }
+      }
     },
     {
       "Sid": "ReadTheHeartbeats",
