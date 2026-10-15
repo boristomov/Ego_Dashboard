@@ -121,8 +121,31 @@ export type StationUpload = {
   completed?: number;
   failed?: number;
   backlog?: number;
+  outstandingBytes?: number;
+  throughputMbps?: number;
+  etaSec?: number | null;
+  paused?: boolean;
+  reason?: string;
   error?: string;
 };
+
+/**
+ * Recorder disk as a recording budget. Uploaded takes are deleted locally
+ * only once S3 is verified to hold them, so free + evictable is the real room.
+ */
+export type StationStorage = {
+  freeBytes: number;
+  totalBytes: number;
+  evictableBytes: number;
+  evictableTakes?: number;
+  keepFreeBytes?: number;
+  takeRateBps?: number;
+  hoursLeft: number;
+  error?: string;
+};
+
+/** Below this the station cannot be trusted to finish a shift. */
+export const LOW_RECORDING_HOURS = 2;
 
 /** Everything needed to build an ssh/vnc link for one board. */
 export type RemoteTarget = {
@@ -243,6 +266,8 @@ export type StationHeartbeat = {
   shift?: StationShift | null;
   /** Absent on recorders that predate take audio. */
   audio?: StationAudio | null;
+  /** Absent on recorders that predate verified eviction. */
+  storage?: StationStorage | null;
 };
 
 export type StationsSnapshot = {
@@ -434,13 +459,24 @@ export function attentionReasons(s: StationHeartbeat): string[] {
   } else if (s.audio?.enabled && s.audio.lastTake && !s.audio.lastTake.ok) {
     out.push(`Last take has no audio: ${s.audio.lastTake.error || "unknown error"}`);
   }
+  const st = s.storage;
+  if (st && Number.isFinite(st.hoursLeft) && st.hoursLeft < LOW_RECORDING_HOURS) {
+    out.push(
+      `Recorder disk: ~${st.hoursLeft.toFixed(1)} h of recording left` +
+        ((s.upload?.backlog || 0) > 0 ? " (uploads behind)" : ""),
+    );
+  }
   const low = freeSpaceWarning(s);
   if (low) out.push(`Low disk: ${formatBytes(low.freeBytes)} free`);
   return out;
 }
 
 export function freeSpaceWarning(s: StationHeartbeat): StationDisk | null {
-  const all = [...(s.disks || []), ...(s.operator?.disk ? [s.operator.disk] : [])];
+  // A recorder that reports storage keeps its own disk in budget by deleting
+  // uploaded takes; its free space is judged in hours, above. The operator
+  // device's disk still counts.
+  const recorderDisks = s.storage ? [] : s.disks || [];
+  const all = [...recorderDisks, ...(s.operator?.disk ? [s.operator.disk] : [])];
   const low = all
     .filter((d) => d && d.totalBytes > 0)
     .sort((a, b) => a.freeBytes - b.freeBytes)[0];

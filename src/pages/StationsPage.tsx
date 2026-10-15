@@ -42,6 +42,7 @@ import {
   heartbeatAgeMs,
   isRecording,
   LATE_AFTER_MS,
+  LOW_RECORDING_HOURS,
   platformLabel,
   relativeAge,
   remoteLinks,
@@ -55,6 +56,7 @@ import {
   type StationDevice,
   type StationHeartbeat,
   type StationStatus,
+  type StationStorage,
   type StationTake,
   type StationUpload,
 } from "../lib/stations";
@@ -584,6 +586,7 @@ function StationDetail({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <UploadChip upload={station.upload} />
+            <StorageChip storage={station.storage} />
             <Battery battery={station.battery} />
           </div>
           <Section title="Daily yield">
@@ -734,13 +737,17 @@ function UploadChip({ upload }: { upload?: StationUpload | null }) {
     );
   }
   if (upload.active) {
+    const left = upload.outstandingBytes ? ` · ${formatBytes(upload.outstandingBytes)} left` : "";
+    const eta = upload.etaSec ? `, about ${formatDuration(upload.etaSec)} to go` : "";
+    const rate = upload.throughputMbps ? ` at ${upload.throughputMbps.toFixed(1)} MB/s` : "";
     return (
       <span
         className={`${base} border-cyan-500/40 bg-cyan-500/15 text-cyan-300`}
-        title={`${upload.running || 0} uploading, ${upload.pending || 0} queued`}
+        title={`${upload.running || 0} uploading, ${upload.pending || 0} queued${rate}${eta}${upload.paused && upload.reason ? ` (paused: ${upload.reason})` : ""}`}
       >
         <CloudUpload size={14} className="animate-pulse" />
         Uploading {upload.backlog ? `(${upload.backlog})` : ""}
+        {left}
       </span>
     );
   }
@@ -752,6 +759,28 @@ function UploadChip({ upload }: { upload?: StationUpload | null }) {
     >
       <CloudUpload size={14} />
       {failed ? `${failed} upload${failed === 1 ? "" : "s"} failed` : "Cloud idle"}
+    </span>
+  );
+}
+
+/**
+ * Recording room left on the recorder: free space plus uploaded takes it may
+ * delete, at the rate its recent takes actually used.
+ */
+function StorageChip({ storage }: { storage?: StationStorage | null }) {
+  if (!storage || !Number.isFinite(storage.hoursLeft)) return null;
+  const low = storage.hoursLeft < LOW_RECORDING_HOURS;
+  const base = "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm";
+  const hours = storage.hoursLeft >= 10 ? Math.round(storage.hoursLeft) : storage.hoursLeft.toFixed(1);
+  return (
+    <span
+      className={`${base} ${low ? "border-warn/40 bg-warn/10 text-amber-300" : "border-border bg-input text-text-muted"}`}
+      title={
+        `${formatBytes(storage.freeBytes)} free + ${formatBytes(storage.evictableBytes)} of uploaded takes ` +
+        `that can be cleared, at ${((storage.takeRateBps || 0) / 1e6).toFixed(1)} MB/s per take`
+      }
+    >
+      <HardDrive size={14} />~{hours} h recording room
     </span>
   );
 }
