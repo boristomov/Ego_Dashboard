@@ -56,7 +56,10 @@ altogether and is the better option.)
 | `GET` | `/staff/codes` | yes | Every person's 4-digit login code, and when it was issued |
 | `POST` | `/staff/<id>/code` | yes | Issue a new code for one person (the old one stops working) |
 
-`<kind>` is `task`, `operator`, `asset`, `environment` or `assignment`.
+`<kind>` is `task`, `operator`, `asset`, `environment`, `assignment` or
+`station`. A station record (id = the rig number) holds per-rig settings the
+operators cannot change, currently `recordAudio`; a rig with no record records
+audio.
 
 ### Staff login codes
 

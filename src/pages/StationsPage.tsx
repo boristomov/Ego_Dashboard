@@ -18,6 +18,8 @@ import {
   Loader2,
   Lock,
   Maximize2,
+  Mic,
+  MicOff,
   Minimize2,
   Monitor,
   Settings2,
@@ -27,7 +29,11 @@ import {
   Zap,
 } from "lucide-react";
 import { BarRows, BatteryMeter, Donut } from "../components/StationCharts";
+import { useRegistryAuth } from "../components/admin/RegistryAuthBar";
+import { useRegistry } from "../hooks/useRegistry";
 import { useStations } from "../hooks/useStations";
+import { recordsAudio, stationSettings, type Registry } from "../lib/registry";
+import { saveRecord } from "../lib/registryApi";
 import {
   attentionReasons,
   batteryTone,
@@ -59,6 +65,9 @@ const SNAPSHOT_OLD_MS = 10 * 60 * 1000;
 export function StationsPage() {
   const { snapshot, stations, error, loading, live, referenceMs, dataAgeMs } = useStations();
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const { registry, reload: reloadRegistry } = useRegistry();
+  const { canEdit } = useRegistryAuth();
+  const settings: StationSettingsCtl = { registry, canEdit, onSaved: reloadRegistry };
 
   const summary = useMemo(() => {
     const by = (s: StationStatus) =>
@@ -156,6 +165,7 @@ export function StationsPage() {
             stale={!live && dataAgeMs > SNAPSHOT_OLD_MS}
             open={expanded.has(s.stationId)}
             onToggle={() => toggle(s.stationId)}
+            settings={settings}
           />
         ))}
       </div>
@@ -192,12 +202,14 @@ function StationTile({
   stale,
   open,
   onToggle,
+  settings,
 }: {
   station: StationHeartbeat;
   referenceMs: number;
   stale: boolean;
   open: boolean;
   onToggle: () => void;
+  settings: StationSettingsCtl;
 }) {
   const status = stationStatus(station, referenceMs);
   const recording = isRecording(station, referenceMs);
@@ -230,6 +242,11 @@ function StationTile({
                 {style.label}
               </span>
               {recording && <RecBadge seconds={station.recorder?.durationSec} />}
+              {station.audio?.state === "off" && (
+                <span className="inline-flex items-center gap-1 rounded-md border border-border bg-input/60 px-2 py-0.5 text-xs text-text-muted">
+                  <MicOff size={12} /> Audio off
+                </span>
+              )}
             </div>
             <div className="mt-0.5 truncate font-mono text-xs text-text-dim">
               {station.name}
@@ -284,8 +301,88 @@ function StationTile({
         </div>
       </button>
 
-      {open && <StationDetail station={station} status={status} referenceMs={referenceMs} />}
+      {open && <StationDetail station={station} status={status} referenceMs={referenceMs} settings={settings} />}
     </article>
+  );
+}
+
+// ---------------- Station settings (written to the registry) ----------------
+
+type StationSettingsCtl = {
+  registry: Registry;
+  canEdit: boolean;
+  onSaved: () => void;
+};
+
+function micLine(audio: StationHeartbeat["audio"]): string {
+  if (!audio) return "This station's recorder does not report audio yet.";
+  const level = audio.levelDbfs != null ? ` · room ${Math.round(audio.levelDbfs)} dBFS` : "";
+  if (audio.state === "recording") return `Recording now${level}`;
+  if (audio.state === "off") return "Off: takes record video only.";
+  if (audio.state === "unavailable") return `No audio: ${audio.problem || "microphone not answering"}`;
+  if (audio.lastTake && !audio.lastTake.ok) return `Mic ready, but the last take has no audio: ${audio.lastTake.error || "unknown error"}`;
+  return `Mic ready${level}`;
+}
+
+/**
+ * The station's audio switch. On unless turned off here; the rig itself has no
+ * switch, so this is the only place it changes. Stations pick registry changes
+ * up within a minute.
+ */
+function AudioSetting({ station, settings }: { station: StationHeartbeat; settings: StationSettingsCtl }) {
+  const rig = station.rig?.id || station.shift?.station || null;
+  const on = recordsAudio(settings.registry, rig);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const audio = station.audio;
+  const syncing = !!audio && audio.enabled !== on;
+
+  const flip = async () => {
+    if (!rig) return;
+    setBusy(true);
+    setErr(null);
+    try {
+      const current = stationSettings(settings.registry, rig);
+      await saveRecord("station", { ...(current || {}), id: rig, recordAudio: !on });
+      settings.onSaved();
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : String(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Collapsible title="Audio" icon={on ? <Mic size={13} /> : <MicOff size={13} />} defaultOpen>
+      <div className="flex flex-col gap-2 text-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-text">Record audio with every take</div>
+            <div className="mt-0.5 break-words text-xs text-text-dim">{micLine(audio)}</div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={on}
+            disabled={!settings.canEdit || busy || !rig}
+            onClick={() => void flip()}
+            title={settings.canEdit ? (on ? "Turn audio off for this station" : "Turn audio on") : "Sign in on the Admin page to change"}
+            className={`relative mt-0.5 inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full border transition disabled:cursor-not-allowed disabled:opacity-50 ${
+              on ? "border-accent/60 bg-accent/70" : "border-border bg-input"
+            }`}
+          >
+            {busy ? (
+              <Loader2 size={14} className="mx-auto animate-spin text-text" />
+            ) : (
+              <span className={`inline-block h-4 w-4 rounded-full bg-text transition ${on ? "translate-x-6" : "translate-x-1"}`} />
+            )}
+          </button>
+        </div>
+        {!settings.canEdit && <div className="text-xs text-text-dim">Sign in on the Admin page to change this.</div>}
+        {syncing && <div className="text-xs text-amber-300">Saved; the station picks it up within a minute.</div>}
+        {err && <div className="break-words text-xs text-red-300">{err}</div>}
+      </div>
+    </Collapsible>
   );
 }
 
@@ -433,10 +530,12 @@ function StationDetail({
   station,
   status,
   referenceMs,
+  settings,
 }: {
   station: StationHeartbeat;
   status: StationStatus;
   referenceMs: number;
+  settings: StationSettingsCtl;
 }) {
   const cam = station.camera;
   const lib = station.library;
@@ -530,6 +629,7 @@ function StationDetail({
 
         <div className="flex flex-col gap-4">
           <RemoteAccess station={station} />
+          <AudioSetting station={station} settings={settings} />
           <Collapsible title="Current settings" icon={<Settings2 size={13} />}>
             {station.settings && Object.keys(station.settings).length > 0 ? (
               <dl className="grid grid-cols-1 gap-x-3 gap-y-1 text-sm sm:grid-cols-2">

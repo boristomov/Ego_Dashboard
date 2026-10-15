@@ -408,6 +408,30 @@ export type Assignment = {
   provenance: Provenance;
 };
 
+/**
+ * Settings a station applies to itself, keyed by station number. A station
+ * with no entry, or a field left unset, keeps the rig's default -- so audio
+ * records unless someone turns it off here. Rigs have no switch of their own.
+ *
+ * Read by the recorder's app/take_audio.py (station_audio_enabled).
+ */
+export type StationSettings = {
+  id: string;
+  recordAudio?: boolean;
+  state: LifecycleState;
+  provenance: Provenance;
+};
+
+export function stationSettings(reg: Registry, station: string | null | undefined): StationSettings | null {
+  if (!station) return null;
+  return (reg.stations || []).find((s) => s.id === station && s.state !== "retired") || null;
+}
+
+/** Whether the station records audio: on unless explicitly turned off. */
+export function recordsAudio(reg: Registry, station: string | null | undefined): boolean {
+  return stationSettings(reg, station)?.recordAudio !== false;
+}
+
 export function activeAssignments(reg: Registry): Assignment[] {
   return (reg.assignments || []).filter((a) => a.state === "active");
 }
@@ -555,6 +579,8 @@ export type Registry = {
   environments: Environment3D[];
   /** Absent in v1 documents. */
   assignments?: Assignment[];
+  /** Absent until the first station setting is saved. */
+  stations?: StationSettings[];
   /** Set when the registry could not be read; the UI says so rather than
    * rendering an empty registry as though everything had been deleted. */
   error?: string | null;
@@ -578,6 +604,7 @@ export const EMPTY_REGISTRY: Registry = {
   assets: [],
   environments: [],
   assignments: [],
+  stations: [],
 };
 
 export function indexAssets(assets: Asset3D[]): Map<string, Asset3D> {

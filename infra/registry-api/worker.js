@@ -44,6 +44,8 @@
 // SETUP: see README.md.
 
 // v2 adds `assignments`. Readers tolerate v1 documents (no assignments).
+// `stations` (per-station settings, e.g. recordAudio) is optional within v2:
+// a reader that predates it ignores it, and a missing entry means defaults.
 const SCHEMA_VERSION = 2;
 const REGISTRY_KEY_DEFAULT = "_registry/registry.json";
 // Staff login codes. A separate object from the registry, because the
@@ -60,6 +62,7 @@ const KINDS = {
   asset: "assets",
   environment: "environments",
   assignment: "assignments",
+  station: "stations",
 };
 
 /** Editing any of these means operators would be told something new, so the
@@ -252,6 +255,7 @@ const EMPTY_REGISTRY = {
   assets: [],
   environments: [],
   assignments: [],
+  stations: [],
 };
 
 const EMPTY_ACCESS = { schemaVersion: 1, generatedAt: "", pins: {}, issued: {} };
@@ -287,6 +291,7 @@ async function readRegistry(env) {
     );
   }
   registry.assignments = registry.assignments || [];
+  registry.stations = registry.stations || [];
   return { registry, etag };
 }
 
@@ -437,6 +442,17 @@ export function validateRecord(kind, record, registry) {
     }
   }
 
+  // Settings a rig applies to itself; the id is the station number. Anything
+  // left out keeps the rig's default, so only booleans that were set travel.
+  if (kind === "station") {
+    if (!/^\d{1,4}$/.test(String(record.id))) {
+      throw new HttpError(400, `station id must be a station number, got "${record.id}"`);
+    }
+    if (record.recordAudio !== undefined && typeof record.recordAudio !== "boolean") {
+      throw new HttpError(400, "recordAudio must be true or false");
+    }
+  }
+
   if (record.state && !["draft", "active", "retired"].includes(record.state)) {
     throw new HttpError(400, `invalid state "${record.state}"`);
   }
@@ -477,9 +493,9 @@ export function applyUpsert(registry, kind, record, actor, nowIso) {
     ? { ...before.provenance, updatedAt: nowIso, updatedBy: actor }
     : { createdAt: nowIso, createdBy: actor };
 
-  // Assignments are live the moment they are made: an assignment saved as a
-  // draft would be a station that looks assigned on the dashboard and is not.
-  const defaultState = kind === "assignment" ? "active" : "draft";
+  // Assignments and station settings are live the moment they are made: saved
+  // as a draft, they would look applied on the dashboard and not be.
+  const defaultState = kind === "assignment" || kind === "station" ? "active" : "draft";
   let merged = {
     ...record,
     state: record.state || before?.state || defaultState,
@@ -923,7 +939,7 @@ export default {
         return json({ ok: true, operatorId, pin }, 200, cors);
       }
 
-      const m = /^\/registry\/(task|operator|asset|environment|assignment)\/(.+)$/.exec(path);
+      const m = /^\/registry\/(task|operator|asset|environment|assignment|station)\/(.+)$/.exec(path);
       if (m && (request.method === "PUT" || request.method === "DELETE")) {
         const [, kind, id] = m;
 

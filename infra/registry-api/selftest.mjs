@@ -451,6 +451,22 @@ check("assignments must point at an active task, a real person, a station number
   rejects(() => applyUpsert(staffed(), "assignment", assign({ target: { kind: "site" } }), "b", T0), 400, "station|operator");
 });
 
+check("station settings are live on save and keep their history", () => {
+  const one = applyUpsert(staffed(), "station", { id: "4", recordAudio: false }, "boris", T0);
+  eq(one.record.state, "active", "active without asking");
+  eq(one.registry.stations, [one.record], "stored under stations");
+  const two = applyUpsert(one.registry, "station", { id: "4", recordAudio: true }, "sara", T1);
+  eq(two.registry.stations.length, 1, "one record per station");
+  eq(two.record.recordAudio, true, "switched back on");
+  eq(two.record.provenance.createdBy, "boris", "created by");
+  eq(two.record.provenance.updatedBy, "sara", "updated by");
+});
+
+check("station settings need a station number and real booleans", () => {
+  rejects(() => applyUpsert(staffed(), "station", { id: "zed-box-4" }, "b", T0), 400, "station number");
+  rejects(() => applyUpsert(staffed(), "station", { id: "4", recordAudio: "no" }, "b", T0), 400, "true or false");
+});
+
 check("a task or person with assignment history cannot be hard-deleted", () => {
   let r = applyUpsert(staffed(), "assignment", assign({ target: { kind: "operator", operatorId: "op-ana" } }), "b", T0).registry;
   rejects(() => applyDelete(r, "task", "task-tea", "b", T1, true), 409, "assignment as-1");

@@ -30,7 +30,7 @@ export const REGISTRY_WRITE_CONFIGURED = !!ENDPOINT;
 
 const TOKEN_KEY = "ego_registry_token";
 
-export type RegistryKind = "task" | "operator" | "asset" | "environment" | "assignment";
+export type RegistryKind = "task" | "operator" | "asset" | "environment" | "assignment" | "station";
 
 export class RegistryApiError extends Error {
   status: number;

@@ -205,6 +205,17 @@ export type StationShift = {
   } | null;
 };
 
+/** The microphone on the operator device, as the recorder sees it. */
+export type StationAudio = {
+  /** "recording" | "ready" | "off" (dashboard) | "unavailable". */
+  state: string;
+  enabled: boolean;
+  available: boolean;
+  problem?: string;
+  levelDbfs?: number | null;
+  lastTake?: { take: string; ok: boolean; error?: string | null } | null;
+};
+
 export type StationHeartbeat = {
   schemaVersion: number;
   stationId: string;
@@ -230,6 +241,8 @@ export type StationHeartbeat = {
   remote?: { recorder?: RemoteTarget | null; pi?: RemoteTarget | null };
   /** Absent on recorders that predate staff login. */
   shift?: StationShift | null;
+  /** Absent on recorders that predate take audio. */
+  audio?: StationAudio | null;
 };
 
 export type StationsSnapshot = {
@@ -415,6 +428,12 @@ export function attentionReasons(s: StationHeartbeat): string[] {
   }
   if (s.operator && s.operator.reachable === false) out.push("Operator screen unreachable");
   if (s.recorder?.error) out.push(s.recorder.error);
+  // Only while audio is wanted: a station turned off here is meant to be silent.
+  if (s.audio?.enabled && s.audio.state === "unavailable") {
+    out.push(`No take audio: ${s.audio.problem || "microphone not answering"}`);
+  } else if (s.audio?.enabled && s.audio.lastTake && !s.audio.lastTake.ok) {
+    out.push(`Last take has no audio: ${s.audio.lastTake.error || "unknown error"}`);
+  }
   const low = freeSpaceWarning(s);
   if (low) out.push(`Low disk: ${formatBytes(low.freeBytes)} free`);
   return out;
