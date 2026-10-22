@@ -547,7 +547,7 @@ export function AssignmentEditor({
   );
   const current = assignmentFor(registry, target);
   const [taskId, setTaskId] = useState<string>(current?.taskId || tasks[0]?.id || "");
-  const [locked, setLocked] = useState(current?.locked ?? true);
+  const [locked, setLocked] = useState(current?.locked ?? false);
   const [note, setNote] = useState("");
   const [query, setQuery] = useState("");
   const { saving, error, save } = useSaver("assignment", onSaved, onClose);

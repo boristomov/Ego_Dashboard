@@ -8,7 +8,9 @@
 //   "translations": { "<slug>": { "zh": { name, headline, description, steps, pitfalls } } }
 //     merged into the i18n field of tasks that already exist;
 //   "tasks": [ { slug, name, headline, ... } ]
-//     created when the slug is new, updated in place (same id) when it is not.
+//     created when the slug is new, updated in place (same id) when it is not;
+//   "unlockAssignments": true
+//     unlocks every live assignment, keeping the task it assigns.
 //
 // Every write goes through PUT /registry/task/<id>, so the Worker's validation,
 // version bumps and slug rules apply exactly as they do for the editor. Sign-in
@@ -115,7 +117,7 @@ export function plan(registry, spec) {
     }
     const i18n = { ...(task.i18n || {}), ...langs };
     if (same(task.i18n, i18n)) continue;
-    writes.push({ what: `translate ${slug} (${Object.keys(langs).join(", ")})`, record: { ...task, i18n } });
+    writes.push({ kind: "task", what: `translate ${slug} (${Object.keys(langs).join(", ")})`, record: { ...task, i18n } });
   }
 
   const defaults = spec.defaults || {};
@@ -129,13 +131,26 @@ export function plan(registry, spec) {
     if (existing) {
       const record = { ...existing, ...t, i18n: { ...(existing.i18n || {}), ...(t.i18n || {}) } };
       const changed = Object.keys(t).some((k) => !same(existing[k], record[k]));
-      if (changed) writes.push({ what: `update ${t.slug}`, record });
+      if (changed) writes.push({ kind: "task", what: `update ${t.slug}`, record });
       continue;
     }
     writes.push({
+      kind: "task",
       what: `create ${t.slug} "${t.name}"`,
       record: { id: newId("task"), objects: [], steps: [], pitfalls: [], ...defaults, ...t },
     });
+  }
+  if (spec.unlockAssignments) {
+    const names = new Map(tasks.map((t) => [t.id, t.name]));
+    for (const a of registry.assignments || []) {
+      if (a.state !== "active" || a.locked === false) continue;
+      const who = a.target?.kind === "station" ? `station ${a.target.station}` : `person ${a.target?.operatorId}`;
+      writes.push({
+        kind: "assignment",
+        what: `unlock ${who} (stays on "${names.get(a.taskId) ?? a.taskId}")`,
+        record: { ...a, locked: false },
+      });
+    }
   }
   return { writes, notes };
 }
@@ -163,12 +178,12 @@ async function main() {
   let failed = 0;
   for (const w of writes) {
     try {
-      const res = await call(endpoint, `/registry/task/${encodeURIComponent(w.record.id)}`, {
+      const res = await call(endpoint, `/registry/${w.kind}/${encodeURIComponent(w.record.id)}`, {
         token,
         method: "PUT",
         body: w.record,
       });
-      console.log(`  ok  ${w.what} → v${res?.record?.version ?? "?"}`);
+      console.log(`  ok  ${w.what}${w.kind === "task" ? ` → v${res?.record?.version ?? "?"}` : ""}`);
     } catch (e) {
       failed++;
       console.log(`  ERR ${w.what}: ${e.message}`);

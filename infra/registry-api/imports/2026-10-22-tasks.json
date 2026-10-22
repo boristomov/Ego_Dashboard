@@ -1,5 +1,6 @@
 {
   "about": "Chinese text for the existing tasks, and 25 new tasks. Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-22-tasks.json --user <you> --apply",
+  "unlockAssignments": true,
   "defaults": { "sites": ["Beijing"], "state": "active", "environmentIds": [] },
   "translations": {
     "test": {
