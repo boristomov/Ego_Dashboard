@@ -9,7 +9,8 @@
 // only for takes already being uploaded; nothing here talks to a station.
 //
 // GET /clips?minutes=15&limit=24 lists the index for the window, reads the
-// entries and returns them with a short-lived signed URL for each clip.
+// entries and returns them with a short-lived signed URL for each clip, and
+// for its frame-aligned audio snippet (monitor_audio.wav) when the take has one.
 //
 // WHY A SEPARATE WORKER
 //
@@ -17,7 +18,7 @@
 // the registry Worker's key is documented as unable to read any session data;
 // putting clip access into either would quietly break what their READMEs
 // promise. This one has its own key (iam-policy.json: list _monitor/, read
-// _monitor/* and */monitor_clip.webm, nothing else) and requires a signed-in
+// _monitor/*, */monitor_clip.webm and */monitor_audio.wav, nothing else) and requires a signed-in
 // admin. It accepts the session token the registry Worker issues, so the
 // dashboard needs one sign-in, not two: set SESSION_SECRET to the same value.
 //
@@ -195,6 +196,15 @@ export function pickSpread(keys, limit) {
   return out.sort().reverse();
 }
 
+/**
+ * The entry's audio snippet key, or null: only ever the snippet that sits
+ * beside the entry's own clip. Pure, for the self-test.
+ */
+export function audioKeyFor(entry) {
+  const want = String(entry?.clipKey || "").replace(/\/monitor_clip\.webm$/, "/monitor_audio.wav");
+  return entry?.audioKey && want.endsWith("/monitor_audio.wav") && entry.audioKey === want ? want : null;
+}
+
 async function listKeys(env, { prefix, startAfter }) {
   const keys = [];
   let token = null;
@@ -234,7 +244,9 @@ async function collect(env, minutes, limit) {
           // Only ever sign the clip the entry names, and only a clip.
           if (!/\/monitor_clip\.webm$/.test(entry.clipKey)) throw new Error("unexpected clip key");
           const { url } = await signGet({ ...creds(env), key: entry.clipKey, presignSeconds: CLIP_URL_TTL_S });
-          return { ...entry, indexKey: key, clipUrl: url };
+          const audioKey = audioKeyFor(entry);
+          const audio = audioKey && (await signGet({ ...creds(env), key: audioKey, presignSeconds: CLIP_URL_TTL_S }));
+          return { ...entry, indexKey: key, clipUrl: url, ...(audio ? { audioUrl: audio.url } : {}) };
         } catch (err) {
           notes.push(`${key}: ${err.message}`);
           return null;

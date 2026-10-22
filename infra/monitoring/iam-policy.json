@@ -20,7 +20,8 @@
       "Action": "s3:GetObject",
       "Resource": [
         "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an/_monitor/*",
-        "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an/*/monitor_clip.webm"
+        "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an/*/monitor_clip.webm",
+        "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an/*/monitor_audio.wav"
       ]
     }
   ]

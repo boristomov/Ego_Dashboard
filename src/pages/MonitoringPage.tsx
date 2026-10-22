@@ -13,6 +13,8 @@ import {
   Square,
   User,
   VideoOff,
+  Volume2,
+  VolumeX,
   X,
 } from "lucide-react";
 import { SignInDialog } from "../components/admin/RegistryAuthBar";
@@ -28,6 +30,7 @@ import {
   grabTone,
   statusTone,
   yieldTone,
+  type MonitorAudio,
   type MonitorClip,
   type MonitorWindow,
   type Tone,
@@ -76,7 +79,7 @@ export function MonitoringPage() {
   const [fetchedAt, setFetchedAt] = useState(0);
   const [focused, setFocused] = useState<MonitorClip | null>(null);
   const [, tick] = useState(0);
-  const urls = useRef(new Map<string, { url: string; at: number }>());
+  const urls = useRef(new Map<string, { url: string; audioUrl?: string; at: number }>());
 
   const load = useCallback(async () => {
     if (!MONITOR_CONFIGURED || !isSignedIn()) return;
@@ -89,8 +92,10 @@ export function MonitoringPage() {
       for (const c of doc.clips) {
         seen.add(c.indexKey);
         const prev = urls.current.get(c.indexKey);
-        if (prev && now - prev.at < keep) c.clipUrl = prev.url;
-        else urls.current.set(c.indexKey, { url: c.clipUrl, at: now });
+        if (prev && now - prev.at < keep && !!prev.audioUrl === !!c.audioUrl) {
+          c.clipUrl = prev.url;
+          c.audioUrl = prev.audioUrl;
+        } else urls.current.set(c.indexKey, { url: c.clipUrl, audioUrl: c.audioUrl, at: now });
       }
       for (const k of urls.current.keys()) if (!seen.has(k)) urls.current.delete(k);
       setData(doc);
@@ -340,7 +345,14 @@ function ClipTile({ clip, size, onOpen }: { clip: MonitorClip; size: Size; onOpe
           </span>
           <StatusPill status={q.status} />
         </div>
-        <span className="whitespace-nowrap rounded bg-black/50 px-1.5 py-0.5 text-sm text-white/85">{relativeAge(Date.parse(clip.recordedAt))}</span>
+        <div className="flex items-center gap-1.5">
+          {clip.audioUrl && (
+            <span className="rounded bg-black/50 p-1 text-white/85" title="Has sound: open the clip to listen">
+              <Volume2 size={14} />
+            </span>
+          )}
+          <span className="whitespace-nowrap rounded bg-black/50 px-1.5 py-0.5 text-sm text-white/85">{relativeAge(Date.parse(clip.recordedAt))}</span>
+        </div>
       </div>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/90 via-black/60 to-transparent p-2.5 pt-8">
@@ -420,7 +432,7 @@ function LoopVideo({ clip, controls = false }: { clip: MonitorClip; controls?: b
       </div>
     );
   }
-  return (
+  const video = (
     <video
       ref={ref}
       src={clip.clipUrl}
@@ -439,6 +451,106 @@ function LoopVideo({ clip, controls = false }: { clip: MonitorClip; controls?: b
       onError={() => setFailed(true)}
     />
   );
+  if (!controls || !clip.audioUrl) return video;
+  return (
+    <div className="relative">
+      {video}
+      <SyncedAudio video={ref} src={clip.audioUrl} />
+    </div>
+  );
+}
+
+/** Beyond this the audio jumps to the video; below it, it catches up by playing a little faster or slower. */
+const RESYNC_S = 0.15;
+
+/**
+ * The take's sound under a video that has none. The snippet is cut on the
+ * clip's own timeline, frame for frame, so keeping audio.currentTime on
+ * video.currentTime is all the aligning left to do here: a hard seek when the
+ * video seeks or loops, and small rate nudges for the drift between the two
+ * elements' clocks. The video's own controls drive it.
+ */
+function SyncedAudio({ video, src }: { video: React.RefObject<HTMLVideoElement>; src: string }) {
+  const ref = useRef<HTMLAudioElement>(null);
+  const [on, setOn] = useState(true);
+  const [failed, setFailed] = useState(false);
+  const onRef = useRef(on);
+  onRef.current = on;
+
+  useEffect(() => {
+    const v = video.current;
+    const a = ref.current;
+    if (!v || !a) return;
+    const follow = () => {
+      a.playbackRate = v.playbackRate;
+      if (Math.abs(a.currentTime - v.currentTime) > 0.04) a.currentTime = v.currentTime;
+      if (onRef.current && !v.paused && !v.seeking) a.play().catch(() => setOn(false));
+    };
+    const stop = () => a.pause();
+    const tick = window.setInterval(() => {
+      if (v.paused || a.paused) return;
+      const drift = a.currentTime - v.currentTime;
+      if (Math.abs(drift) > RESYNC_S) a.currentTime = v.currentTime;
+      else a.playbackRate = v.playbackRate * (1 - Math.max(-0.05, Math.min(0.05, drift)));
+    }, 250);
+    const resume = ["playing", "seeked", "ratechange"];
+    const halt = ["pause", "waiting", "seeking"];
+    resume.forEach((e) => v.addEventListener(e, follow));
+    halt.forEach((e) => v.addEventListener(e, stop));
+    follow();
+    return () => {
+      window.clearInterval(tick);
+      resume.forEach((e) => v.removeEventListener(e, follow));
+      halt.forEach((e) => v.removeEventListener(e, stop));
+      a.pause();
+    };
+  }, [video, src]);
+
+  useEffect(() => {
+    const v = video.current;
+    const a = ref.current;
+    if (!a) return;
+    if (!on) a.pause();
+    else if (v && !v.paused) {
+      a.currentTime = v.currentTime;
+      a.play().catch(() => setOn(false));
+    }
+  }, [on, video]);
+
+  return (
+    <>
+      <audio ref={ref} src={src} preload="auto" onError={() => setFailed(true)} />
+      {failed ? (
+        <span className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-black/70 px-2 py-1 text-sm text-text-muted">
+          <VolumeX size={15} /> Sound unavailable
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOn((x) => !x)}
+          aria-pressed={on}
+          className="absolute right-3 top-3 inline-flex items-center gap-1.5 rounded-md bg-black/70 px-2 py-1 text-sm text-white hover:bg-black/85"
+        >
+          {on ? <Volume2 size={15} /> : <VolumeX size={15} />} {on ? "Sound on" : "Sound off"}
+        </button>
+      )}
+    </>
+  );
+}
+
+function audioSummary(clip: MonitorClip): string {
+  const a: MonitorAudio = clip.audio ?? {};
+  if (clip.audioUrl) {
+    const notes = ["Frame-aligned with the video, from the rig's mic"];
+    if ((a.gainDb ?? 0) >= 0.5) notes.push(`raised ${a.gainDb!.toFixed(0)} dB to be audible`);
+    if ((a.segments ?? 1) > 1) notes.push(`skips with the video at ${a.segments! - 1} frame gap${a.segments! > 2 ? "s" : ""}`);
+    if (a.covered != null && a.covered < 0.995) notes.push(`silent for ${Math.round((1 - a.covered) * 100)}% of the clip, past the take's audio`);
+    return notes.join(" · ");
+  }
+  if (a.off) return "Off for this station";
+  if (a.clip) return "Cut, but the monitoring Worker does not serve it yet";
+  if (a.error) return `None: ${a.error}`;
+  return "None for this take";
 }
 
 function Metric({ tone, label, value }: { tone: Tone; label: string; value: string }) {
@@ -504,6 +616,7 @@ function ClipDetail({ clip, onClose }: { clip: MonitorClip; onClose: () => void 
             <Row k="Recorder" v={clip.recorder} />
             <Row k="Take" v={`${formatDuration(q.durationSec)} · ${q.frameCount.toLocaleString()} frames`} />
             <Row k="Preview" v={start != null ? `${clock(start)} – ${clock(start + len)} of the take` : `${len}s`} />
+            <Row k="Sound" v={audioSummary(clip)} />
             <Row k="Bucket path" v={<span className="break-all font-mono text-[0.8rem]">{clip.prefix}/</span>} />
           </div>
           <div className="flex flex-col gap-3">

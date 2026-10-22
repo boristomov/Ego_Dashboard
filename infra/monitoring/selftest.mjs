@@ -5,7 +5,7 @@
 // and MONITOR_BUCKET in the environment it also makes two real, read-only
 // requests: a listing of _monitor/ and a presigned GET.
 import crypto from "node:crypto";
-import worker, { pickSpread, signGet, verifyToken, windowListings } from "./worker.js";
+import worker, { audioKeyFor, pickSpread, signGet, verifyToken, windowListings } from "./worker.js";
 
 let failed = 0;
 const check = (ok, name) => {
@@ -52,6 +52,17 @@ const check = (ok, name) => {
   check((await verifyToken(t, "other")) === null, "rejects a token signed with another secret");
   check((await verifyToken(mint({ sub: "boris", exp: 1 }), secret)) === null, "rejects an expired token");
   check((await verifyToken(t.replace(/.$/, (c) => (c === "A" ? "B" : "A")), secret)) === null, "rejects a tampered signature");
+}
+
+// ---- audio snippet ----
+{
+  const clipKey = "Wash/20261022_012021/monitor_clip.webm";
+  check(audioKeyFor({ clipKey, audioKey: "Wash/20261022_012021/monitor_audio.wav" }) === "Wash/20261022_012021/monitor_audio.wav",
+    "signs the snippet beside the entry's clip");
+  check(audioKeyFor({ clipKey, audioKey: null }) === null, "no snippet, no audio URL");
+  check(audioKeyFor({ clipKey, audioKey: "Other/20261022_000000/monitor_audio.wav" }) === null, "never another take's audio");
+  check(audioKeyFor({ clipKey, audioKey: "Wash/20261022_012021/audio.flac" }) === null, "never the take's full audio");
+  check(audioKeyFor({ clipKey: "x/recording.svo2", audioKey: "x/recording.svo2" }) === null, "never anything but a snippet");
 }
 
 // ---- router ----

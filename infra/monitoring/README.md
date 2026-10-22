@@ -6,10 +6,11 @@ so a project manager can spot a station doing something wrong.
 
 ```
 station ──after upload, while idle──► S3: <take>/monitor_clip.webm
+                                       S3: <take>/monitor_audio.wav   (takes with audio)
                                        S3: _monitor/<day>/<time>_<station>_<take>.json
 dashboard ──signed-in GET /clips──► Worker ──list + read──► S3
-dashboard ◄── entries + 15-min signed clip URLs ──┘
-dashboard ──GET clip URL──────────────────────────────────► S3
+dashboard ◄── entries + 15-min signed clip (and audio) URLs ──┘
+dashboard ──GET clip / audio URL──────────────────────────► S3
 ```
 
 ## Why it is built this way
@@ -23,6 +24,16 @@ moment a new recording starts. The clip window is picked by hashing the
 take's name, away from the first and last second (reaching for the buttons),
 so it is stable across retries but different for every take.
 
+**Sound, frame-aligned.** When the take recorded audio, the same pass cuts
+`monitor_audio.wav` (16 kHz mono, ~0.5 MB) laid out on the clip's own
+timeline: each kept frame's camera timestamp picks the audio heard at that
+moment, so where the take dropped frames the sound skips with the picture.
+The recorder cannot mux it into the WebM (no ffmpeg on the rigs), so the
+page plays it beside the video and keeps the two together: the clip detail
+view has a sound toggle, and the wall itself stays muted. The entry's
+`audioKey` is signed only when it is the snippet beside that entry's own
+clip, never the take's full `audio.flac`.
+
 **A time-ordered index instead of a bucket listing.** The page asks for "the
 last 15 minutes". Each take writes a small entry under
 `_monitor/<UTC day>/<HHMMSS>_<station>_<take>.json`, which carries the
@@ -31,7 +42,7 @@ and no second read per take is needed. A listing of the take prefixes would
 grow forever.
 
 **A separate Worker with its own read-only key.** It can list `_monitor/`,
-read index entries and read `*/monitor_clip.webm`. It cannot read the takes
+read index entries and read `*/monitor_clip.webm` and `*/monitor_audio.wav`. It cannot read the takes
 (SVO, MP4, MCAP), metadata, heartbeats, the registry or staff codes, and it
 cannot write. Previews show people at work, so the endpoint requires sign-in.
 
@@ -54,7 +65,7 @@ others off the wall.
 | Method | Path | Auth | Purpose |
 | --- | --- | --- | --- |
 | `GET` | `/health` | none | Which settings resolve |
-| `GET` | `/clips?minutes=15&limit=24` | Bearer | Index entries in the window, each with a `clipUrl` |
+| `GET` | `/clips?minutes=15&limit=24` | Bearer | Index entries in the window, each with a `clipUrl`, and an `audioUrl` when the take has sound |
 
 `minutes` is clamped to 1–1440 and `limit` to 1–40. Responses are cached at
 the edge for 20 s after the token check.

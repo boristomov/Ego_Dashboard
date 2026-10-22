@@ -30,9 +30,32 @@ export interface MonitorQuality {
   exposure: { label?: string; verdict: ExposureVerdict; note?: string }[];
 }
 
+/**
+ * The clip's audio snippet: on the clip's own timeline, frame for frame, so
+ * playing it from the video's currentTime is in sync. Or why there is none.
+ */
+export interface MonitorAudio {
+  clip?: string;
+  sampleRate?: number;
+  durationSec?: number;
+  /** Raised to make the snippet audible; the take's own level is peakDbfs. */
+  gainDb?: number;
+  peakDbfs?: number | null;
+  /** Runs of frames between frame gaps; each gap is a jump in the audio too. */
+  segments?: number;
+  longestJumpMs?: number;
+  /** Share of the clip the take's audio covers. */
+  covered?: number;
+  off?: boolean;
+  error?: string | null;
+}
+
 export interface MonitorClip {
   indexKey: string;
   clipUrl: string;
+  audioUrl?: string;
+  audioKey?: string | null;
+  audio?: MonitorAudio;
   recordedAt: string;
   publishedAt?: string;
   station: string | null;
