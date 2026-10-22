@@ -184,6 +184,51 @@ export type StationDevice = {
   remote?: RemoteTarget | null;
 };
 
+/** The Wi-Fi network the operator device is on; the whole rig's uplink. */
+export type StationWifi = {
+  device?: string | null;
+  connected?: boolean;
+  ssid?: string | null;
+  /** NetworkManager's 0-100 figure, from its last background scan. */
+  signalPct?: number | null;
+  /** Live from the driver, where it reports one. */
+  signalDbm?: number | null;
+  freqMhz?: number | null;
+  band?: string | null;
+  rateMbps?: number | null;
+  error?: string | null;
+};
+
+/** The last internet speed check the station ran, by itself or by hand. */
+export type StationSpeedCheck = {
+  state?: "done" | "error" | string;
+  downMbps?: number | null;
+  upMbps?: number | null;
+  latencyMs?: number | null;
+  /** Epoch seconds. */
+  finishedAt?: number | null;
+  trigger?: "auto" | "manual" | string;
+  /** The network it was measured on, which may not be the current one. */
+  ssid?: string | null;
+  error?: string | null;
+  bytesUsed?: number | null;
+  /** Download per route: international (the one uploads take) and China. */
+  paths?: { id: string; label: string; downMbps?: number | null; latencyMs?: number | null; reached?: boolean }[];
+  running?: boolean;
+  /** How often it runs by itself; 0 = manual only. */
+  everyMin?: number | null;
+};
+
+export type StationNetwork = {
+  interfaces?: { name: string; type?: string; ip?: string | null; up?: boolean; carrier?: boolean }[];
+  wifi_connected?: boolean;
+  ethernet_connected?: boolean;
+  uplink?: { iface: string; type: string } | null;
+  /** Absent on operator devices that predate Wi-Fi reporting. */
+  wifi?: StationWifi | null;
+  speedCheck?: StationSpeedCheck | null;
+};
+
 /** The operator device's own report, relayed by the recorder. */
 export type StationOperator = {
   reachable?: boolean;
@@ -197,7 +242,7 @@ export type StationOperator = {
   } | null;
   disk?: StationDisk | null;
   power?: { totalW?: number | null; source?: string | null } | null;
-  network?: Record<string, unknown> | null;
+  network?: StationNetwork | null;
   kiosk?: { controlEnabled?: boolean; running?: boolean } | null;
   preview?: { lastFrameAgeMs?: number | null } | null;
   remote?: RemoteTarget | null;
@@ -543,6 +588,53 @@ export function remoteLinks(t: RemoteTarget | null | undefined) {
     /** Openable in a browser window; null until noVNC is bridged on the board. */
     screenUrl: t.screenUrl || null,
   };
+}
+
+// ---------- Network ----------
+
+export type SignalQuality = "strong" | "good" | "weak" | "poor";
+
+/** Wi-Fi signal in words, from NetworkManager's 0-100 or, failing that, dBm. */
+export function signalQuality(wifi: StationWifi | null | undefined): SignalQuality | null {
+  const pct = wifi?.signalPct;
+  if (pct != null) return pct >= 70 ? "strong" : pct >= 50 ? "good" : pct >= 30 ? "weak" : "poor";
+  const dbm = wifi?.signalDbm;
+  if (dbm != null) return dbm >= -60 ? "strong" : dbm >= -70 ? "good" : dbm >= -80 ? "weak" : "poor";
+  return null;
+}
+
+/**
+ * Upload speed against what recording needs: takes are written at about
+ * 24-36 Mbps. Same bands as the speed check's verdict on the station's own
+ * screen (NetworkPanel.jsx in the frontend repo), so both say the same thing.
+ */
+export function uploadTone(mbps: number | null | undefined): "ok" | "warn" | "err" | "dim" {
+  if (mbps == null) return "dim";
+  return mbps >= 20 ? "ok" : mbps >= 5 ? "warn" : "err";
+}
+
+/** The rig's uplink as the operator device sees it, whatever its software age. */
+export function stationNetwork(s: StationHeartbeat) {
+  const net = s.operator?.network || null;
+  const wifi = net?.wifi || null;
+  const speed = net?.speedCheck || null;
+  const wired = net?.uplink?.type === "ethernet";
+  return {
+    reported: !!net,
+    /** False on operator devices that predate Wi-Fi reporting. */
+    detailed: !!net && ("wifi" in net || "speedCheck" in net),
+    wired,
+    wifi,
+    speed: speed?.finishedAt ? speed : null,
+    speedRunning: !!speed?.running,
+    speedEveryMin: speed?.everyMin ?? null,
+    quality: signalQuality(wifi),
+  };
+}
+
+export function formatMbps(n: number | null | undefined): string {
+  if (n == null || !Number.isFinite(n)) return "—";
+  return n >= 100 ? `${Math.round(n)}` : n.toFixed(1);
 }
 
 /** Episode counts and recorded minutes grouped by task, largest first. */

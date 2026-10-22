@@ -2,6 +2,8 @@ import { useMemo, useState } from "react";
 import {
   Activity,
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   BatteryCharging,
   Camera,
   CheckCircle2,
@@ -12,6 +14,7 @@ import {
   CloudOff,
   CloudUpload,
   Copy,
+  EthernetPort,
   ExternalLink,
   HardDrive,
   ListChecks,
@@ -26,6 +29,11 @@ import {
   Terminal,
   Thermometer,
   User,
+  Wifi,
+  WifiHigh,
+  WifiLow,
+  WifiOff,
+  WifiZero,
   Zap,
 } from "lucide-react";
 import { BarRows, BatteryMeter, Donut } from "../components/StationCharts";
@@ -39,6 +47,7 @@ import {
   batteryTone,
   formatBytes,
   formatDuration,
+  formatMbps,
   heartbeatAgeMs,
   isRecording,
   LATE_AFTER_MS,
@@ -49,8 +58,11 @@ import {
   ROLE_LABELS,
   STALE_AFTER_MS,
   stationLabel,
+  stationNetwork,
   stationStatus,
   takesByTask,
+  uploadTone,
+  type SignalQuality,
   type StationBattery,
   type StationDay,
   type StationDevice,
@@ -282,6 +294,8 @@ function StationTile({
             <BatteryVital battery={station.battery} upload={station.upload} />
           </div>
         </div>
+
+        <NetworkStrip station={station} />
 
         {reasons.length > 0 && (
           <ul className="flex flex-col gap-1">
@@ -632,6 +646,7 @@ function StationDetail({
 
         <div className="flex flex-col gap-4">
           <RemoteAccess station={station} />
+          <NetworkDetail station={station} />
           <AudioSetting station={station} settings={settings} />
           <Collapsible title="Current settings" icon={<Settings2 size={13} />}>
             {station.settings && Object.keys(station.settings).length > 0 ? (
@@ -810,6 +825,170 @@ function Battery({ battery }: { battery?: StationBattery | null }) {
         }
       />
     </div>
+  );
+}
+
+// ---------------- Network ----------------
+
+const SIGNAL_LOOK: Record<SignalQuality, { icon: React.ReactNode; color: string }> = {
+  strong: { icon: <Wifi size={15} />, color: "text-emerald-300" },
+  good: { icon: <WifiHigh size={15} />, color: "text-emerald-300" },
+  weak: { icon: <WifiLow size={15} />, color: "text-amber-300" },
+  poor: { icon: <WifiZero size={15} />, color: "text-red-300" },
+};
+
+const TONE_TEXT = {
+  ok: "text-emerald-300",
+  warn: "text-amber-300",
+  err: "text-red-300",
+  dim: "text-text-dim",
+};
+
+function speedTitle(speed: NonNullable<ReturnType<typeof stationNetwork>["speed"]>): string {
+  const when = new Date((speed.finishedAt || 0) * 1000).toLocaleString();
+  const routes = (speed.paths || [])
+    .map((p) => `${p.label} ↓ ${p.reached === false ? "unreachable" : `${formatMbps(p.downMbps)} Mbps`}`)
+    .join(", ");
+  return [
+    `${speed.trigger === "manual" ? "Checked by hand" : "Automatic check"} at ${when}`,
+    speed.ssid ? `on ${speed.ssid}` : null,
+    routes || null,
+    speed.latencyMs != null ? `latency ${Math.round(speed.latencyMs)} ms` : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+}
+
+/**
+ * The rig's internet on the card itself: which Wi-Fi, how well it hears it,
+ * and the last measured download and upload. Uploads of takes go out this way.
+ */
+function NetworkStrip({ station }: { station: StationHeartbeat }) {
+  const n = stationNetwork(station);
+  if (!n.reported) return null;
+  const box = "flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-lg border border-border bg-input/50 px-3 py-2 text-sm";
+  if (!n.detailed) {
+    return (
+      <div className={`${box} text-text-dim`}>
+        <span className="inline-flex items-center gap-1.5">
+          <Wifi size={14} /> Wi-Fi and speed need a station software update
+        </span>
+      </div>
+    );
+  }
+  const look = n.quality ? SIGNAL_LOOK[n.quality] : null;
+  const speed = n.speed;
+  const otherNetwork = speed?.ssid && n.wifi?.ssid && speed.ssid !== n.wifi.ssid;
+  return (
+    <div className={box}>
+      <span className="inline-flex min-w-0 items-center gap-1.5">
+        {n.wired ? (
+          <>
+            <EthernetPort size={15} className="flex-shrink-0 text-text-muted" />
+            <span className="truncate text-text">Wired</span>
+          </>
+        ) : n.wifi?.connected ? (
+          <>
+            <span className={`flex-shrink-0 ${look?.color || "text-text-muted"}`}>{look?.icon || <Wifi size={15} />}</span>
+            <span className="truncate font-medium text-text" title={n.wifi.ssid || undefined}>
+              {n.wifi.ssid || "Hidden network"}
+            </span>
+            {n.wifi.signalPct != null && (
+              <span
+                className={`flex-shrink-0 ${look?.color || "text-text-muted"}`}
+                title={n.wifi.signalDbm != null ? `${n.wifi.signalDbm} dBm` : undefined}
+              >
+                {n.wifi.signalPct}% · {n.quality}
+              </span>
+            )}
+          </>
+        ) : (
+          <>
+            <WifiOff size={15} className="flex-shrink-0 text-red-300" />
+            <span className="text-red-300">Not on Wi-Fi</span>
+          </>
+        )}
+      </span>
+      {speed?.state === "error" ? (
+        <span className="text-red-300" title={speedTitle(speed)}>
+          No internet at last check · {relativeAge((speed.finishedAt || 0) * 1000)}
+        </span>
+      ) : speed ? (
+        <span className="inline-flex items-center gap-2 whitespace-nowrap" title={speedTitle(speed)}>
+          <span className="inline-flex items-center gap-0.5 text-text">
+            <ArrowDown size={13} className="text-text-muted" />
+            {formatMbps(speed.downMbps)}
+          </span>
+          <span className={`inline-flex items-center gap-0.5 ${TONE_TEXT[uploadTone(speed.upMbps)]}`}>
+            <ArrowUp size={13} className="text-text-muted" />
+            {formatMbps(speed.upMbps)}
+          </span>
+          <span className="text-xs text-text-dim">
+            Mbps · {relativeAge((speed.finishedAt || 0) * 1000)}
+            {otherNetwork ? ` on ${speed.ssid}` : ""}
+          </span>
+        </span>
+      ) : (
+        <span className="text-xs text-text-dim">
+          {n.speedRunning ? "Measuring speed…" : n.speedEveryMin ? "Speed: first check within the hour" : "Speed not measured"}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Everything the station knows about its uplink, for the expanded card. */
+function NetworkDetail({ station }: { station: StationHeartbeat }) {
+  const n = stationNetwork(station);
+  if (!n.detailed) return null;
+  const wifi = n.wifi;
+  const speed = n.speed;
+  const rows: [string, React.ReactNode][] = [
+    ["Uplink", n.wired ? "Wired Ethernet" : station.operator?.network?.uplink?.iface ? `Wi-Fi (${station.operator.network.uplink.iface})` : "—"],
+    ["Network", wifi?.connected ? wifi.ssid || "Hidden network" : "Not connected"],
+    [
+      "Signal",
+      wifi?.connected
+        ? [wifi.signalPct != null ? `${wifi.signalPct}%` : null, wifi.signalDbm != null ? `${wifi.signalDbm} dBm` : null, n.quality]
+            .filter(Boolean)
+            .join(" · ") || "—"
+        : "—",
+    ],
+    ["Band", wifi?.band ? `${wifi.band}${wifi.freqMhz ? ` (${wifi.freqMhz} MHz)` : ""}` : "—"],
+    ["Link rate", wifi?.rateMbps != null ? `${wifi.rateMbps} Mbps` : "—"],
+  ];
+  if (speed) {
+    for (const p of speed.paths || []) {
+      rows.push([
+        `Download · ${p.label}`,
+        p.reached === false ? "unreachable" : `${formatMbps(p.downMbps)} Mbps${p.latencyMs != null ? ` · ${Math.round(p.latencyMs)} ms` : ""}`,
+      ]);
+    }
+    rows.push([
+      "Upload",
+      <span className={TONE_TEXT[uploadTone(speed.upMbps)]}>{speed.upMbps != null ? `${formatMbps(speed.upMbps)} Mbps` : "—"}</span>,
+    ]);
+    rows.push([
+      "Measured",
+      `${relativeAge((speed.finishedAt || 0) * 1000)} · ${speed.trigger === "manual" ? "by hand" : "automatic"}${speed.ssid ? ` · on ${speed.ssid}` : ""}`,
+    ]);
+    if (speed.state === "error") rows.push(["Last check", <span className="text-red-300">{speed.error || "failed"}</span>]);
+  }
+  rows.push([
+    "Speed check",
+    n.speedEveryMin ? `every ${n.speedEveryMin} min while idle` : "manual only",
+  ]);
+  return (
+    <Collapsible title="Network" icon={<Wifi size={13} />} defaultOpen>
+      <dl className="grid grid-cols-1 gap-y-1 text-sm">
+        {rows.map(([k, v]) => (
+          <div key={k} className="flex items-baseline justify-between gap-3">
+            <dt className="flex-shrink-0 text-text-muted">{k}</dt>
+            <dd className="min-w-0 truncate text-right text-text">{v}</dd>
+          </div>
+        ))}
+      </dl>
+    </Collapsible>
   );
 }
 
