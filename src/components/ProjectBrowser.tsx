@@ -15,14 +15,17 @@ import {
   Search,
   ShieldCheck,
   Timer,
+  Trash2,
 } from "lucide-react";
 import { useAuth } from "../context/Auth";
 import { SignInDialog } from "./admin/RegistryAuthBar";
+import { Modal } from "./admin/formKit";
 import { VideoPlayerModal } from "./VideoPlayerModal";
 import { REGISTRY_WRITE_CONFIGURED } from "../lib/registryApi";
 import {
   PROJECTS_CONFIGURED,
   ProjectsApiError,
+  deleteProjectItem,
   fetchProject,
   hasProjectsSession,
   projectFileUrl,
@@ -56,6 +59,8 @@ type Item = {
   thumb?: string | null;
   /** The folder the item's files sit in. */
   prefix: string;
+  session: string;
+  rawPrefix?: string | null;
   files: ProjectFile[];
   sample: boolean;
 };
@@ -77,6 +82,8 @@ function fromClip(c: ProjectClip): Item {
     preview: c.preview,
     thumb: c.thumb,
     prefix: c.prefix,
+    session: c.session,
+    rawPrefix: c.raw_prefix,
     files: c.files,
     sample: false,
   };
@@ -95,6 +102,8 @@ function fromSample(s: SampleSession): Item {
     preview: s.preview,
     thumb: s.thumb,
     prefix: s.prefix,
+    session: s.session,
+    rawPrefix: s.raw_prefix,
     files: s.files,
     sample: true,
   };
@@ -219,6 +228,19 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
     const id = window.setTimeout(load, Math.max(10_000, ms));
     return () => window.clearTimeout(id);
   }, [doc, load]);
+
+  const removeItem = useCallback((id: string) => {
+    setDoc((d) =>
+      d && {
+        ...d,
+        index: {
+          ...d.index,
+          clips: d.index.clips?.filter((c) => c.clip_id !== id),
+          sessions: d.index.sessions?.filter((s) => s.session !== id),
+        },
+      },
+    );
+  }, []);
 
   const items = useMemo<Item[]>(() => {
     if (!doc) return [];
@@ -373,7 +395,7 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
         doc && (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {shown.map((i) => (
-              <ItemCard key={i.id} item={i} doc={doc} showRecordedAs={isAdmin} />
+              <ItemCard key={i.id} item={i} doc={doc} showRecordedAs={isAdmin} onDeleted={removeItem} />
             ))}
           </div>
         )
@@ -443,12 +465,15 @@ const ItemCard = memo(function ItemCard({
   item,
   doc,
   showRecordedAs,
+  onDeleted,
 }: {
   item: Item;
   doc: ProjectDoc;
   showRecordedAs: boolean;
+  onDeleted: (id: string) => void;
 }) {
   const [playing, setPlaying] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [thumbBroken, setThumbBroken] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const bytes = item.files.reduce((n, f) => n + (f.bytes || 0), 0);
@@ -517,13 +542,27 @@ const ItemCard = memo(function ItemCard({
       </div>
 
       <div className="flex flex-1 flex-col gap-2 px-3 py-2.5">
-        <div className="min-w-0">
-          <div className="truncate text-[0.85rem] font-semibold text-text" title={item.title}>
-            {item.title}
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[0.85rem] font-semibold text-text" title={item.title}>
+              {item.title}
+            </div>
+            <div className="mt-0.5 truncate font-mono text-[0.68rem] text-text-muted">{item.subtitle}</div>
+            {showRecordedAs && item.taskAsRecorded && (
+              <div className="mt-0.5 text-[0.65rem] text-amber-300">Recorded as “{item.taskAsRecorded}”</div>
+            )}
           </div>
-          <div className="mt-0.5 truncate font-mono text-[0.68rem] text-text-muted">{item.subtitle}</div>
-          {showRecordedAs && item.taskAsRecorded && (
-            <div className="mt-0.5 text-[0.65rem] text-amber-300">Recorded as “{item.taskAsRecorded}”</div>
+          {doc.admin && (
+            <button
+              type="button"
+              className="btn shrink-0 !px-1.5 !py-1 text-text-dim hover:border-err/60 hover:text-err disabled:opacity-40"
+              onClick={() => setDeleting(true)}
+              disabled={!item.rawPrefix}
+              title={item.rawPrefix ? "Delete this recording everywhere" : "Not deletable until the publisher records its raw folder"}
+              aria-label={`Delete ${item.subtitle}`}
+            >
+              <Trash2 size={13} />
+            </button>
           )}
         </div>
 
@@ -608,7 +647,99 @@ const ItemCard = memo(function ItemCard({
           onClose={() => setPlaying(false)}
         />
       )}
+
+      {deleting && (
+        <DeleteDialog
+          item={item}
+          project={doc.project}
+          onClose={() => setDeleting(false)}
+          onDeleted={() => {
+            setDeleting(false);
+            onDeleted(item.id);
+          }}
+        />
+      )}
     </div>
   );
 });
+
+function DeleteDialog({
+  item,
+  project,
+  onClose,
+  onDeleted,
+}: {
+  item: Item;
+  project: string;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const [typed, setTyped] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const armed = typed.trim() === item.session;
+
+  return (
+    <Modal title="Delete recording" subtitle={`${item.title} · ${item.subtitle}`} icon={Trash2} onClose={busy ? () => {} : onClose} width="max-w-lg">
+      <form
+        className="flex flex-col gap-3 px-5 py-4 text-[0.8rem] text-text-muted"
+        onSubmit={async (e) => {
+          e.preventDefault();
+          if (!armed) return;
+          setBusy(true);
+          setError(null);
+          try {
+            await deleteProjectItem(project, item.id);
+            onDeleted();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+            setBusy(false);
+          }
+        }}
+      >
+        <p>This removes the recording from both buckets:</p>
+        <ul className="ml-4 list-disc space-y-1 font-mono text-[0.72rem] text-text">
+          <li>raw: {item.rawPrefix}/</li>
+          <li>{project}: {item.prefix}/</li>
+        </ul>
+        <p>
+          It disappears from this project for everyone, the publisher will not bring it back, and the station drops its
+          local copy instead of uploading it again. The files stay in the buckets' version history for 90 days, so AWS
+          can still restore them until then.
+        </p>
+        <label className="flex flex-col gap-1">
+          <span>
+            Type the session id <span className="font-mono text-text">{item.session}</span> to confirm
+          </span>
+          <input
+            className="input-base font-mono"
+            value={typed}
+            onChange={(e) => setTyped(e.target.value)}
+            autoFocus
+            spellCheck={false}
+            autoComplete="off"
+            disabled={busy}
+          />
+        </label>
+        {error && (
+          <div className="flex items-center gap-2 rounded-md border border-err/30 bg-err/10 px-3 py-2 text-err">
+            <AlertCircle size={14} /> {error}
+          </div>
+        )}
+        <div className="flex justify-end gap-2">
+          <button type="button" className="btn" onClick={onClose} disabled={busy}>
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="btn border-err/60 bg-err/15 text-err hover:bg-err/25 disabled:opacity-40"
+            disabled={!armed || busy}
+          >
+            {busy ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete everywhere
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
 

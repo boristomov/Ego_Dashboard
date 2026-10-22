@@ -13,7 +13,6 @@ const ENDPOINT = (ENV.VITE_PROJECTS_ENDPOINT || "").replace(/\/+$/, "");
 
 export const PROJECTS_CONFIGURED = !!ENDPOINT;
 
-// localStorage, like the dashboard session it rides with (both last 12 h).
 const CLIENT_TOKEN_KEY = "ego_projects_token";
 
 export class ProjectsApiError extends Error {
@@ -48,6 +47,8 @@ export type ProjectClip = {
   checks: ProjectCheck[];
   capture_format?: string;
   prefix: string;
+  /** The raw take, `<task>/<session>`; deletes need it. */
+  raw_prefix?: string | null;
   preview?: string | null;
   thumb?: string | null;
   files: ProjectFile[];
@@ -66,6 +67,7 @@ export type SampleSession = {
   quality_status?: string | null;
   label: string;
   prefix: string;
+  raw_prefix?: string | null;
   preview?: string | null;
   thumb?: string | null;
   files: ProjectFile[];
@@ -85,7 +87,7 @@ export type ProjectDoc = { project: string; index: ProjectIndex; grant: string; 
 
 function clientToken(): string | null {
   try {
-    return localStorage.getItem(CLIENT_TOKEN_KEY);
+    return sessionStorage.getItem(CLIENT_TOKEN_KEY);
   } catch {
     return null;
   }
@@ -101,7 +103,7 @@ export function hasProjectsSession(): boolean {
 
 export function signOutProjects(): void {
   try {
-    localStorage.removeItem(CLIENT_TOKEN_KEY);
+    sessionStorage.removeItem(CLIENT_TOKEN_KEY);
   } catch {
     /* private browsing */
   }
@@ -158,7 +160,7 @@ export async function signInProjects(email: string, password: string): Promise<s
     false,
   );
   try {
-    localStorage.setItem(CLIENT_TOKEN_KEY, res.token);
+    sessionStorage.setItem(CLIENT_TOKEN_KEY, res.token);
   } catch {
     /* the session will not survive a reload */
   }
@@ -171,6 +173,20 @@ export function listProjects(): Promise<{ user: string; admin: boolean; projects
 
 export function fetchProject(id: string): Promise<ProjectDoc> {
   return req(`/projects/${encodeURIComponent(id)}`);
+}
+
+export type DeleteResult = { deleted: string; session: string; raw_objects: number; project_objects: number };
+
+/**
+ * Admins: delete one recording (a clip id or a sample session) from the project
+ * and its raw take from the raw bucket. Recoverable from S3 versions for 90 days.
+ */
+export function deleteProjectItem(project: string, item: string): Promise<DeleteResult> {
+  return req(`/projects/${encodeURIComponent(project)}/delete`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ item }),
+  });
 }
 
 /** A link to one of the project's files: opens through the Worker's redirect, valid while the grant is. */

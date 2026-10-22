@@ -52,6 +52,26 @@ bucket, no writes.
 | `GET` | `/projects` | Bearer | The projects the caller may open |
 | `GET` | `/projects/<id>` | Bearer | `index.json`, plus a file grant |
 | `GET` | `/file?p=<id>&k=<key>&g=<grant>[&dl=1]` | grant | 302 to the file |
+| `POST` | `/projects/<id>/delete` | admin | `{item}` (clip id or session): delete one recording everywhere |
+
+### Deleting a recording
+
+Admins get a bin icon on each card in the Data Browser. Confirming removes
+the take's raw folder (`<task>/<session>/` in the raw bucket), its folder under
+`projects/<id>/` and its index entry. It is done in this order:
+
+1. A tombstone, `_deleted/<task>/<session>.json`, is written to the raw bucket.
+   The publisher (`scripts/wirestock_publish.py`) never republishes a
+   tombstoned take, and a station's storage keeper drops its local copy
+   instead of uploading it again.
+2. The objects are deleted, and the entry is taken out of `index.json`.
+
+Both buckets are versioned, so a delete only adds delete markers; the
+lifecycle rule expires the old versions after 90 days. Until then a take can
+be restored by removing its delete markers (and its tombstone). The delete
+key has no `s3:DeleteObjectVersion`, so it cannot make a delete permanent, and
+it cannot delete anything under a `_` folder in the raw bucket (`_fleet/`,
+`_registry/`, ...).
 
 ## Setup
 
@@ -82,6 +102,11 @@ Cloudflare dashboard → **Workers & Pages** → **Create** → `ego-projects`,
 | `CLIENT_PROOF_SALT` | var | random hex, e.g. `openssl rand -hex 16` |
 | `PROJECT_CLIENTS` | secret | see below |
 | `ALLOWED_ORIGIN` | var | `https://egodash.aithoth.com` |
+| `RAW_BUCKET` | var | `egodata-raw-prod-854929212137-us-west-2-an` (deletes only) |
+| `DELETE_AWS_ACCESS_KEY_ID` | secret | `ego-projects-deleter`'s key, with `iam-delete-policy.json` (deletes only) |
+| `DELETE_AWS_SECRET_ACCESS_KEY` | secret | as above |
+
+Without the last three, deleting answers 500 and everything else works.
 
 `PROJECT_CLIENTS` is one JSON object, an entry per client account:
 
@@ -121,3 +146,7 @@ project, the key guard, sign-in, the redirect, and the presigner against AWS's
 published example. With `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and
 `PROJECTS_BUCKET` set it also reads the real `projects/wirestock/index.json`
 (or `PROBE_PROJECT`) and fetches its first thumbnail. Read-only.
+
+`LIVE_DELETE=1` with `RAW_BUCKET` (and optionally `DELETE_AWS_*`) runs a real
+delete of a throwaway take, `TEST/20200101_000000` in project `selftest`, that
+it writes first.

@@ -1,0 +1,40 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ListToFindATakesFiles",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": [
+        "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an",
+        "arn:aws:s3:::egodata-processed-prod-854929212137-us-west-2-an"
+      ]
+    },
+    {
+      "Sid": "DeleteTakesAndDeliveries",
+      "Effect": "Allow",
+      "Action": "s3:DeleteObject",
+      "Resource": [
+        "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an/*",
+        "arn:aws:s3:::egodata-processed-prod-854929212137-us-west-2-an/projects/*"
+      ]
+    },
+    {
+      "Sid": "WriteTombstonesAndProjectIndexes",
+      "Effect": "Allow",
+      "Action": "s3:PutObject",
+      "Resource": [
+        "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an/_deleted/*",
+        "arn:aws:s3:::egodata-processed-prod-854929212137-us-west-2-an/projects/*/index.json"
+      ]
+    },
+    {
+      "Sid": "NeverTouchSystemFolders",
+      "Effect": "Deny",
+      "Action": "s3:DeleteObject",
+      "Resource": [
+        "arn:aws:s3:::egodata-raw-prod-854929212137-us-west-2-an/_*"
+      ]
+    }
+  ]
+}
