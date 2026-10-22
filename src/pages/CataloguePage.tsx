@@ -9,6 +9,10 @@ import {
 import { SessionCard } from "../components/SessionCard";
 import { DownloadModal } from "../components/DownloadModal";
 import { formatBytes, formatHours } from "../lib/session";
+import { useSearchParams } from "react-router-dom";
+import { useAuth, userProjects } from "../context/Auth";
+import { ProjectBrowser } from "../components/ProjectBrowser";
+import { PROJECTS_CONFIGURED } from "../lib/projectsApi";
 
 // Cards are mounted in batches as the user scrolls instead of all at once —
 // mounting hundreds of image-bearing cards in one commit visibly locks up
@@ -16,7 +20,56 @@ import { formatBytes, formatHours } from "../lib/session";
 // batch well before it scrolls into view so growth is imperceptible.
 const BATCH_SIZE = 24;
 
+const PROJECT_TITLES: Record<string, string> = { wirestock: "Wirestock", samples: "Sample data" };
+
 export function CataloguePage() {
+  const { session, role } = useAuth();
+  const [params, setParams] = useSearchParams();
+  const allowed = userProjects(session?.email, role);
+  const projects = !PROJECTS_CONFIGURED
+    ? []
+    : allowed === "all"
+      ? Object.keys(PROJECT_TITLES)
+      : allowed.filter((p) => p in PROJECT_TITLES);
+  if (!projects.length) return <PilotCatalogue />;
+
+  // A project client lands on its project; everyone else on the pilot dataset.
+  const fallback = allowed === "all" ? "pilot" : projects[0];
+  const want = params.get("project") || fallback;
+  const tab = want === "pilot" || projects.includes(want) ? want : fallback;
+  const tabs = [...projects.map((id) => ({ id, label: PROJECT_TITLES[id] })), { id: "pilot", label: "Pilot dataset" }];
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center gap-1 rounded-lg border border-border bg-panel p-1 self-start">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            type="button"
+            onClick={() => setParams(t.id === fallback ? {} : { project: t.id }, { replace: true })}
+            className={`rounded-md px-3 py-1.5 text-[0.78rem] font-medium transition ${
+              tab === t.id ? "bg-accent/20 text-accent-hover" : "text-text-muted hover:bg-panel-hover hover:text-text"
+            }`}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+      {tab === "pilot" ? (
+        <PilotCatalogue />
+      ) : (
+        <div className="flex flex-col gap-4">
+          <h1 className="text-xl font-semibold tracking-tight">
+            <span className="brand-grad">Data Browser</span>
+          </h1>
+          <ProjectBrowser key={tab} project={tab} title={PROJECT_TITLES[tab]} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PilotCatalogue() {
   const { loading, error, sessions, refetch } = useCatalogue();
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [showDownload, setShowDownload] = useState(false);

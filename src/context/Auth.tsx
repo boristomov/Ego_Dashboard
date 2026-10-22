@@ -54,6 +54,12 @@ export type UserRecord = {
   company: string;
   /** Human-readable description of what data this account may access. */
   allowedData: string[];
+  /**
+   * Project deliveries (infra/projects) this account opens in the Data
+   * Browser. The Worker decides, from its own PROJECT_CLIENTS; this only says
+   * which tabs to offer, and makes sign-in fetch a project token too.
+   */
+  projects?: string[];
 };
 
 /** Safe projection of a user for display (no secrets). */
@@ -88,7 +94,26 @@ const USERS: UserRecord[] = [
     company: "Genesis AI",
     allowedData: ["Welcome", "Data browser (demo dataset)"],
   },
+  {
+    email: "wirestock@aithoth.com",
+    salt: "455887070c225a90754fa75c26d52178",
+    passwordHash:
+      "0bef24e4d122d13d56fea6440bee376a9ab7c7f958d79d0aaeb5aa64b2083d72",
+    iterations: 310000,
+    role: "client",
+    name: "Wirestock",
+    company: "Wirestock",
+    allowedData: ["Welcome", "Data browser (demo dataset)", "Wirestock project", "Sample data"],
+    projects: ["wirestock", "samples"],
+  },
 ];
+
+/** The project deliveries an account is offered (admins: all of them). */
+export function userProjects(email: string | undefined, role: Role): string[] | "all" {
+  if (role === "admin") return "all";
+  const u = USERS.find((x) => x.email.toLowerCase() === (email || "").toLowerCase());
+  return u?.projects ?? [];
+}
 
 export function listUsers(): UserInfo[] {
   return USERS.map(({ email, role, name, company, allowedData }) => ({
@@ -445,6 +470,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           /* vault unlock is best-effort */
         });
     } else {
+      if (user.projects?.length) {
+        // Same password, the projects Worker's own proof and token. Awaited so
+        // the Data Browser has its token when it opens; a failure only leaves
+        // the project tabs asking to sign in again.
+        await import("../lib/projectsApi")
+          .then(({ PROJECTS_CONFIGURED, signInProjects }) =>
+            PROJECTS_CONFIGURED ? signInProjects(user.email, password) : null,
+          )
+          .catch(() => null);
+      }
       // Log client/r&d sign-ins to the activity feed (admin sign-ins are not
       // logged — the feed is about client/public behaviour).
       void import("../lib/lead")
@@ -472,6 +507,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch {
       /* ignore */
     }
+    void import("../lib/projectsApi").then(({ signOutProjects }) => signOutProjects());
     setSession(null);
   }, []);
 

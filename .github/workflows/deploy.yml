@@ -184,6 +184,9 @@ jobs:
           # Monitoring previews (infra/monitoring). Unset → /monitoring says
           # it is not deployed.
           VITE_MONITOR_ENDPOINT: ${{ vars.VITE_MONITOR_ENDPOINT }}
+          # Client project deliveries (infra/projects). Unset → the Data
+          # Browser shows only the pilot dataset.
+          VITE_PROJECTS_ENDPOINT: ${{ vars.VITE_PROJECTS_ENDPOINT }}
         run: npm run build
 
       - name: Setup Pages
