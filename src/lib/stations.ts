@@ -76,6 +76,14 @@ export type StationDay = {
   frames: number;
 };
 
+export type StationTally = {
+  takes: number;
+  okTakes: number;
+  durationSec: number;
+  bytes: number;
+  frames: number;
+};
+
 export type StationLibrary = {
   totalTakes: number;
   okTakes: number;
@@ -83,6 +91,18 @@ export type StationLibrary = {
   today: StationDay | null;
   days: StationDay[];
   recentTakes: StationTake[];
+  /**
+   * Every take the station has collected, including uploaded takes it has
+   * since deleted to free space. Absent from recorders older than 2026-10-22,
+   * whose totals only covered the newest 300 folders still on disk.
+   */
+  all?: StationTally & { firstAt?: string | null; lastAt?: string | null };
+  onDevice?: StationTally;
+  clearedAfterUpload?: StationTally;
+  awaitingUpload?: StationTally;
+  unreadableTakes?: number;
+  byTask?: (StationTally & { task: string; lastAt?: string | null })[];
+  byOperator?: (StationTally & { operator: string })[];
 };
 
 export type StationPower = {
@@ -637,10 +657,37 @@ export function formatMbps(n: number | null | undefined): string {
   return n >= 100 ? `${Math.round(n)}` : n.toFixed(1);
 }
 
-/** Episode counts and recorded minutes grouped by task, largest first. */
+/**
+ * Everything a station has collected. `whole` is false for recorders that
+ * predate the full-history ledger, whose figures only cover the newest
+ * folders still on disk and the last two weeks of days.
+ */
+export function collectedTotals(
+  library: StationLibrary | undefined | null,
+): { takes: number; okTakes: number; durationSec: number; bytes: number; whole: boolean } {
+  if (library?.all) return { ...library.all, whole: true };
+  const days = library?.days || [];
+  return {
+    takes: library?.totalTakes || 0,
+    okTakes: library?.okTakes || 0,
+    durationSec: days.reduce((n, d) => n + (d.durationSec || 0), 0),
+    bytes: days.reduce((n, d) => n + (d.bytes || 0), 0),
+    whole: false,
+  };
+}
+
+/**
+ * Episode counts and recorded minutes grouped by task, largest first. Whole
+ * history when the recorder reports it, else the recent takes it carries.
+ */
 export function takesByTask(
   library: StationLibrary | undefined | null,
-): { label: string; takes: number; durationSec: number }[] {
+): { label: string; takes: number; durationSec: number; bytes?: number }[] {
+  if (library?.byTask) {
+    return library.byTask
+      .map((r) => ({ label: r.task || "Unlabelled", takes: r.takes, durationSec: r.durationSec, bytes: r.bytes }))
+      .sort((a, b) => b.takes - a.takes);
+  }
   const byTask = new Map<string, { takes: number; durationSec: number }>();
   for (const take of library?.recentTakes || []) {
     const label = take.taskName || "Unlabelled";

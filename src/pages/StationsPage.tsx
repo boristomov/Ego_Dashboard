@@ -14,6 +14,7 @@ import {
   CloudOff,
   CloudUpload,
   Copy,
+  Database,
   EthernetPort,
   ExternalLink,
   HardDrive,
@@ -45,6 +46,7 @@ import { saveRecord } from "../lib/registryApi";
 import {
   attentionReasons,
   batteryTone,
+  collectedTotals,
   formatBytes,
   formatDuration,
   formatMbps,
@@ -94,6 +96,8 @@ export function StationsPage() {
       recording: stations.filter((s) => isRecording(s, referenceMs)).length,
       takesToday: stations.reduce((n, s) => n + (s.library?.today?.takes || 0), 0),
       secToday: stations.reduce((n, s) => n + (s.library?.today?.durationSec || 0), 0),
+      takesAll: stations.reduce((n, s) => n + collectedTotals(s.library).takes, 0),
+      secAll: stations.reduce((n, s) => n + collectedTotals(s.library).durationSec, 0),
     };
   }, [stations, referenceMs]);
 
@@ -153,7 +157,7 @@ export function StationsPage() {
         />
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7">
         <Stat label="Stations" value={summary.total} accent="slate" />
         <Stat label="Online" value={summary.online + summary.attention} accent="ok" />
         <Stat label="Recording" value={summary.recording} accent="rec" />
@@ -163,6 +167,12 @@ export function StationsPage() {
           label="Takes today"
           value={summary.takesToday}
           sub={formatDuration(summary.secToday)}
+          accent="slate"
+        />
+        <Stat
+          label="Collected, all time"
+          value={formatDuration(summary.secAll)}
+          sub={`${summary.takesAll} takes`}
           accent="slate"
         />
       </div>
@@ -278,7 +288,7 @@ function StationTile({
 
         <div className={open ? "grid gap-3 lg:grid-cols-2" : "contents"}>
           <WhoAndWhat station={station} status={status} recording={recording} />
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Vital
               icon={<Camera size={13} />}
               label="Camera"
@@ -291,6 +301,7 @@ function StationTile({
               value={`${station.library?.today?.takes ?? 0} takes`}
               sub={formatDuration(station.library?.today?.durationSec ?? 0)}
             />
+            <CollectedVital station={station} />
             <BatteryVital battery={station.battery} upload={station.upload} />
           </div>
         </div>
@@ -603,6 +614,7 @@ function StationDetail({
             <StorageChip storage={station.storage} />
             <Battery battery={station.battery} />
           </div>
+          <Collected station={station} />
           <Section title="Daily yield">
             {lib?.days?.length ? <YieldBars days={lib.days} /> : <Empty>No recordings yet</Empty>}
           </Section>
@@ -691,19 +703,104 @@ function StationDetail({
   );
 }
 
+const PARTIAL_NOTE =
+  "This recorder predates whole-history totals: the figures cover only the newest takes still on disk. Update the recorder for the full count.";
+
+function CollectedVital({ station }: { station: StationHeartbeat }) {
+  const c = collectedTotals(station.library);
+  return (
+    <Vital
+      icon={<Database size={13} />}
+      label="Collected"
+      value={c.takes ? formatDuration(c.durationSec) : "—"}
+      sub={`${c.takes} take${c.takes === 1 ? "" : "s"}${c.whole ? "" : " · partial"}`}
+      title={c.whole ? `${formatBytes(c.bytes)} across every take this station has recorded` : PARTIAL_NOTE}
+    />
+  );
+}
+
 /**
- * Episodes and recorded time split by task.
- *
- * Scoped to the recent takes the heartbeat carries rather than the station's
- * whole history: the heartbeat is rewritten in place every cycle and has to
- * stay small, so it ships a recent window, and the chart says so.
+ * Everything the station has ever collected, and where it is now: still on
+ * its disk, uploaded and cleared to make room, or waiting to upload.
+ */
+function Collected({ station }: { station: StationHeartbeat }) {
+  const lib = station.library;
+  const c = collectedTotals(lib);
+  if (!c.takes) return null;
+  const first = lib?.all?.firstAt ? Date.parse(lib.all.firstAt) : NaN;
+  const last = lib?.all?.lastAt ? Date.parse(lib.all.lastAt) : NaN;
+  const where = [
+    { label: "On this device", t: lib?.onDevice },
+    { label: "Uploaded and cleared", t: lib?.clearedAfterUpload },
+    { label: "Waiting to upload", t: lib?.awaitingUpload },
+  ].filter((r) => r.t && r.t.takes > 0);
+  const operators = lib?.byOperator || [];
+
+  return (
+    <Section title="Collected on this station">
+      <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-3 gap-2">
+          <Vital icon={<Clock size={13} />} label="Recorded" value={formatDuration(c.durationSec)} />
+          <Vital icon={<ListChecks size={13} />} label="Takes" value={String(c.takes)}
+            sub={c.takes ? `${Math.round((c.okTakes / c.takes) * 100)}% clean` : undefined} />
+          <Vital icon={<HardDrive size={13} />} label="Size" value={formatBytes(c.bytes)} />
+        </div>
+        {Number.isFinite(first) && (
+          <p className="text-xs text-text-dim">
+            Since {new Date(first).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}
+            {Number.isFinite(last) ? ` · last take ${relativeAge(last)}` : ""}
+          </p>
+        )}
+        {where.length > 0 && (
+          <ul className="flex flex-col gap-1 text-sm">
+            {where.map(({ label, t }) => (
+              <li key={label} className="flex items-baseline justify-between gap-2">
+                <span className="text-text-muted">{label}</span>
+                <span className="font-mono text-xs text-text">
+                  {t!.takes} · {formatDuration(t!.durationSec)} · {formatBytes(t!.bytes)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {operators.length > 0 && (
+          <div>
+            <SectionLabel>Recorded time by operator</SectionLabel>
+            <div className="mt-1.5">
+              <BarRows
+                rows={operators.map((o) => ({
+                  label: o.operator,
+                  value: Math.round(o.durationSec / 60),
+                  hint: `${o.takes} take${o.takes === 1 ? "" : "s"} · ${formatDuration(o.durationSec)}`,
+                }))}
+                format={(n) => `${n} min`}
+              />
+            </div>
+          </div>
+        )}
+        {(lib?.unreadableTakes || 0) > 0 && (
+          <p className="text-xs text-amber-300">
+            {lib!.unreadableTakes} take{lib!.unreadableTakes === 1 ? " has" : "s have"} unreadable metadata, so
+            {lib!.unreadableTakes === 1 ? " its" : " their"} length is not in the total.
+          </p>
+        )}
+        {!c.whole && <p className="text-xs text-text-dim">{PARTIAL_NOTE}</p>}
+      </div>
+    </Section>
+  );
+}
+
+/**
+ * Episodes and recorded time split by task, over the station's whole history.
+ * Recorders older than the full-history ledger only ship their recent takes,
+ * and the chart says which it is showing.
  */
 function TaskBreakdown({ station }: { station: StationHeartbeat }) {
   const rows = useMemo(() => takesByTask(station.library), [station.library]);
   if (!rows.length) return null;
 
   const window = station.library?.recentTakes?.length || 0;
-  const totalMin = rows.reduce((n, r) => n + r.durationSec, 0) / 60;
+  const totalSec = rows.reduce((n, r) => n + r.durationSec, 0);
 
   return (
     <Collapsible
@@ -721,14 +818,15 @@ function TaskBreakdown({ station }: { station: StationHeartbeat }) {
               rows={rows.map((r) => ({
                 label: r.label,
                 value: Math.round(r.durationSec / 60),
-                hint: formatDuration(r.durationSec),
+                hint: r.bytes != null ? `${formatDuration(r.durationSec)} · ${formatBytes(r.bytes)}` : formatDuration(r.durationSec),
               }))}
               format={(n) => `${n} min`}
             />
           </div>
         </div>
         <p className="text-xs text-text-dim">
-          Last {window} take{window === 1 ? "" : "s"} · {totalMin.toFixed(0)} min total
+          {station.library?.byTask ? "Every take on record" : `Last ${window} take${window === 1 ? "" : "s"}`} ·{" "}
+          {formatDuration(totalSec)} total
         </p>
       </div>
     </Collapsible>
@@ -1320,7 +1418,7 @@ function Stat({
   accent,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   sub?: string;
   accent: "ok" | "rec" | "err" | "warn" | "slate";
 }) {
