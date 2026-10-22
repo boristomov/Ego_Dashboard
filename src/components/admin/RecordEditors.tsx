@@ -37,6 +37,7 @@ import {
   type ObjectRef,
   type Registry,
   type TaskDefinition,
+  type TaskTranslation,
 } from "../../lib/registry";
 import { deleteRecord, saveRecord, type RegistryKind } from "../../lib/registryApi";
 import { ObjectRefEditor } from "./ObjectRefEditor";
@@ -135,9 +136,13 @@ export function TaskEditor({
     sites: (existing?.sites ?? []) as string[],
     targetTakes: existing?.targetTakes,
     targetDurationSec: existing?.targetDurationSec ?? {},
+    i18n: existing?.i18n ?? {},
     state: (existing?.state ?? "draft") as LifecycleState,
   }));
   const { saving, error, save, remove } = useSaver("task", onSaved, onClose);
+  const zh: TaskTranslation = d.i18n.zh ?? {};
+  const setZh = <K extends keyof TaskTranslation>(k: K, v: TaskTranslation[K]) =>
+    set("i18n", { ...d.i18n, zh: { ...zh, [k]: v } });
 
   const version = nextTaskVersion(existing, d);
   const bumping = !!existing && version !== existing.version;
@@ -249,6 +254,28 @@ export function TaskEditor({
             assets={registry.assets}
           />
         </Field>
+
+        <Section title="Chinese · 中文">
+          <Note>
+            Shown on the rig when its language is set to Chinese. Anything left
+            empty falls back to the English above.
+          </Note>
+          <Field label="Name" hint="Display only. Recordings are still filed under the English name.">
+            <Text value={zh.name ?? ""} onChange={(v) => setZh("name", v)} />
+          </Field>
+          <Field label="Headline">
+            <Text value={zh.headline ?? ""} onChange={(v) => setZh("headline", v)} />
+          </Field>
+          <Field label="Description">
+            <Area value={zh.description ?? ""} onChange={(v) => setZh("description", v)} rows={4} />
+          </Field>
+          <Field label="Steps">
+            <StringList values={zh.steps ?? []} ordered onChange={(v) => setZh("steps", v)} />
+          </Field>
+          <Field label="Pitfalls">
+            <StringList values={zh.pitfalls ?? []} onChange={(v) => setZh("pitfalls", v)} />
+          </Field>
+        </Section>
 
         <Section title="Where and how much">
           <Field label="Sites" hint="Empty means every site.">

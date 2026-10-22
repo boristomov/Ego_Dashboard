@@ -272,8 +272,20 @@ export type TaskDefinition = {
   targetDurationSec?: { min?: number; max?: number };
   /** How many good takes are wanted, for yield tracking. */
   targetTakes?: number;
+  /** The operator-facing text in other languages. Rigs fall back to English
+   *  field by field. `name` stays the English one everywhere it is a key:
+   *  recording folders and S3 prefixes are named after it. */
+  i18n?: { zh?: TaskTranslation };
   state: LifecycleState;
   provenance: Provenance;
+};
+
+export type TaskTranslation = {
+  name?: string;
+  headline?: string;
+  description?: string;
+  steps?: string[];
+  pitfalls?: string[];
 };
 
 /**

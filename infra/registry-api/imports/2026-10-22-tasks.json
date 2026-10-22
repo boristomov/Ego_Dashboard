@@ -1,0 +1,1123 @@
+{
+  "about": "Chinese text for the existing tasks, and 25 new tasks. Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-22-tasks.json --user <you> --apply",
+  "defaults": { "sites": ["Beijing"], "state": "active", "environmentIds": [] },
+  "translations": {
+    "test": {
+      "zh": {
+        "name": "测试",
+        "headline": "开发测试标题",
+        "description": "开发测试描述",
+        "steps": ["测试步骤 1"],
+        "pitfalls": []
+      }
+    },
+    "washing-dishes": {
+      "zh": {
+        "name": "洗碗",
+        "headline": "清洗脏的炊具和餐具",
+        "description": "操作员需要一个有自来水、海绵和洗洁精等厨房用品的环境。目标是一次清洗一件物品。物品必须明显脏污或有污渍，不能使用干净的物品。",
+        "steps": [],
+        "pitfalls": []
+      }
+    },
+    "folding-a-towel": {
+      "zh": {
+        "name": "叠毛巾",
+        "headline": "叠一条毛巾",
+        "description": "从多种初始状态出发，用多种方式叠毛巾。请确保双手大部分时间可见，不要被布料完全遮住。这个任务要求毛巾的起始位置和最终摆放位置每次都不同。",
+        "steps": [],
+        "pitfalls": []
+      }
+    },
+    "make-bed": {
+      "zh": {
+        "name": "铺床",
+        "headline": "铺床",
+        "description": "把床铺整齐，整理并摆放从床单到被子、被套等各种床上用品。如果有枕头，也要摆好。注意手部遮挡，与布料互动时始终确保双手可见。",
+        "steps": [],
+        "pitfalls": []
+      }
+    },
+    "cleaning-weeds-with-a-shovel": {
+      "zh": {
+        "name": "用铲子清除杂草",
+        "headline": "用铲子清除杂草",
+        "description": "清除一块约 1–2 平方米的杂草区域。确保铲尖和双手始终在画面内。动作简单，不要遮挡双手。",
+        "steps": [],
+        "pitfalls": []
+      }
+    },
+    "folding-laundry": {
+      "zh": {
+        "name": "叠衣物",
+        "headline": "叠衣物",
+        "description": "叠衣服、床单、毛巾、袜子等。目标是每次录制时物品的起始状态都不同：不要总是平铺展开，而是随意扔在叠衣服的地方。使用多种物品，每件物品至少叠 10–20 次。也就是说，如果你在叠一件衬衫，就叠 20 次，每次从不同的初始状态开始，然后再换一件新物品。",
+        "steps": [],
+        "pitfalls": ["布料遮挡双手"]
+      }
+    },
+    "prepare-a-salad": {
+      "zh": {
+        "name": "做沙拉",
+        "headline": "做沙拉",
+        "description": "切蔬菜，每种蔬菜用各自不同的切法处理。使用各种厨刀、擦丝器等工具。尝试不同的绿叶菜和食材。可以按喜好给沙拉调味。使用不同的砧板。把沙拉装进不同的碗、盘子等容器里。",
+        "steps": [],
+        "pitfalls": []
+      }
+    },
+    "water-plants": {
+      "zh": {
+        "name": "浇花",
+        "headline": "浇花",
+        "description": "在各种环境中用不同的水壶或水管给植物浇水。尽量让浇水方式随机多变。",
+        "steps": [],
+        "pitfalls": []
+      }
+    },
+    "hang-clothes-on-a-rack": {
+      "zh": {
+        "name": "把衣服挂到衣架上",
+        "headline": "把衣服挂到衣架上",
+        "description": "把衣服挂到各种不同的晾衣架上。使用不同的衣架和挂法。把衣服挂上衣架时，确保衣服没有挡住双手。确保空间不要太暗。",
+        "steps": [],
+        "pitfalls": ["双手被衣服挡住"]
+      }
+    },
+    "peel-a-shell-food": {
+      "zh": {
+        "name": "剥壳（食物）",
+        "headline": "剥壳（食物）",
+        "description": "剥去任何食物的外壳或外皮，例如煮鸡蛋、豆角、坚果、瓜子、水果（香蕉等）和蔬菜。动作不要过于简单。一次录制中可以处理多个物品。确保起始位置、工作台面和操作方式都有变化。",
+        "steps": [],
+        "pitfalls": []
+      }
+    },
+    "make-origami": {
+      "zh": {
+        "name": "折纸",
+        "headline": "折纸",
+        "description": "折纸：使用不同形状和颜色的纸。在各种不同的工作台面上进行。",
+        "steps": [],
+        "pitfalls": []
+      }
+    }
+  },
+  "tasks": [
+    {
+      "slug": "sweep-a-floor",
+      "name": "Sweep a floor",
+      "headline": "Sweep visible dirt into a dustpan",
+      "description": "Sweep a patch of floor (about 2–4 m²) with a broom, collect the dirt in a dustpan and empty it into a bin. The floor must be visibly dirty before you start: scatter crumbs, rice, paper scraps, leaves, sand or dust so the dirt is clearly visible on camera. A clean floor is not usable. Make every take different: change the room and floor type (tile, wood, concrete), where the dirt lies (corners, under a chair, along a wall, open floor), how spread out it is, and where the dustpan and bin start. Use different brooms across takes, including a short hand brush and pan.",
+      "steps": [
+        "Scatter visible dirt on the floor in a new pattern.",
+        "Look down at the dirt so it is in view before you begin.",
+        "Sweep the dirt into one pile.",
+        "Hold the dustpan flat and sweep the pile into it.",
+        "Carry it to the bin and empty it.",
+        "Put the broom and dustpan down."
+      ],
+      "pitfalls": [
+        "Floor already clean, or dirt too fine to see on camera",
+        "Looking ahead instead of down, so the broom head and dirt leave the frame",
+        "Dark dirt on a dark floor: pick dirt that contrasts with the floor",
+        "Sweeping so fast that dirt flies out of view",
+        "Same room, same dirt layout and same broom every take"
+      ],
+      "objects": [{ "kind": "described", "label": "Broom" }, { "kind": "described", "label": "Dustpan" }, { "kind": "described", "label": "Trash bin" }],
+      "targetTakes": 40,
+      "targetDurationSec": { "min": 30, "max": 180 },
+      "i18n": {
+        "zh": {
+          "name": "扫地",
+          "headline": "把明显的垃圾扫进簸箕",
+          "description": "用扫帚清扫一块地面（约 2–4 平方米），把垃圾扫进簸箕，再倒进垃圾桶。开始前地面必须明显脏：撒上面包屑、米粒、碎纸、树叶、沙子或灰尘，让镜头能清楚看到垃圾。干净的地面不可用。每次录制都要不同：更换房间和地面材质（瓷砖、木地板、水泥地）、垃圾的位置（墙角、椅子下、沿墙、空地）、分散程度，以及簸箕和垃圾桶的起始位置。不同录制使用不同的扫帚，包括小号手持刷和簸箕。",
+          "steps": [
+            "用新的方式在地上撒上明显的垃圾。",
+            "开始前低头看着垃圾，让它进入画面。",
+            "把垃圾扫成一堆。",
+            "把簸箕放平，把垃圾扫进去。",
+            "拿到垃圾桶旁倒掉。",
+            "放下扫帚和簸箕。"
+          ],
+          "pitfalls": [
+            "地面本来就干净，或垃圾太细，镜头看不到",
+            "眼睛看前方而不是看地面，导致扫帚头和垃圾离开画面",
+            "深色地面上的深色垃圾：选择和地面颜色对比明显的垃圾",
+            "扫得太快，把垃圾扫出画面",
+            "每次都是同一个房间、同样的垃圾分布、同一把扫帚"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "mop-a-floor",
+      "name": "Mop a floor",
+      "headline": "Mop visible stains off a floor",
+      "description": "Mop a patch of floor until the visible marks are gone. Before starting, make the floor visibly dirty: muddy footprints, coffee or juice spills, sticky drips or dusty patches the camera can clearly see. Wet the mop in a bucket, wring it out, mop the area, and rinse again when needed. Vary the room, the floor material, where the stains are and how big they are, the mop type (flat mop, string mop, spin mop) and where the bucket starts. Change the mopping pattern between takes: straight strokes, figure-eight, edges first.",
+      "steps": [
+        "Make visible stains or footprints on the floor.",
+        "Look at the dirty area so it is in view.",
+        "Dip the mop in the bucket and wring it out.",
+        "Mop until the marks are gone, rinsing the mop when needed.",
+        "Wring the mop a last time and lean it against the bucket."
+      ],
+      "pitfalls": [
+        "No visible dirt at the start",
+        "Wringing the mop below the camera's view: bring the bucket and your hands into the frame",
+        "Leaving the floor soaking wet and slippery: wring well and walk carefully",
+        "Water splashing onto the camera or the rig",
+        "A bright window reflecting off the wet floor and washing out the image"
+      ],
+      "objects": [{ "kind": "described", "label": "Mop" }, { "kind": "described", "label": "Bucket" }],
+      "targetTakes": 40,
+      "targetDurationSec": { "min": 30, "max": 240 },
+      "i18n": {
+        "zh": {
+          "name": "拖地",
+          "headline": "把地面上明显的污渍拖干净",
+          "description": "拖一块地面，直到明显的污渍消失。开始前让地面明显变脏：泥脚印、咖啡或果汁洒出的痕迹、黏的滴痕或灰尘斑块，要让镜头能清楚看到。把拖把在水桶里浸湿、拧干、拖地，需要时再次清洗。变换房间、地面材质、污渍的位置和大小、拖把类型（平板拖把、棉线拖把、旋转拖把）以及水桶的起始位置。每次录制改变拖地方式：直线、8 字形、先拖边缘。",
+          "steps": [
+            "在地面上制造明显的污渍或脚印。",
+            "看向脏的区域，让它进入画面。",
+            "把拖把浸入水桶并拧干。",
+            "拖到污渍消失，需要时清洗拖把。",
+            "最后拧干拖把，靠在水桶上。"
+          ],
+          "pitfalls": [
+            "开始时没有明显的污渍",
+            "在镜头看不到的低处拧拖把：把水桶和双手放进画面",
+            "地面太湿太滑：拧干一些，小心走动",
+            "水溅到相机或设备上",
+            "窗户的强光在湿地面上反射，画面过曝"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "clean-a-countertop-with-spray",
+      "name": "Clean a countertop with spray",
+      "headline": "Spray and wipe a dirty countertop",
+      "description": "Clean a kitchen or bathroom countertop with a spray bottle and a cloth, sponge or paper towel. The counter must be visibly dirty: crumbs, sauce smears, coffee rings, sticky spots or water marks. Move objects out of the way, spray, wipe until clean, then put the objects back. Change the counter's layout every take: which objects are on it, where the stains are, which hand holds the spray, and whether you wipe in circles or straight lines or sweep crumbs into your hand or a bin.",
+      "steps": [
+        "Make sure the counter has visible stains and crumbs.",
+        "Move objects that are in the way to one side.",
+        "Spray the dirty areas.",
+        "Wipe until the surface is clean, collecting the crumbs.",
+        "Put the objects back and set the spray bottle down."
+      ],
+      "pitfalls": [
+        "Counter already clean before the take",
+        "Spraying toward the camera or into the air",
+        "The cloth hiding the whole hand the entire time: let the fingers show at the edges",
+        "Same objects and stain positions every take",
+        "A shiny counter reflecting a bright light into the camera"
+      ],
+      "objects": [{ "kind": "described", "label": "Spray bottle" }, { "kind": "described", "label": "Cloth or sponge" }],
+      "targetTakes": 50,
+      "targetDurationSec": { "min": 30, "max": 180 },
+      "i18n": {
+        "zh": {
+          "name": "用喷雾清洁台面",
+          "headline": "喷洒并擦拭脏的台面",
+          "description": "用喷壶和抹布、海绵或纸巾清洁厨房或浴室台面。台面必须明显脏：面包屑、酱汁痕迹、咖啡杯印、黏渍或水渍。把挡路的物品移开，喷洒，擦到干净，再把物品放回原处。每次录制都要改变台面布置：台面上放哪些物品、污渍在哪里、哪只手拿喷壶，以及是画圈擦、直线擦，还是把碎屑扫进手里或垃圾桶。",
+          "steps": [
+            "确认台面上有明显的污渍和碎屑。",
+            "把挡路的物品移到一边。",
+            "向脏的地方喷洒。",
+            "擦到表面干净，同时收集碎屑。",
+            "把物品放回原处，放下喷壶。"
+          ],
+          "pitfalls": [
+            "录制前台面已经是干净的",
+            "朝着相机或空中喷洒",
+            "抹布一直完全盖住手：让手指在边缘露出来",
+            "每次物品和污渍的位置都一样",
+            "光亮的台面把强光反射进镜头"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "clean-a-window",
+      "name": "Clean a window or glass surface",
+      "headline": "Clean smudges off glass with spray and a cloth",
+      "description": "Clean a window, glass door or glass table top. The glass must have visible smudges, fingerprints, dust or water spots. Spray, wipe with a cloth or pull a squeegee across, then buff out the streaks. Vary the surface, its height (low table, eye-level window), the size of the dirty area and the tool. Stand at an angle to reflective glass so your face and the rig are not reflected.",
+      "steps": [
+        "Check that the glass has visible smudges or spots.",
+        "Spray the glass.",
+        "Wipe or squeegee from top to bottom.",
+        "Buff the remaining streaks with a dry cloth.",
+        "Put the tools down."
+      ],
+      "pitfalls": [
+        "Your face or other people reflected in the glass: stand at an angle",
+        "Strong sunlight behind the glass turning the hands into dark silhouettes",
+        "Glass that is already clean",
+        "Spraying toward the camera"
+      ],
+      "objects": [{ "kind": "described", "label": "Glass cleaner spray" }, { "kind": "described", "label": "Microfiber cloth" }, { "kind": "described", "label": "Squeegee" }],
+      "targetTakes": 30,
+      "targetDurationSec": { "min": 30, "max": 180 },
+      "i18n": {
+        "zh": {
+          "name": "清洁窗户或玻璃表面",
+          "headline": "用喷雾和抹布擦掉玻璃上的污迹",
+          "description": "清洁窗户、玻璃门或玻璃桌面。玻璃上必须有明显的污迹、指纹、灰尘或水渍。喷洒后用抹布擦或用刮水器刮，再把残留的条纹擦亮。变换表面、高度（矮桌、齐眼高的窗户）、脏污面积和工具。面对会反光的玻璃时要斜着站，避免拍到自己的脸和设备的倒影。",
+          "steps": [
+            "确认玻璃上有明显的污迹或斑点。",
+            "向玻璃喷洒。",
+            "从上到下擦拭或用刮水器刮。",
+            "用干抹布把残留的条纹擦亮。",
+            "放下工具。"
+          ],
+          "pitfalls": [
+            "玻璃里映出你的脸或其他人：斜着站",
+            "玻璃后面的强烈阳光让双手变成黑色剪影",
+            "玻璃本来就干净",
+            "朝着相机喷洒"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "dust-shelves",
+      "name": "Dust shelves and objects",
+      "headline": "Dust a shelf, lifting and wiping each object",
+      "description": "Dust a shelf, desk or cabinet top that has a visible layer of dust or dirt (sprinkle a little flour or fine powder if needed so it shows on camera). Lift each object, wipe the surface under it, wipe the object itself, and put it back. Use shelves at different heights holding different things: books, picture frames, vases, small boxes, plants. Change how many objects there are, where they stand, and the order you pick them up.",
+      "steps": [
+        "Check that the dust is visible on the surface.",
+        "Lift the first object and wipe under it.",
+        "Wipe the object and put it back.",
+        "Repeat for every object, then wipe the open surface.",
+        "Shake out or put down the cloth or duster."
+      ],
+      "pitfalls": [
+        "Dust too faint to see on camera",
+        "A shelf above eye level, so the hands leave the frame",
+        "Leaving fragile items near the edge",
+        "Picking objects up in the same order every take"
+      ],
+      "objects": [{ "kind": "described", "label": "Duster or cloth" }],
+      "targetTakes": 30,
+      "targetDurationSec": { "min": 30, "max": 180 },
+      "i18n": {
+        "zh": {
+          "name": "给架子和物品除尘",
+          "headline": "给架子除尘，逐个拿起物品擦拭",
+          "description": "给有明显灰尘或污垢的架子、书桌或柜面除尘（如有需要可撒一点面粉或细粉，让灰尘在镜头里看得见）。逐个拿起物品，擦干净下面的表面，再擦物品本身，然后放回原处。使用不同高度、摆放不同物品的架子：书、相框、花瓶、小盒子、植物。改变物品的数量、摆放位置和拿起的顺序。",
+          "steps": [
+            "确认表面上的灰尘清晰可见。",
+            "拿起第一个物品，擦下面的表面。",
+            "擦拭物品并放回原处。",
+            "对每个物品重复，再擦空出来的表面。",
+            "抖一抖或放下抹布或掸子。"
+          ],
+          "pitfalls": [
+            "灰尘太淡，镜头看不到",
+            "架子高于视线，导致双手离开画面",
+            "把易碎物品放在边缘附近",
+            "每次都按相同的顺序拿起物品"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "scrub-a-sink",
+      "name": "Scrub a sink",
+      "headline": "Scrub a dirty sink clean",
+      "description": "Scrub a kitchen or bathroom sink or basin that is visibly dirty: food residue, toothpaste, soap scum, coffee grounds or stains. Use a brush or sponge with dish soap or cleaner, scrub the basin, the rim and around the tap, then rinse everything down the drain. Vary the sink, the kind of dirt and where it is, the tool, and the order you scrub in. Gloves are fine and add variety.",
+      "steps": [
+        "Check that the sink is visibly dirty.",
+        "Apply soap or cleaner.",
+        "Scrub the basin, the rim and around the tap.",
+        "Rinse the dirt down the drain.",
+        "Rinse the brush or sponge and put it back."
+      ],
+      "pitfalls": [
+        "Sink already clean at the start",
+        "Hands deep in the basin below the camera's view: lean so the bottom of the sink is in frame",
+        "Water splashing onto the rig",
+        "Using strong chemicals with bare hands"
+      ],
+      "objects": [{ "kind": "described", "label": "Scrub brush or sponge" }, { "kind": "described", "label": "Cleaner" }],
+      "targetTakes": 30,
+      "targetDurationSec": { "min": 30, "max": 180 },
+      "i18n": {
+        "zh": {
+          "name": "刷洗水槽",
+          "headline": "把脏水槽刷干净",
+          "description": "刷洗明显脏的厨房或浴室水槽、洗手盆：食物残渣、牙膏、皂垢、咖啡渣或污渍。用刷子或海绵加洗洁精或清洁剂，刷洗盆内、边缘和水龙头周围，然后把脏东西全部冲进下水口。变换水槽、脏污的种类和位置、工具以及刷洗的顺序。可以戴手套，也能增加多样性。",
+          "steps": [
+            "确认水槽明显脏。",
+            "倒上洗洁精或清洁剂。",
+            "刷洗盆内、边缘和水龙头周围。",
+            "把脏东西冲进下水口。",
+            "冲洗刷子或海绵，放回原处。"
+          ],
+          "pitfalls": [
+            "开始时水槽已经干净",
+            "双手深入盆底，低于镜头视野：身体前倾，让水槽底部进入画面",
+            "水溅到设备上",
+            "徒手使用强效化学清洁剂"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "load-a-dish-rack",
+      "name": "Load a dish drying rack",
+      "headline": "Arrange washed dishes in a drying rack",
+      "description": "Place clean, wet dishes, cups, cutlery and pots into a drying rack. In some takes, unload a dry rack into cupboards and drawers instead. Every take should start with a different mix of items piled in a different place (sink, counter, tray). Fit items into different slots: plates upright, cups upside down, cutlery in the holder. Use different racks.",
+      "steps": [
+        "Start with a new mix of washed items in a new place.",
+        "Pick up one item at a time.",
+        "Place it in a sensible slot in the rack.",
+        "Put cutlery in the cutlery holder.",
+        "Stop when everything is in the rack."
+      ],
+      "pitfalls": [
+        "Stacking so items fall or break: handle glass carefully",
+        "Same set of items in the same order every take",
+        "Rack so far to the side that it leaves the frame"
+      ],
+      "objects": [{ "kind": "described", "label": "Dish rack" }, { "kind": "described", "label": "Plates, cups and cutlery" }],
+      "targetTakes": 30,
+      "targetDurationSec": { "min": 30, "max": 180 },
+      "i18n": {
+        "zh": {
+          "name": "把碗碟放进沥水架",
+          "headline": "把洗好的碗碟摆进沥水架",
+          "description": "把洗干净、还湿着的盘子、杯子、餐具和锅放进沥水架。部分录制改为把沥水架上已干的碗碟收进橱柜和抽屉。每次录制开始时，物品的组合和堆放位置（水槽、台面、托盘）都要不同。把物品放进不同的槽位：盘子竖放，杯子倒扣，餐具放进餐具筒。使用不同的沥水架。",
+          "steps": [
+            "从新的位置、新的物品组合开始。",
+            "一次拿起一件物品。",
+            "放进沥水架中合适的位置。",
+            "把餐具放进餐具筒。",
+            "全部放进沥水架后结束。"
+          ],
+          "pitfalls": [
+            "堆放不稳导致物品掉落或摔碎：小心拿玻璃制品",
+            "每次都用同样的物品、同样的顺序",
+            "沥水架放得太偏，离开画面"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "put-away-groceries",
+      "name": "Put away groceries",
+      "headline": "Unpack a grocery bag into the fridge and cupboards",
+      "description": "Unpack a bag of groceries and put each item where it belongs: fridge, freezer, cupboard, fruit bowl. Use a real mix of items: bottles, cartons, bagged vegetables, eggs, cans, boxes. Change the bag type (plastic, cloth, box), what is inside, the order you take things out, and where things go between takes.",
+      "steps": [
+        "Put the full bag down somewhere new.",
+        "Take items out one at a time.",
+        "Put each item away in the fridge, cupboard or bowl.",
+        "Fold or put away the empty bag."
+      ],
+      "pitfalls": [
+        "The fridge door blocking the view of the hands",
+        "Reaching deep into a cupboard so the hand disappears",
+        "Same items unpacked in the same order every take",
+        "Dropping eggs or glass"
+      ],
+      "objects": [{ "kind": "described", "label": "Grocery bag" }, { "kind": "described", "label": "Groceries" }],
+      "targetTakes": 30,
+      "targetDurationSec": { "min": 45, "max": 240 },
+      "i18n": {
+        "zh": {
+          "name": "收纳买回的食品",
+          "headline": "把购物袋里的东西放进冰箱和橱柜",
+          "description": "打开一袋买回的食品杂货，把每样东西放到该放的地方：冷藏室、冷冻室、橱柜、水果盘。使用真实多样的物品：瓶装饮料、纸盒、袋装蔬菜、鸡蛋、罐头、盒装食品。每次录制改变袋子类型（塑料袋、布袋、纸箱）、里面的东西、取出的顺序以及物品存放的位置。",
+          "steps": [
+            "把装满的袋子放在一个新的位置。",
+            "一次取出一样东西。",
+            "把每样东西放进冰箱、橱柜或盘子里。",
+            "把空袋子折好或收起来。"
+          ],
+          "pitfalls": [
+            "冰箱门挡住了双手",
+            "手伸进橱柜深处，看不见手",
+            "每次都按同样的顺序拿出同样的东西",
+            "摔了鸡蛋或玻璃制品"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "pour-and-serve-drinks",
+      "name": "Pour and serve drinks",
+      "headline": "Pour drinks into glasses and serve them",
+      "description": "Pour liquid from bottles, cartons, kettles or jugs into cups and glasses, then carry or slide them to a place setting. Mix it up: containers that are full and nearly empty, different glass sizes, pouring to different levels, one hand or two, adding ice or a straw. Prefer coloured drinks (juice, tea, milk) so the liquid is visible. Change where the containers and cups start every take.",
+      "steps": [
+        "Set out containers and cups in a new arrangement.",
+        "Open the container.",
+        "Pour into each cup to the chosen level.",
+        "Close the container and put it down.",
+        "Move the filled cups to where they will be served."
+      ],
+      "pitfalls": [
+        "Spilling near electronics or onto the rig",
+        "Only clear water, which is hard to see",
+        "Containers starting in the same place every take",
+        "Pouring outside the frame"
+      ],
+      "objects": [{ "kind": "described", "label": "Bottle, carton or kettle" }, { "kind": "described", "label": "Cups and glasses" }],
+      "targetTakes": 40,
+      "targetDurationSec": { "min": 20, "max": 150 },
+      "i18n": {
+        "zh": {
+          "name": "倒饮料并端上",
+          "headline": "把饮料倒进杯子并端上",
+          "description": "把瓶子、纸盒、水壶或大水罐里的液体倒进杯子，然后端到或推到餐位上。尽量多变：满的和快空的容器、不同大小的杯子、倒到不同的高度、单手或双手、加冰块或插吸管。优先使用有颜色的饮料（果汁、茶、牛奶），让液体在镜头里看得见。每次录制改变容器和杯子的起始位置。",
+          "steps": [
+            "用新的方式摆好容器和杯子。",
+            "打开容器。",
+            "把每个杯子倒到选定的高度。",
+            "盖好容器并放下。",
+            "把倒满的杯子端到要上饮料的位置。"
+          ],
+          "pitfalls": [
+            "在电子设备附近或设备上洒出液体",
+            "只用透明的清水，很难看清",
+            "每次容器都从同一个位置开始",
+            "在画面外倒饮料"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "make-a-sandwich",
+      "name": "Make a sandwich",
+      "headline": "Make a sandwich from start to finish",
+      "description": "Make a sandwich: take out the bread, spread butter, sauce or jam with a knife, layer fillings (cheese, ham, lettuce, tomato, egg), close it, cut it and put it on a plate. Vary the bread (slices, buns, wraps), the fillings, how it is cut (halves, triangles, quarters) and the layout of the ingredients on the counter.",
+      "steps": [
+        "Lay out the ingredients in a new arrangement.",
+        "Spread the bread.",
+        "Layer the fillings.",
+        "Close the sandwich and cut it.",
+        "Put it on a plate."
+      ],
+      "pitfalls": [
+        "Ingredients so far across the counter that they go out of frame",
+        "Cutting fast or toward the fingers: cut slowly",
+        "Same ingredients in the same order every take"
+      ],
+      "objects": [{ "kind": "described", "label": "Bread" }, { "kind": "described", "label": "Butter knife" }, { "kind": "described", "label": "Fillings" }],
+      "targetTakes": 30,
+      "targetDurationSec": { "min": 60, "max": 300 },
+      "i18n": {
+        "zh": {
+          "name": "做三明治",
+          "headline": "从头到尾做一个三明治",
+          "description": "做一个三明治：拿出面包，用刀抹上黄油、酱料或果酱，铺上馅料（奶酪、火腿、生菜、番茄、鸡蛋），合上、切开，放到盘子里。变换面包（切片面包、小圆面包、卷饼）、馅料、切法（对半、三角形、四等分）以及台面上食材的摆放方式。",
+          "steps": [
+            "用新的方式摆好食材。",
+            "在面包上抹酱。",
+            "铺上馅料。",
+            "合上三明治并切开。",
+            "放到盘子里。"
+          ],
+          "pitfalls": [
+            "食材放得太远，超出画面",
+            "切得太快或朝着手指切：慢慢切",
+            "每次都用同样的食材、同样的顺序"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "crack-and-whisk-eggs",
+      "name": "Crack and whisk eggs",
+      "headline": "Crack eggs into a bowl and whisk them",
+      "description": "Crack 1–4 eggs into a bowl, pick out any bits of shell, and whisk with a fork, chopsticks or a whisk. Some takes can separate the yolks from the whites. Vary the bowl, the number of eggs, how you crack them (on the rim, on the counter, one-handed) and where the eggs and tools start. Plan to cook the eggs afterwards.",
+      "steps": [
+        "Place the eggs, bowl and whisk in a new arrangement.",
+        "Crack each egg into the bowl.",
+        "Remove any shell pieces.",
+        "Whisk until smooth.",
+        "Put the shells in the bin and the whisk down."
+      ],
+      "pitfalls": [
+        "Bowl too low or too close: the inside of the bowl must be visible",
+        "Shell left in the bowl",
+        "Same bowl and same cracking style every take"
+      ],
+      "objects": [{ "kind": "described", "label": "Eggs" }, { "kind": "described", "label": "Bowl" }, { "kind": "described", "label": "Whisk, fork or chopsticks" }],
+      "targetTakes": 30,
+      "targetDurationSec": { "min": 20, "max": 150 },
+      "i18n": {
+        "zh": {
+          "name": "打蛋并搅拌",
+          "headline": "把鸡蛋打进碗里并搅匀",
+          "description": "把 1–4 个鸡蛋打进碗里，挑出蛋壳碎片，用叉子、筷子或打蛋器搅匀。部分录制可以把蛋黄和蛋清分开。变换碗、鸡蛋数量、打蛋方式（在碗边磕、在台面上磕、单手打）以及鸡蛋和工具的起始位置。事后请把鸡蛋煮熟食用。",
+          "steps": [
+            "用新的方式摆好鸡蛋、碗和打蛋工具。",
+            "把每个鸡蛋打进碗里。",
+            "挑出蛋壳碎片。",
+            "搅拌均匀。",
+            "把蛋壳扔进垃圾桶，放下打蛋工具。"
+          ],
+          "pitfalls": [
+            "碗放得太低或太近：必须能看到碗里面",
+            "碗里留有蛋壳",
+            "每次都用同一个碗、同样的打蛋方式"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "wrap-dumplings",
+      "name": "Wrap dumplings",
+      "headline": "Fill and fold dumplings",
+      "description": "Make dumplings (jiaozi, wontons or baozi): lay a wrapper on the palm, add filling with a spoon or chopsticks, wet the edge, fold and pleat it closed, and set it on a tray. Make several in one take. Vary the wrapper type, the fold (half-moon, pleated, ingot), the amount of filling, and the layout of the tray, the filling bowl and the wrappers.",
+      "steps": [
+        "Set out the wrappers, filling and tray in a new arrangement.",
+        "Lay a wrapper on your palm and add filling.",
+        "Wet the edge and fold it closed.",
+        "Pleat or press the edge to seal it.",
+        "Place it on the tray and make the next one."
+      ],
+      "pitfalls": [
+        "Hands held low in the lap, out of frame",
+        "Pleating behind the dumpling where the fingers cannot be seen: turn it toward the camera sometimes",
+        "Every dumpling folded in exactly the same style"
+      ],
+      "objects": [{ "kind": "described", "label": "Dumpling wrappers" }, { "kind": "described", "label": "Filling" }, { "kind": "described", "label": "Tray" }],
+      "targetTakes": 40,
+      "targetDurationSec": { "min": 60, "max": 360 },
+      "i18n": {
+        "zh": {
+          "name": "包饺子",
+          "headline": "放馅并包好饺子",
+          "description": "包饺子（饺子、馄饨或包子）：把皮放在手掌上，用勺子或筷子放馅，沾湿边缘，对折并捏褶封口，放到托盘上。一次录制包好几个。变换皮的种类、包法（月牙形、捏褶、元宝形）、馅量，以及托盘、馅碗和饺子皮的摆放方式。",
+          "steps": [
+            "用新的方式摆好饺子皮、馅和托盘。",
+            "把皮放在手掌上，放上馅。",
+            "沾湿边缘，对折合上。",
+            "捏褶或压紧边缘封口。",
+            "放到托盘上，再包下一个。"
+          ],
+          "pitfalls": [
+            "双手放得太低，在腿上，离开画面",
+            "在饺子背面捏褶，看不到手指：偶尔把饺子转向镜头",
+            "每个饺子都用完全相同的包法"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "chopsticks-transfer",
+      "name": "Transfer objects with chopsticks",
+      "headline": "Move small items between bowls with chopsticks",
+      "description": "Use chopsticks to pick up small items one at a time and move them between bowls or plates: peanuts, beans, grapes, tofu cubes, noodles, dumplings. Mix slippery, soft and hard items. Change the bowl positions and distances and which items you use; sometimes sort the items by type or colour.",
+      "steps": [
+        "Set out the bowls and items in a new arrangement.",
+        "Pick up one item with the chopsticks.",
+        "Move it to the target bowl.",
+        "Repeat until the bowl is empty or sorted.",
+        "Put the chopsticks down."
+      ],
+      "pitfalls": [
+        "Bowls so far apart that the hand leaves the frame",
+        "Only using easy items",
+        "Same layout every take"
+      ],
+      "objects": [{ "kind": "described", "label": "Chopsticks" }, { "kind": "described", "label": "Bowls" }, { "kind": "described", "label": "Small food items" }],
+      "targetTakes": 30,
+      "targetDurationSec": { "min": 30, "max": 180 },
+      "i18n": {
+        "zh": {
+          "name": "用筷子夹东西",
+          "headline": "用筷子把小东西在碗之间夹来夹去",
+          "description": "用筷子一次夹起一个小物品，在碗或盘子之间转移：花生、豆子、葡萄、豆腐块、面条、饺子。混合滑的、软的和硬的物品。改变碗的位置和距离以及使用的物品；有时按种类或颜色分拣。",
+          "steps": [
+            "用新的方式摆好碗和物品。",
+            "用筷子夹起一个物品。",
+            "放进目标碗里。",
+            "重复，直到碗空了或分拣完毕。",
+            "放下筷子。"
+          ],
+          "pitfalls": [
+            "碗之间距离太远，手离开画面",
+            "只用容易夹的东西",
+            "每次摆放都一样"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "tie-shoelaces",
+      "name": "Tie shoelaces",
+      "headline": "Lace and tie a pair of shoes",
+      "description": "Tie the laces of shoes, either on your feet or on a table in front of you. In some takes, thread a loose lace through the eyelets first. Vary the shoes (trainers, boots, children's shoes), the knot (bow, double knot, loop) and the position: seated with the shoe on, shoe on a table, shoe on the floor.",
+      "steps": [
+        "Put the shoe in a new position.",
+        "Thread or tighten the laces.",
+        "Tie the knot.",
+        "Check it holds, then let go."
+      ],
+      "pitfalls": [
+        "A shoe on the foot far below the camera: bend down so the knot is in frame",
+        "Hands covering the knot the whole time",
+        "Dark laces in dim light"
+      ],
+      "objects": [{ "kind": "described", "label": "Shoes with laces" }],
+      "targetTakes": 30,
+      "targetDurationSec": { "min": 15, "max": 150 },
+      "i18n": {
+        "zh": {
+          "name": "系鞋带",
+          "headline": "穿好并系上一双鞋的鞋带",
+          "description": "系鞋带，鞋可以穿在脚上，也可以放在面前的桌子上。部分录制先把松开的鞋带穿过鞋眼。变换鞋子（运动鞋、靴子、童鞋）、结的类型（蝴蝶结、双结、单环结）和姿势：坐着穿鞋系、鞋放在桌上、鞋放在地上。",
+          "steps": [
+            "把鞋放到一个新的位置。",
+            "穿好或拉紧鞋带。",
+            "系结。",
+            "检查是否系牢，然后松手。"
+          ],
+          "pitfalls": [
+            "鞋穿在脚上，离镜头太远：弯腰让鞋结进入画面",
+            "双手一直挡住鞋结",
+            "光线暗时用深色鞋带"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "button-a-shirt",
+      "name": "Button and unbutton a shirt",
+      "headline": "Button and unbutton a shirt",
+      "description": "Button and unbutton a shirt, jacket or cardigan, either worn or laid flat on a table or hung on a hanger. Include zips and snap buttons in some takes. Vary the garment, the button size, the starting state (fully open, half done, buttoned wrong) and whether it is on your body or in front of you.",
+      "steps": [
+        "Put the garment in a new starting state.",
+        "Do up each button in turn.",
+        "Undo them again, or fix a wrongly done button.",
+        "Lay the garment down or hang it up."
+      ],
+      "pitfalls": [
+        "Top buttons of a shirt you are wearing are too close to the chin for the camera to see: lay the shirt out or work on the lower buttons",
+        "Same garment every take",
+        "Small buttons in dim light"
+      ],
+      "objects": [{ "kind": "described", "label": "Shirt, jacket or cardigan" }],
+      "targetTakes": 30,
+      "targetDurationSec": { "min": 20, "max": 180 },
+      "i18n": {
+        "zh": {
+          "name": "扣上和解开衬衫扣子",
+          "headline": "扣上和解开衬衫扣子",
+          "description": "扣上和解开衬衫、外套或开衫的扣子，衣服可以穿在身上，也可以平铺在桌上或挂在衣架上。部分录制包括拉链和按扣。变换衣服、扣子大小、起始状态（全部敞开、扣了一半、扣错了）以及衣服是穿在身上还是放在面前。",
+          "steps": [
+            "让衣服处于新的起始状态。",
+            "依次扣好每颗扣子。",
+            "再解开，或纠正扣错的扣子。",
+            "把衣服放下或挂起来。"
+          ],
+          "pitfalls": [
+            "穿在身上的衬衫最上面的扣子离下巴太近，镜头看不到：把衬衫平铺，或扣下面的扣子",
+            "每次都用同一件衣服",
+            "光线暗时扣小扣子"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "pack-a-bag",
+      "name": "Pack a bag",
+      "headline": "Pack items into a bag or suitcase and close it",
+      "description": "Pack a backpack, handbag or suitcase with a mix of items (clothes, a bottle, a book, a charger, toiletries), fitting them in neatly, then zip or buckle it closed. Some takes can unpack instead. Vary the bag, the items, where they start (bed, table, floor) and the packing order.",
+      "steps": [
+        "Lay the items out somewhere new.",
+        "Open the bag.",
+        "Fit the items in one by one.",
+        "Close the zip or buckles."
+      ],
+      "pitfalls": [
+        "Hands inside the bag out of sight for long stretches",
+        "Bag on the floor below the camera's view",
+        "Packing ID cards or documents with visible personal details"
+      ],
+      "objects": [{ "kind": "described", "label": "Backpack or suitcase" }],
+      "targetTakes": 30,
+      "targetDurationSec": { "min": 30, "max": 240 },
+      "i18n": {
+        "zh": {
+          "name": "收拾背包",
+          "headline": "把物品装进包或行李箱并合上",
+          "description": "把各种物品（衣服、水瓶、书、充电器、洗漱用品）整齐地装进背包、手提包或行李箱，然后拉上拉链或扣好搭扣。部分录制可以改为把东西拿出来。变换包、物品、物品的起始位置（床上、桌上、地上）以及装包顺序。",
+          "steps": [
+            "把物品放在一个新的位置。",
+            "打开包。",
+            "一件一件装进去。",
+            "拉上拉链或扣好搭扣。"
+          ],
+          "pitfalls": [
+            "双手长时间在包里，看不见",
+            "包放在地上，低于镜头视野",
+            "装入能看清个人信息的证件或文件"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "sort-cutlery",
+      "name": "Sort cutlery into a drawer organizer",
+      "headline": "Sort mixed cutlery into a drawer organizer",
+      "description": "Take a mixed pile of cutlery and kitchen utensils (forks, spoons, knives, chopsticks, ladles, spatulas) and sort each into its slot in a drawer organizer or utensil holder. Vary where the pile is, the mix of items, how many there are, and the organizer.",
+      "steps": [
+        "Make a new mixed pile of cutlery.",
+        "Pick up one or two pieces.",
+        "Put each in its slot.",
+        "Repeat until the pile is gone, then close the drawer."
+      ],
+      "pitfalls": [
+        "Drawer open below the camera's view",
+        "Careless handling of sharp knives",
+        "Grabbing whole handfuls at once: pick one or two pieces at a time"
+      ],
+      "objects": [{ "kind": "described", "label": "Cutlery" }, { "kind": "described", "label": "Drawer organizer" }],
+      "targetTakes": 25,
+      "targetDurationSec": { "min": 30, "max": 180 },
+      "i18n": {
+        "zh": {
+          "name": "把餐具分类放进抽屉收纳盒",
+          "headline": "把混在一起的餐具分类放进抽屉收纳盒",
+          "description": "把一堆混在一起的餐具和厨房用具（叉子、勺子、刀、筷子、汤勺、锅铲）分别放进抽屉收纳盒或餐具筒对应的格子里。变换餐具堆的位置、物品组合、数量以及收纳盒。",
+          "steps": [
+            "堆一堆新的混合餐具。",
+            "拿起一两件。",
+            "放进各自的格子。",
+            "重复直到全部放好，然后关上抽屉。"
+          ],
+          "pitfalls": [
+            "抽屉开在镜头视野下方",
+            "拿锋利的刀时不小心",
+            "一次抓一大把：每次拿一两件"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "sew-a-button",
+      "name": "Thread a needle and sew a button",
+      "headline": "Thread a needle and sew on a button",
+      "description": "Thread a needle, tie a knot, and sew a button onto a piece of fabric or clothing, then finish with a knot and cut the thread. Vary the fabric, the button's size and colour, the thread colour and the number of holes. Use thread that contrasts with the fabric so it shows on camera, and work in a bright space.",
+      "steps": [
+        "Cut a length of thread and thread the needle.",
+        "Tie a knot at the end.",
+        "Sew through the button holes several times.",
+        "Tie off the thread on the back and cut it.",
+        "Put the needle away safely."
+      ],
+      "pitfalls": [
+        "Work held too close to the face, where the camera cannot focus: keep it in front of the chest",
+        "Thread the same colour as the fabric",
+        "Low light: small details need a bright space",
+        "Leaving the needle where it can be lost or stepped on"
+      ],
+      "objects": [{ "kind": "described", "label": "Needle and thread" }, { "kind": "described", "label": "Button" }, { "kind": "described", "label": "Fabric" }],
+      "targetTakes": 25,
+      "targetDurationSec": { "min": 60, "max": 480 },
+      "i18n": {
+        "zh": {
+          "name": "穿针并缝扣子",
+          "headline": "穿针，把扣子缝上",
+          "description": "穿针、打结，把扣子缝到布料或衣服上，最后打结并剪断线。变换布料、扣子的大小和颜色、线的颜色以及扣眼的数量。使用与布料颜色对比明显的线，让线在镜头里看得清，并在明亮的地方操作。",
+          "steps": [
+            "剪一段线并穿针。",
+            "在线尾打结。",
+            "在扣眼之间来回缝几次。",
+            "在背面打结并剪断线。",
+            "把针安全收好。"
+          ],
+          "pitfalls": [
+            "离脸太近，镜头无法对焦：放在胸前操作",
+            "线和布料颜色一样",
+            "光线太暗：细小的细节需要明亮的环境",
+            "针乱放，可能丢失或被踩到"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "wrap-a-gift",
+      "name": "Wrap a gift",
+      "headline": "Wrap a box with paper and tape",
+      "description": "Wrap a box or object in wrapping paper: measure and cut the paper, fold it around the item, tape the seams, fold in the ends, and optionally tie a ribbon. Vary the item's size and shape, the paper pattern, and where the scissors and tape sit on the table.",
+      "steps": [
+        "Set out the item, paper, scissors and tape in a new arrangement.",
+        "Measure and cut the paper.",
+        "Fold the paper around the item and tape the seam.",
+        "Fold and tape the ends.",
+        "Add a ribbon if you like."
+      ],
+      "pitfalls": [
+        "The paper sheet hiding the hands: work from the front of the item",
+        "Cutting toward your hand",
+        "Same box every take"
+      ],
+      "objects": [{ "kind": "described", "label": "Wrapping paper" }, { "kind": "described", "label": "Scissors" }, { "kind": "described", "label": "Tape" }],
+      "targetTakes": 25,
+      "targetDurationSec": { "min": 60, "max": 360 },
+      "i18n": {
+        "zh": {
+          "name": "包礼物",
+          "headline": "用包装纸和胶带包好一个盒子",
+          "description": "用包装纸包一个盒子或物品：量好并剪下包装纸，把纸折包在物品外面，用胶带粘好接缝，折好两端，也可以系上丝带。变换物品的大小和形状、包装纸的图案，以及剪刀和胶带在桌上的位置。",
+          "steps": [
+            "用新的方式摆好物品、包装纸、剪刀和胶带。",
+            "量好并剪下包装纸。",
+            "把纸包在物品外面，粘好接缝。",
+            "折好两端并粘牢。",
+            "可以系上丝带。"
+          ],
+          "pitfalls": [
+            "包装纸挡住了双手：从物品正面操作",
+            "剪刀朝着自己的手剪",
+            "每次都用同一个盒子"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "build-with-blocks",
+      "name": "Build with interlocking blocks",
+      "headline": "Build a small structure with interlocking blocks",
+      "description": "Build something with LEGO-style or other interlocking blocks: find the pieces you need, press them together, take some apart and rebuild. Vary the design, the colours, the block sizes and where the loose pieces start (scattered, in a box, in piles).",
+      "steps": [
+        "Spread the loose pieces out in a new way.",
+        "Pick the pieces you need.",
+        "Press them together to build.",
+        "Take some apart and rebuild them differently.",
+        "Put the finished model down."
+      ],
+      "pitfalls": [
+        "Building too close to the body, below the camera's view",
+        "Building the same model every take",
+        "Tiny pieces in poor light"
+      ],
+      "objects": [{ "kind": "described", "label": "Interlocking blocks" }],
+      "targetTakes": 25,
+      "targetDurationSec": { "min": 60, "max": 360 },
+      "i18n": {
+        "zh": {
+          "name": "拼积木",
+          "headline": "用拼插积木搭一个小结构",
+          "description": "用乐高类或其他拼插积木搭建东西：找出需要的积木，按压拼合，拆开一部分再重新搭建。变换造型、颜色、积木大小以及散落积木的起始状态（散开、放在盒子里、分成几堆）。",
+          "steps": [
+            "用新的方式摊开散落的积木。",
+            "挑出需要的积木。",
+            "按压拼合进行搭建。",
+            "拆开一部分，换一种方式重新搭。",
+            "放下完成的模型。"
+          ],
+          "pitfalls": [
+            "搭得离身体太近，低于镜头视野",
+            "每次都搭同一个模型",
+            "光线差时拼很小的积木"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "use-a-screwdriver",
+      "name": "Drive screws with a screwdriver",
+      "headline": "Screw and unscrew screws with a screwdriver",
+      "description": "Use a hand screwdriver to drive screws into a board, or to put together and take apart small furniture, a shelf bracket or a toy. Pick the right screw and bit, start the screw by hand, then drive it in. Vary the screw size, cross-head versus flat-head, the object and the angle (horizontal, vertical). Power tools are not part of this task.",
+      "steps": [
+        "Set out the object, screws and screwdriver in a new arrangement.",
+        "Pick a screw and start it by hand.",
+        "Drive it in with the screwdriver.",
+        "Unscrew some screws again.",
+        "Put the screws back in their container."
+      ],
+      "pitfalls": [
+        "Screws too small to see: use larger screws in some takes",
+        "Working at the edge of the table where the hand leaves the frame",
+        "Using a power drill"
+      ],
+      "objects": [{ "kind": "described", "label": "Screwdriver" }, { "kind": "described", "label": "Screws" }],
+      "targetTakes": 25,
+      "targetDurationSec": { "min": 30, "max": 300 },
+      "i18n": {
+        "zh": {
+          "name": "用螺丝刀拧螺丝",
+          "headline": "用螺丝刀拧上和拧下螺丝",
+          "description": "用手动螺丝刀把螺丝拧进木板，或组装、拆卸小家具、层板支架或玩具。选好合适的螺丝和刀头，先用手把螺丝拧上几圈，再用螺丝刀拧紧。变换螺丝大小、十字或一字、操作对象以及角度（水平、垂直）。本任务不使用电动工具。",
+          "steps": [
+            "用新的方式摆好物件、螺丝和螺丝刀。",
+            "拿起一颗螺丝，先用手拧上几圈。",
+            "用螺丝刀拧紧。",
+            "再拧下一些螺丝。",
+            "把螺丝放回盒子里。"
+          ],
+          "pitfalls": [
+            "螺丝太小看不清：部分录制使用较大的螺丝",
+            "在桌子边缘操作，手离开画面",
+            "使用电钻"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "coil-cables",
+      "name": "Coil and tie cables",
+      "headline": "Unplug, coil and tie a cable",
+      "description": "Unplug a cable (charger, extension lead, HDMI cable or a rope), coil it neatly in loops, and secure it with a velcro strap, twist tie or rubber band. Some takes can untangle a knotted cable first. Vary the cable's length and thickness and how tangled it starts. Never touch the recording rig's own cables.",
+      "steps": [
+        "Start with a cable in a new state: plugged in, loose or tangled.",
+        "Unplug it and untangle it if needed.",
+        "Coil it in even loops.",
+        "Tie the coil closed.",
+        "Put it down or hang it up."
+      ],
+      "pitfalls": [
+        "Unplugging from a socket behind furniture, out of view",
+        "Always using the same cable",
+        "Touching the rig's own cables"
+      ],
+      "objects": [{ "kind": "described", "label": "Cable" }, { "kind": "described", "label": "Cable tie" }],
+      "targetTakes": 25,
+      "targetDurationSec": { "min": 20, "max": 180 },
+      "i18n": {
+        "zh": {
+          "name": "盘线并扎好",
+          "headline": "拔下线缆，盘好并扎起来",
+          "description": "拔下一根线（充电线、插线板、HDMI 线或绳子），整齐地盘成圈，用魔术贴扎带、扎线或橡皮筋固定。部分录制先把打结的线解开。变换线的长度和粗细，以及开始时缠绕的程度。绝对不要碰录制设备本身的线缆。",
+          "steps": [
+            "让线处于新的初始状态：插着、松散或缠在一起。",
+            "拔下线，必要时解开缠绕。",
+            "盘成大小均匀的圈。",
+            "把线圈扎好。",
+            "放下或挂起来。"
+          ],
+          "pitfalls": [
+            "从家具后面看不见的插座上拔线",
+            "每次都用同一根线",
+            "碰到设备本身的线缆"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "open-and-close-containers",
+      "name": "Open and close containers",
+      "headline": "Open and close jars, bottles and boxes",
+      "description": "Open and close a mix of containers: screw-top jars, bottle caps, flip lids, zip-lock bags, snap-lid food boxes, tins and boxes with sliding drawers. Take something out or put something in each time. Vary the containers, how tight they are, which hand holds and which twists, and where they stand.",
+      "steps": [
+        "Set out a new mix of containers.",
+        "Open one.",
+        "Take something out or put something in.",
+        "Close it properly.",
+        "Move on to the next container."
+      ],
+      "pitfalls": [
+        "Same three containers every take",
+        "Lid hidden inside the palm the whole time",
+        "Opening containers of liquid over electronics"
+      ],
+      "objects": [{ "kind": "described", "label": "Jars, bottles and boxes" }],
+      "targetTakes": 30,
+      "targetDurationSec": { "min": 20, "max": 180 },
+      "i18n": {
+        "zh": {
+          "name": "打开和关上容器",
+          "headline": "打开和关上罐子、瓶子和盒子",
+          "description": "打开和关上各种容器：旋盖罐子、瓶盖、翻盖、密封袋、卡扣式保鲜盒、铁盒和抽拉式盒子。每次都取出或放入一样东西。变换容器、松紧程度、哪只手拿、哪只手拧，以及容器摆放的位置。",
+          "steps": [
+            "摆出一组新的容器。",
+            "打开一个。",
+            "取出或放入一样东西。",
+            "盖好盖子。",
+            "换下一个容器。"
+          ],
+          "pitfalls": [
+            "每次都用同样的三个容器",
+            "盖子一直藏在手掌里",
+            "在电子设备上方打开装液体的容器"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "repot-a-plant",
+      "name": "Repot a plant",
+      "headline": "Move a plant into a new pot with soil",
+      "description": "Take a plant out of its pot, loosen the roots, put soil into a new pot, set the plant in and fill around it, press the soil down, and tidy up any spilled soil. Vary the plant, the pot sizes, the tools (trowel, spoon, bare hands) and the work surface. Lay newspaper or a tray down first.",
+      "steps": [
+        "Lay down newspaper and set out the pots and soil.",
+        "Tip the plant out of its old pot.",
+        "Loosen the roots.",
+        "Add soil to the new pot and set the plant in.",
+        "Fill around it, press down and tidy up."
+      ],
+      "pitfalls": [
+        "Soil getting on the camera or rig",
+        "Working on the floor so the pot is out of frame",
+        "Dark soil on a dark surface: use a light-coloured sheet underneath"
+      ],
+      "objects": [{ "kind": "described", "label": "Plant" }, { "kind": "described", "label": "Pots" }, { "kind": "described", "label": "Soil" }],
+      "targetTakes": 20,
+      "targetDurationSec": { "min": 60, "max": 360 },
+      "i18n": {
+        "zh": {
+          "name": "给植物换盆",
+          "headline": "把植物移进装了土的新花盆",
+          "description": "把植物从花盆里取出，松开根部，在新花盆里放土，把植物放进去并在周围填土，压实，再清理洒出的土。变换植物、花盆大小、工具（小铲子、勺子、徒手）和工作台面。先铺上报纸或托盘。",
+          "steps": [
+            "铺上报纸，摆好花盆和土。",
+            "把植物从旧花盆里倒出来。",
+            "松开根部。",
+            "在新花盆里放土，把植物放进去。",
+            "在周围填土、压实并清理干净。"
+          ],
+          "pitfalls": [
+            "土弄到相机或设备上",
+            "在地上操作，花盆离开画面",
+            "深色的土在深色表面上：在下面垫一张浅色的纸"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "change-a-trash-bag",
+      "name": "Change a trash bag",
+      "headline": "Tie off a full trash bag and fit a new one",
+      "description": "Lift a full trash bag out of a bin, tie it closed, set it aside, and fit a new bag over the rim, opening it fully. The old bag must have visible trash in it. Vary the bin (kitchen, bathroom, pedal bin), the bag type (drawstring, plain, tie handles) and where the new bags are kept.",
+      "steps": [
+        "Lift the full bag out of the bin.",
+        "Tie the bag closed.",
+        "Set it aside.",
+        "Take a new bag and open it.",
+        "Fit it over the rim of the bin."
+      ],
+      "pitfalls": [
+        "Bin on the floor below the camera's view: bend so the rim is in frame",
+        "Sharp or leaking trash",
+        "Same bin every take"
+      ],
+      "objects": [{ "kind": "described", "label": "Trash bin" }, { "kind": "described", "label": "Trash bags" }],
+      "targetTakes": 20,
+      "targetDurationSec": { "min": 20, "max": 150 },
+      "i18n": {
+        "zh": {
+          "name": "换垃圾袋",
+          "headline": "扎好满的垃圾袋并套上新袋子",
+          "description": "把装满的垃圾袋从垃圾桶里提出来，扎紧袋口，放到一边，再把新袋子套在桶口上并完全撑开。旧袋子里必须有看得见的垃圾。变换垃圾桶（厨房、卫生间、脚踏式）、袋子类型（抽绳、普通、手提式）以及新袋子的存放位置。",
+          "steps": [
+            "把满的垃圾袋从桶里提出来。",
+            "扎紧袋口。",
+            "放到一边。",
+            "拿一个新袋子并撑开。",
+            "套在垃圾桶口上。"
+          ],
+          "pitfalls": [
+            "垃圾桶在地上，低于镜头视野：弯腰让桶口进入画面",
+            "尖锐或会漏的垃圾",
+            "每次都用同一个垃圾桶"
+          ]
+        }
+      }
+    }
+  ]
+}
