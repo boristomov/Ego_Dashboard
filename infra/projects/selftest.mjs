@@ -92,12 +92,12 @@ const req = (path, init = {}, token) =>
   check(deleteTargets("wirestock", { ...clip, prefix: "projects/wirestock" }) === null, "never the project itself");
 
   const index = { project: "wirestock", clips: [
-    { ...clip, checks: [{ id: "x", ok: false }], checks_passed: false, task_as_recorded: "old" },
+    { ...clip, checks: [{ id: "x", ok: false }], checks_passed: false, task_as_recorded: "old", sync: { p99: 1 } },
     { clip_id: "TAI-B", session: "20261022_090000", checks: [], checks_passed: true } ] };
   const client = viewIndex(index, ["TAI-R02-20261022T082606Z"], false);
   check(client.clips.length === 1 && client.clips[0].clip_id === clip.clip_id, "a client sees only the delivery");
-  check(["checks", "checks_passed", "raw_prefix", "task_as_recorded"].every((k) => !(k in client.clips[0])),
-    "a client sees no checks or internal fields");
+  check(["checks", "checks_passed", "sync", "raw_prefix", "task_as_recorded"].every((k) => !(k in client.clips[0])),
+    "a client sees no checks, sync figures or internal fields");
   check(viewIndex(index, null, false).clips.length === 2, "without a delivery list a client sees every entry");
   const adm = viewIndex(index, ["TAI-B"], true);
   check(adm.clips.length === 2 && adm.clips[1].in_delivery && !adm.clips[0].in_delivery && adm.clips[0].checks,

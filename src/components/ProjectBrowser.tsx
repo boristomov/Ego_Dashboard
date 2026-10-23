@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clock,
   Download,
+  DownloadCloud,
   FlaskConical,
   HardDrive,
   ImageOff,
@@ -37,12 +38,14 @@ import {
   type SampleSession,
 } from "../lib/projectsApi";
 import { formatBytes, formatDateTime, formatDuration, formatHours } from "../lib/session";
+import { badgeRank, fileBadge } from "../lib/projectFiles";
+import { ProjectDownloadModal } from "./ProjectDownloadModal";
 
 /** Reload the index (and its file grant) this long before the grant runs out. */
 const GRANT_MARGIN_S = 15 * 60;
 
 /** One card shape for both sets: a Wirestock clip or a sample take. */
-type Item = {
+export type Item = {
   id: string;
   title: string;
   subtitle: string;
@@ -111,33 +114,6 @@ function fromSample(s: SampleSession): Item {
   };
 }
 
-/** Short badge text for a delivered file, from its name. */
-function fileBadge(name: string, clipId: string): string {
-  const rest = name.startsWith(clipId) ? name.slice(clipId.length) : name;
-  const map: Record<string, string> = {
-    ".mp4": "MP4 L",
-    "_right.mp4": "MP4 R",
-    ".mcap": "MCAP",
-    "_frames.csv": "FRAMES",
-    "_imu.csv": "IMU",
-    "_calibration.json": "CALIB",
-    ".json": "SIDECAR",
-    SHA256SUMS: "SHA256",
-    "recording.svo2": "SVO2",
-    "audio.flac": "AUDIO",
-    "audio.json": "AUDIO META",
-    "metadata.json": "META",
-  };
-  return map[rest] ?? rest.replace(/^[_.]/, "").toUpperCase();
-}
-
-const BADGE_ORDER = ["MP4 L", "MP4 R", "MCAP", "SVO2", "SIDECAR", "META", "CALIB", "FRAMES", "IMU", "AUDIO", "AUDIO META", "SHA256"];
-
-function badgeRank(label: string): number {
-  const i = BADGE_ORDER.indexOf(label);
-  return i < 0 ? BADGE_ORDER.length : i;
-}
-
 const BADGE_TONE: Record<string, string> = {
   "MP4 L": "border-emerald-500/50 bg-emerald-500/15 text-emerald-300",
   "MP4 R": "border-emerald-500/50 bg-emerald-500/15 text-emerald-300",
@@ -193,6 +169,18 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
   const [search, setSearch] = useState("");
   const [task, setTask] = useState("");
   const [checks, setChecks] = useState<"all" | "pass" | "fail" | "delivery">("all");
+  const [selected, setSelected] = useState<Set<string>>(() => new Set());
+  const [showDownload, setShowDownload] = useState(false);
+  const toggleSelected = useCallback(
+    (id: string) =>
+      setSelected((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id);
+        else next.add(id);
+        return next;
+      }),
+    [],
+  );
 
   const load = useCallback(async () => {
     if (!PROJECTS_CONFIGURED || !hasProjectsSession()) {
@@ -232,6 +220,12 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
   }, [doc, load]);
 
   const removeItem = useCallback((id: string) => {
+    setSelected((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
     setDoc((d) =>
       d && {
         ...d,
@@ -250,7 +244,7 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
   }, [doc]);
 
   const tasks = useMemo(() => [...new Set(items.map((i) => i.title))].sort(), [items]);
-  const hasChecks = items.some((i) => i.checks);
+  const hasChecks = !!doc?.admin && items.some((i) => i.checks);
 
   const shown = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -275,6 +269,9 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
     }
     return { sec, bytes, passing };
   }, [shown]);
+
+  const picked = useMemo(() => items.filter((i) => selected.has(i.id)), [items, selected]);
+  const allShownSelected = shown.length > 0 && shown.every((i) => selected.has(i.id));
 
   if (!PROJECTS_CONFIGURED) {
     return (
@@ -333,6 +330,19 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
           </div>
           <div className="flex items-center gap-2 text-[0.7rem] text-text-dim">
             <span>Updated {formatDateTime(new Date(doc.index.updated_at))}</span>
+            <button
+              type="button"
+              className="btn !border-accent/40 !text-accent-hover hover:!bg-accent/10"
+              onClick={() => setShowDownload(true)}
+              disabled={!(picked.length || shown.length)}
+              title={picked.length ? "Download the selected recordings" : "Download every recording shown"}
+            >
+              <DownloadCloud size={13} />
+              {picked.length ? "Download selected" : "Download all"}
+              <span className="ml-0.5 rounded-full bg-accent/20 px-1.5 text-[0.6rem] font-semibold tabular-nums">
+                {picked.length || shown.length}
+              </span>
+            </button>
             <button type="button" className="btn" onClick={load} disabled={loading}>
               <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
             </button>
@@ -377,6 +387,28 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
             {items.some((i) => i.inDelivery) && <option value="delivery">In client delivery</option>}
           </select>
         )}
+        <button
+          type="button"
+          className="btn !py-1.5"
+          disabled={!shown.length}
+          onClick={() =>
+            setSelected((prev) => {
+              const next = new Set(prev);
+              for (const i of shown) {
+                if (allShownSelected) next.delete(i.id);
+                else next.add(i.id);
+              }
+              return next;
+            })
+          }
+        >
+          {allShownSelected ? "Unselect shown" : "Select shown"}
+        </button>
+        {picked.length > 0 && (
+          <button type="button" className="btn !py-1.5" onClick={() => setSelected(new Set())}>
+            Clear selection ({picked.length})
+          </button>
+        )}
       </div>
 
       {error && (
@@ -399,10 +431,28 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
         doc && (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {shown.map((i) => (
-              <ItemCard key={i.id} item={i} doc={doc} showRecordedAs={isAdmin} onDeleted={removeItem} />
+              <ItemCard
+                key={i.id}
+                item={i}
+                doc={doc}
+                showRecordedAs={isAdmin}
+                onDeleted={removeItem}
+                selected={selected.has(i.id)}
+                onToggle={toggleSelected}
+              />
             ))}
           </div>
         )
+      )}
+
+      {showDownload && doc && (
+        <ProjectDownloadModal
+          doc={doc}
+          title={title}
+          items={picked.length ? picked : shown}
+          scope={picked.length ? "selected" : "shown"}
+          onClose={() => setShowDownload(false)}
+        />
       )}
     </div>
   );
@@ -470,11 +520,15 @@ const ItemCard = memo(function ItemCard({
   doc,
   showRecordedAs,
   onDeleted,
+  selected,
+  onToggle,
 }: {
   item: Item;
   doc: ProjectDoc;
   showRecordedAs: boolean;
   onDeleted: (id: string) => void;
+  selected: boolean;
+  onToggle: (id: string) => void;
 }) {
   const [playing, setPlaying] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -486,7 +540,11 @@ const ItemCard = memo(function ItemCard({
   const canPlay = !!item.preview;
 
   return (
-    <div className="group flex flex-col overflow-hidden rounded-xl border-2 border-border bg-panel transition hover:border-text-muted">
+    <div
+      className={`group flex flex-col overflow-hidden rounded-xl border-2 bg-panel transition ${
+        selected ? "border-accent/70" : "border-border hover:border-text-muted"
+      }`}
+    >
       <div
         className={`relative aspect-video w-full overflow-hidden bg-black ${canPlay ? "cursor-pointer" : ""}`}
         onClick={() => canPlay && setPlaying(true)}
@@ -517,7 +575,7 @@ const ItemCard = memo(function ItemCard({
         <div className="absolute left-2 top-2 flex gap-1">
           {item.sample ? (
             <SampleChip />
-          ) : item.checks ? (
+          ) : doc.admin && item.checks ? (
             item.checksPassed ? (
               <span className="inline-flex items-center gap-1 rounded-md border border-ok/40 bg-ok/20 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-emerald-200 backdrop-blur">
                 <CheckCircle2 size={10} /> All checks pass
@@ -528,7 +586,7 @@ const ItemCard = memo(function ItemCard({
               </span>
             )
           ) : null}
-          {item.inDelivery && (
+          {doc.admin && item.inDelivery && (
             <span className="inline-flex items-center gap-1 rounded-md border border-sky-400/50 bg-sky-500/25 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-sky-100 backdrop-blur">
               Client delivery
             </span>
@@ -552,6 +610,19 @@ const ItemCard = memo(function ItemCard({
 
       <div className="flex flex-1 flex-col gap-2 px-3 py-2.5">
         <div className="flex items-start gap-2">
+          <button
+            type="button"
+            role="checkbox"
+            aria-checked={selected}
+            aria-label={`Select ${item.subtitle} for download`}
+            title={selected ? "Remove from the download" : "Add to the download"}
+            onClick={() => onToggle(item.id)}
+            className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-[4px] border text-[0.62rem] font-bold transition ${
+              selected ? "border-accent bg-accent text-bg" : "border-text-dim hover:border-accent"
+            }`}
+          >
+            {selected ? "✓" : ""}
+          </button>
           <div className="min-w-0 flex-1">
             <div className="truncate text-[0.85rem] font-semibold text-text" title={item.title}>
               {item.title}
@@ -598,7 +669,7 @@ const ItemCard = memo(function ItemCard({
           </p>
         )}
 
-        {item.checks && (
+        {doc.admin && item.checks && (
           <details className="rounded-md border border-border bg-input/40 px-2 py-1 text-[0.68rem]">
             <summary className="cursor-pointer select-none text-text-muted">
               Acceptance checks: {item.checks.length - failing.length} of {item.checks.length} pass

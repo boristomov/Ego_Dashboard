@@ -359,7 +359,9 @@ async function readIndex(env, id) {
 const entryId = (e) => e.clip_id || e.session;
 
 /** Fields only admins see: our own acceptance checks and where the raw take lives. */
-const INTERNAL_FIELDS = ["checks", "checks_passed", "raw_prefix", "task_as_recorded"];
+const INTERNAL_FIELDS = [
+  "checks", "checks_passed", "sync", "quality_status", "interim", "capture_format", "raw_prefix", "task_as_recorded",
+];
 
 /** projects/<id>/delivery.json, {"clips": ["<clip id or session>", ...]}: what clients see. Null if absent. */
 async function readDelivery(env, id) {
