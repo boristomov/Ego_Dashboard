@@ -30,11 +30,13 @@ import {
   fetchProject,
   hasProjectsSession,
   projectFileUrl,
+  relabelProjectItem,
   signInProjects,
   type ProjectCheck,
   type ProjectClip,
   type ProjectDoc,
   type ProjectFile,
+  type ProjectTask,
   type SampleSession,
 } from "../lib/projectsApi";
 import { formatBytes, formatDateTime, formatDuration, formatHours } from "../lib/session";
@@ -67,6 +69,7 @@ export type Item = {
   rawPrefix?: string | null;
   files: ProjectFile[];
   sample: boolean;
+  relabel?: ProjectClip["relabel"];
 };
 
 function fromClip(c: ProjectClip): Item {
@@ -91,6 +94,7 @@ function fromClip(c: ProjectClip): Item {
     rawPrefix: c.raw_prefix,
     files: c.files,
     sample: false,
+    relabel: c.relabel,
   };
 }
 
@@ -233,6 +237,18 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
           ...d.index,
           clips: d.index.clips?.filter((c) => c.clip_id !== id),
           sessions: d.index.sessions?.filter((s) => s.session !== id),
+        },
+      },
+    );
+  }, []);
+
+  const replaceClip = useCallback((entry: ProjectClip) => {
+    setDoc((d) =>
+      d && {
+        ...d,
+        index: {
+          ...d.index,
+          clips: d.index.clips?.map((c) => (c.clip_id === entry.clip_id ? { ...entry, in_delivery: c.in_delivery } : c)),
         },
       },
     );
@@ -437,6 +453,7 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
                 doc={doc}
                 showRecordedAs={isAdmin}
                 onDeleted={removeItem}
+                onRelabeled={replaceClip}
                 selected={selected.has(i.id)}
                 onToggle={toggleSelected}
               />
@@ -495,6 +512,65 @@ function ClientReauth({ email, onDone }: { email: string; onDone: () => void }) 
   );
 }
 
+function TaskPicker({
+  project,
+  item,
+  tasks,
+  onDone,
+}: {
+  project: string;
+  item: Item;
+  tasks: ProjectTask[];
+  onDone: (entry: ProjectClip | null) => void;
+}) {
+  const [choice, setChoice] = useState(item.title);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const names = tasks.some((t) => t.name === item.title) ? tasks : [{ name: item.title }, ...tasks];
+  const save = async () => {
+    if (choice === item.title) return onDone(null);
+    setBusy(true);
+    setError(null);
+    try {
+      onDone((await relabelProjectItem(project, item.id, choice)).entry);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : String(e));
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-center gap-1">
+        <select
+          autoFocus
+          className="input-base !w-auto min-w-0 flex-1 !py-1 text-[0.78rem]"
+          value={choice}
+          disabled={busy}
+          onChange={(e) => setChoice(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void save();
+            if (e.key === "Escape") onDone(null);
+          }}
+          aria-label="Task"
+        >
+          {names.map((t) => (
+            <option key={t.name} value={t.name}>
+              {t.name}
+            </option>
+          ))}
+        </select>
+        <button type="button" className="btn btn-accent !px-2 !py-1 text-[0.7rem]" disabled={busy} onClick={() => void save()}>
+          {busy ? <Loader2 size={12} className="animate-spin" /> : "Save"}
+        </button>
+        <button type="button" className="btn !px-2 !py-1 text-[0.7rem]" disabled={busy} onClick={() => onDone(null)}>
+          Cancel
+        </button>
+      </div>
+      {error && <span className="text-[0.65rem] text-err">{error}</span>}
+    </div>
+  );
+}
+
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="panel px-4 py-3">
@@ -520,6 +596,7 @@ const ItemCard = memo(function ItemCard({
   doc,
   showRecordedAs,
   onDeleted,
+  onRelabeled,
   selected,
   onToggle,
 }: {
@@ -527,6 +604,7 @@ const ItemCard = memo(function ItemCard({
   doc: ProjectDoc;
   showRecordedAs: boolean;
   onDeleted: (id: string) => void;
+  onRelabeled: (entry: ProjectClip) => void;
   selected: boolean;
   onToggle: (id: string) => void;
 }) {
@@ -534,6 +612,8 @@ const ItemCard = memo(function ItemCard({
   const [deleting, setDeleting] = useState(false);
   const [thumbBroken, setThumbBroken] = useState(false);
   const [expanded, setExpanded] = useState(false);
+  const [relabeling, setRelabeling] = useState(false);
+  const canRelabel = doc.admin && !item.sample && !!doc.tasks?.length;
   const bytes = item.files.reduce((n, f) => n + (f.bytes || 0), 0);
   const failing = (item.checks ?? []).filter((c) => !c.ok);
   const main = item.files.find((f) => fileBadge(f.name, item.id) === "MP4 L");
@@ -624,9 +704,35 @@ const ItemCard = memo(function ItemCard({
             {selected ? "✓" : ""}
           </button>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-[0.85rem] font-semibold text-text" title={item.title}>
-              {item.title}
-            </div>
+            {relabeling && doc.tasks ? (
+              <TaskPicker
+                project={doc.project}
+                item={item}
+                tasks={doc.tasks}
+                onDone={(entry) => {
+                  setRelabeling(false);
+                  if (entry) onRelabeled(entry);
+                }}
+              />
+            ) : canRelabel ? (
+              <button
+                type="button"
+                className="block max-w-full truncate text-left text-[0.85rem] font-semibold text-text decoration-dotted underline-offset-2 hover:text-accent-hover hover:underline"
+                title={`${item.title}: click to change the task`}
+                onClick={() => setRelabeling(true)}
+              >
+                {item.title}
+              </button>
+            ) : (
+              <div className="truncate text-[0.85rem] font-semibold text-text" title={item.title}>
+                {item.title}
+              </div>
+            )}
+            {doc.admin && item.relabel && (
+              <div className="mt-0.5 text-[0.65rem] text-sky-300" title={item.relabel.by ? `by ${item.relabel.by}` : undefined}>
+                Relabelled{item.relabel.from ? ` from “${item.relabel.from}”` : ""}; updating its files
+              </div>
+            )}
             <div className="mt-0.5 truncate font-mono text-[0.68rem] text-text-muted">{item.subtitle}</div>
             {showRecordedAs && item.taskAsRecorded && (
               <div className="mt-0.5 text-[0.65rem] text-amber-300">Recorded as “{item.taskAsRecorded}”</div>

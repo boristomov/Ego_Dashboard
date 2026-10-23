@@ -16,6 +16,7 @@
 //   GET  /file?p=<id>&k=<key>&g=<grant>[&dl=1]
 //                                  302 to a presigned URL for that one file
 //   POST /projects/<id>/delete {item}
+//   POST /projects/<id>/relabel {item, task}
 //                                  admins: delete one recording from the raw
 //                                  bucket and the project (see deleteRecording)
 //
@@ -361,7 +362,48 @@ const entryId = (e) => e.clip_id || e.session;
 /** Fields only admins see: our own acceptance checks and where the raw take lives. */
 const INTERNAL_FIELDS = [
   "checks", "checks_passed", "sync", "quality_status", "interim", "capture_format", "raw_prefix", "task_as_recorded",
+  "relabel",
 ];
+
+/** projects/<id>/tasks.json, {"tasks": [{name, category, activity, environment, topic}]}: what a recording may be relabelled to. */
+async function readTasks(env, id) {
+  const { url: u, headers } = await signGet({ ...creds(env), key: `projects/${id}/tasks.json` });
+  const res = await fetch(u, { headers });
+  if (res.status === 404 || res.status === 403) return [];
+  if (!res.ok) throw new Error(`could not read the project task list (${res.status})`);
+  const doc = JSON.parse(await res.text());
+  return Array.isArray(doc.tasks) ? doc.tasks.filter((t) => t && typeof t.name === "string") : [];
+}
+
+/**
+ * The index entry with its task switched. The label and its taxonomy fields change at once; `relabel`
+ * tells the publisher to bring the clip's own files (sidecar, checksums, MCAP) in line, and it removes
+ * the note when they are. Pure, for the self-test.
+ */
+export function relabelEntry(entry, task, who, at) {
+  const next = { ...entry, task_name: task.name };
+  for (const [k, tk] of [["task_category", "category"], ["task_activity", "activity"], ["environment", "environment"]]) {
+    next[k] = task[tk] || null;
+  }
+  next.relabel = { task_name: task.name, from: entry.relabel?.from ?? entry.task_name, by: who, at };
+  return next;
+}
+
+async function relabelRecording(env, project, item, taskName, who) {
+  const task = (await readTasks(env, project)).find((t) => t.name === taskName);
+  if (!task) return { status: 400, body: { error: `"${taskName}" is not a task of ${project}` } };
+  const { index, missing } = await readIndex(env, project);
+  if (missing) return { status: 404, body: { error: "this project has nothing published yet" } };
+  const field = index.clips ? "clips" : "sessions";
+  const list = index[field] || [];
+  const at = list.findIndex((e) => entryId(e) === item);
+  if (at < 0) return { status: 404, body: { error: `${item} is not in ${project}` } };
+  if (list[at].task_name === task.name) return { status: 200, body: { entry: list[at], unchanged: true } };
+  list[at] = relabelEntry(list[at], task, who, new Date().toISOString());
+  index.updated_at = new Date().toISOString();
+  await putJson(deleteCreds(env, env.PROJECTS_BUCKET), `projects/${project}/index.json`, index, { "cache-control": "no-cache" });
+  return { status: 200, body: { entry: list[at] } };
+}
 
 /** projects/<id>/delivery.json, {"clips": ["<clip id or session>", ...]}: what clients see. Null if absent. */
 async function readDelivery(env, id) {
@@ -528,7 +570,8 @@ export default {
         const index = viewIndex(JSON.parse(text), await readDelivery(env, id), who.admin);
         const exp = Math.floor(Date.now() / 1000) + GRANT_TTL_S;
         const grant = await mint({ kind: "grant", p: id, sub: who.who, exp }, env.CLIENT_TOKEN_SECRET);
-        return json({ project: id, index, grant, grantExp: exp, admin: who.admin });
+        const tasks = who.admin ? await readTasks(env, id) : undefined;
+        return json({ project: id, index, grant, grantExp: exp, admin: who.admin, tasks });
       }
 
       const del = /^\/projects\/([a-z0-9-]+)\/delete$/.exec(path);
@@ -539,6 +582,18 @@ export default {
         const { item } = await request.json().catch(() => ({}));
         if (!item || typeof item !== "string" || item.length > 80) return json({ error: "item required" }, 400);
         const r = await deleteRecording(env, del[1], item, who.who);
+        return json(r.body, r.status);
+      }
+
+      const rel = /^\/projects\/([a-z0-9-]+)\/relabel$/.exec(path);
+      if (rel && request.method === "POST") {
+        if (!who.admin) return json({ error: "only admins can relabel recordings" }, 403);
+        if (!who.projects.includes(rel[1])) return json({ error: "unknown project" }, 404);
+        if (!configured || !deletesConfigured(env)) return json({ error: "editing is not configured on ego-projects" }, 500);
+        const { item, task } = await request.json().catch(() => ({}));
+        if (!item || typeof item !== "string" || item.length > 80) return json({ error: "item required" }, 400);
+        if (!task || typeof task !== "string" || task.length > 120) return json({ error: "task required" }, 400);
+        const r = await relabelRecording(env, rel[1], item, task, who.who);
         return json(r.body, r.status);
       }
 

@@ -6,7 +6,7 @@
 // environment it also reads a real project index through the router
 // (read-only), and with PROBE_PROJECT=<id> picks that project.
 import crypto from "node:crypto";
-import worker, { caller, deleteTargets, fileKey, mint, signGet, signS3, verify, viewIndex } from "./worker.js";
+import worker, { caller, deleteTargets, fileKey, mint, relabelEntry, signGet, signS3, verify, viewIndex } from "./worker.js";
 
 let failed = 0;
 const check = (ok, name) => {
@@ -240,6 +240,21 @@ if (process.env.LIVE_DELETE === "1" && process.env.RAW_BUCKET) {
   check(idx.clips.length === 1 && idx.clips[0].clip_id === "TAI-KEEP", "the index lost only that entry");
   await s3(RAW, "DELETE", `_deleted/${take}.json`);
   await s3(PROC, "DELETE", "projects/selftest/index.json");
+}
+
+// ---- relabel ----
+{
+  const e = { clip_id: "TAI-A", session: "s", task_name: "Cleaning weeds with a shovel", task_category: "repairs_diy", environment: "outdoors" };
+  const salad = { name: "Prepare a salad", category: "home_daily", activity: "food_preparation", environment: "home_kitchen" };
+  const once = relabelEntry(e, salad, "boris", "t1");
+  check(once.task_name === "Prepare a salad" && once.task_category === "home_daily" && once.environment === "home_kitchen"
+    && once.task_activity === "food_preparation", "a relabel switches the task and its taxonomy fields");
+  check(once.relabel.from === "Cleaning weeds with a shovel" && once.relabel.by === "boris", "the relabel note says from what and by whom");
+  const twice = relabelEntry(once, { name: "Make bed", category: "home_daily" }, "jay", "t2");
+  check(twice.relabel.from === "Cleaning weeds with a shovel" && twice.environment === null,
+    "a second relabel keeps the original label and clears what the new task does not set");
+  const client = viewIndex({ clips: [once] }, null, false);
+  check(!("relabel" in client.clips[0]) && client.clips[0].task_name === "Prepare a salad", "a client sees the new task, not the note");
 }
 
 console.log(failed ? `\n${failed} check(s) failed` : "\nall project checks passed");

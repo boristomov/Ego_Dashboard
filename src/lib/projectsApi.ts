@@ -54,7 +54,12 @@ export type ProjectClip = {
   preview?: string | null;
   thumb?: string | null;
   files: ProjectFile[];
+  /** Admins only: relabelled in the data browser; set until the publisher has updated the clip's files. */
+  relabel?: { task_name: string; from?: string | null; by?: string; at?: string } | null;
 };
+
+/** A task a recording can be relabelled to (projects/<id>/tasks.json). */
+export type ProjectTask = { name: string; category?: string | null; activity?: string | null; environment?: string | null; topic?: string | null };
 
 /** One sample-data take (scripts/wirestock_publish.py, samples). */
 export type SampleSession = {
@@ -85,7 +90,15 @@ export type ProjectIndex = {
   sessions?: SampleSession[];
 };
 
-export type ProjectDoc = { project: string; index: ProjectIndex; grant: string; grantExp: number; admin: boolean };
+export type ProjectDoc = {
+  project: string;
+  index: ProjectIndex;
+  grant: string;
+  grantExp: number;
+  admin: boolean;
+  /** Admins only: what a recording can be relabelled to. */
+  tasks?: ProjectTask[];
+};
 
 function clientToken(): string | null {
   try {
@@ -188,6 +201,18 @@ export function deleteProjectItem(project: string, item: string): Promise<Delete
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ item }),
+  });
+}
+
+/**
+ * Admins: switch a recording's task. The index changes at once; the publisher then brings the
+ * clip's sidecar, checksums and MCAP in line and clears `relabel`.
+ */
+export function relabelProjectItem(project: string, item: string, task: string): Promise<{ entry: ProjectClip; unchanged?: boolean }> {
+  return req(`/projects/${encodeURIComponent(project)}/relabel`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ item, task }),
   });
 }
 
