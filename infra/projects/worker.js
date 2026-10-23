@@ -47,10 +47,11 @@
 //   PROJECT_CLIENTS       {"<email>": {"proof": "<sha256 hex>", "name": "...", "projects": ["wirestock"]}}
 //   PROJECTS              optional, {"wirestock": "Wirestock", ...}; default below
 //   ALLOWED_ORIGIN        https://egodash.aithoth.com
-//   RAW_BUCKET            egodata-raw-prod-854929212137-us-west-2-an (deletes)
+//   RAW_BUCKET            egodata-raw-prod-854929212137-us-west-2-an; without
+//                         it the Worker only reads
 //   DELETE_AWS_ACCESS_KEY_ID, DELETE_AWS_SECRET_ACCESS_KEY
-//                         the delete key (iam-delete-policy.json); without
-//                         them the Worker only reads
+//                         optional separate key for deletes; otherwise the
+//                         main key needs iam-delete-policy.json too
 
 const ALG = "AWS4-HMAC-SHA256";
 const TOKEN_TTL_S = 12 * 3600;
@@ -159,13 +160,17 @@ function creds(env) {
   };
 }
 
-/** The delete key (iam-delete-policy.json): delete-markers only, never versions. */
+/**
+ * The key granted iam-delete-policy.json: a separate DELETE_* key if set,
+ * otherwise the main key with that policy attached as well.
+ */
 function deleteCreds(env, bucket) {
+  const own = env.DELETE_AWS_ACCESS_KEY_ID && env.DELETE_AWS_SECRET_ACCESS_KEY;
   return {
     bucket,
     region: env.AWS_REGION,
-    accessKeyId: env.DELETE_AWS_ACCESS_KEY_ID,
-    secretAccessKey: env.DELETE_AWS_SECRET_ACCESS_KEY,
+    accessKeyId: own ? env.DELETE_AWS_ACCESS_KEY_ID : env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: own ? env.DELETE_AWS_SECRET_ACCESS_KEY : env.AWS_SECRET_ACCESS_KEY,
   };
 }
 
@@ -353,7 +358,7 @@ async function readIndex(env, id) {
 const entryId = (e) => e.clip_id || e.session;
 
 function deletesConfigured(env) {
-  return !!(env.DELETE_AWS_ACCESS_KEY_ID && env.DELETE_AWS_SECRET_ACCESS_KEY && env.RAW_BUCKET);
+  return !!(env.RAW_BUCKET && deleteCreds(env).accessKeyId && deleteCreds(env).secretAccessKey);
 }
 
 /**

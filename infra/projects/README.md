@@ -103,10 +103,12 @@ Cloudflare dashboard → **Workers & Pages** → **Create** → `ego-projects`,
 | `PROJECT_CLIENTS` | secret | see below |
 | `ALLOWED_ORIGIN` | var | `https://egodash.aithoth.com` |
 | `RAW_BUCKET` | var | `egodata-raw-prod-854929212137-us-west-2-an` (deletes only) |
-| `DELETE_AWS_ACCESS_KEY_ID` | secret | `ego-projects-deleter`'s key, with `iam-delete-policy.json` (deletes only) |
+| `DELETE_AWS_ACCESS_KEY_ID` | secret | optional: a separate key with `iam-delete-policy.json` |
 | `DELETE_AWS_SECRET_ACCESS_KEY` | secret | as above |
 
-Without the last three, deleting answers 500 and everything else works.
+Deletes use the `DELETE_*` key if set, otherwise the step 1 key, which then
+also needs `iam-delete-policy.json` as a second inline policy. Without
+`RAW_BUCKET`, deleting answers 500 and everything else works.
 
 `PROJECT_CLIENTS` is one JSON object, an entry per client account:
 
