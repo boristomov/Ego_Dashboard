@@ -815,11 +815,15 @@ async function verifyToken(token, env) {
 /** `{"boris":"<sha256 of the client-derived proof>", ...}` — names, so the
  *  audit trail says who, not just "admin". */
 function adminUsers(env) {
-  try {
-    return JSON.parse(env.ADMIN_USERS || "{}");
-  } catch {
-    return {};
-  }
+  const parse = (v) => {
+    try {
+      return JSON.parse(v || "{}");
+    } catch {
+      return {};
+    }
+  };
+  // ADMIN_USERS_EXTRA adds admins without re-entering the existing ones.
+  return { ...parse(env.ADMIN_USERS_EXTRA), ...parse(env.ADMIN_USERS) };
 }
 
 async function whoami(request, env) {

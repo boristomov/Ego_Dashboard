@@ -22,10 +22,23 @@ import type { AdminCreds } from "./leadsAdmin";
 // Holds the `ego-registry-reader` IAM key: dynamodb:Scan on ego-users and
 // ego-leads ONLY — even a hypothetical offline crack of the vault yields no
 // access to S3 data or any write/delete capability.
-const VAULT = {
-  salt: "3a6c9a83aa365448afaedc5f50525b4e",
-  iv: "f1e3ab47d67b3bbe1de00038",
-  ct: "38793d1dc18fcfe296799923b67bd202bc1d7e81deded5f72c855554758a7ad5f087771d61d269a6b1d713d7ef6cf44d2f15eac0afc6b7ab55cc5031c0c622b52d12b44f7a9bb60038a40382c1f185994d2d4189fa39e119b39f74ca8613cd507c1d757388f54fb9eeea0ca54d4c4ab5a0f6a3",
+// One copy per admin, each sealed with that admin's own password.
+const VAULTS: Record<string, { salt: string; iv: string; ct: string }> = {
+  "aws@aithoth.com": {
+    salt: "3a6c9a83aa365448afaedc5f50525b4e",
+    iv: "f1e3ab47d67b3bbe1de00038",
+    ct: "38793d1dc18fcfe296799923b67bd202bc1d7e81deded5f72c855554758a7ad5f087771d61d269a6b1d713d7ef6cf44d2f15eac0afc6b7ab55cc5031c0c622b52d12b44f7a9bb60038a40382c1f185994d2d4189fa39e119b39f74ca8613cd507c1d757388f54fb9eeea0ca54d4c4ab5a0f6a3",
+  },
+  "jimmy@aithoth.com": {
+    salt: "f3e01dcc9db93ed95be8c415db4bd40a",
+    iv: "7effad6eb920da48111255e1",
+    ct: "66bad3a51720147312bf0630119cc78877987b911e11f3cb172f04ee73b87e1147db80ecf26cf2b0880099b2359ef4885c3fecc635231b75a8bed759bb0020725e86d20ad8c6ddc89e718da92135e85ee6e844cd9243792fdd7b8d6a8bf0e65268a7590f470c6ba8d26d92018fcd5cb0a2f2b7",
+  },
+  "jay@aithoth.com": {
+    salt: "36b39fa421b35dd1331ec385ab578a29",
+    iv: "6e3c225f6246070d822ad89d",
+    ct: "8fb035a9a95386aa8450acf004859ea5a0fd95127aa24904f34de825ae0b1dd7cf2c40f365f5b25b280273e6f56b61cf0d6e73e487d22f8c2bcb824780188fed9c34a11af2bde8d37d274d9e96916fe474de54774e9e209dbb41e0c68ca97dfa43226fde16d0bdd76680de9bef2075df3be36c",
+  },
 };
 
 function hexToBytes(hex: string): Uint8Array {
@@ -42,8 +55,11 @@ function hexToBytes(hex: string): Uint8Array {
  * different password).
  */
 export async function unsealAdminVault(
+  email: string,
   password: string,
 ): Promise<AdminCreds | null> {
+  const VAULT = VAULTS[email.toLowerCase()];
+  if (!VAULT) return null;
   try {
     const baseKey = await crypto.subtle.importKey(
       "raw",

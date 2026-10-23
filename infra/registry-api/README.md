@@ -194,6 +194,7 @@ node -e '
 | --- | --- | --- |
 | `ADMIN_PROOF_SALT` | var | the `$SALT` above |
 | `ADMIN_USERS` | secret | `{"boris":"<hash>","sara":"<hash>"}` |
+| `ADMIN_USERS_EXTRA` | secret | optional, same shape: more admins without re-entering `ADMIN_USERS` |
 
 Use real names as keys — they become `provenance.updatedBy`, and an audit
 trail that says "admin" for everyone answers none of the questions it exists

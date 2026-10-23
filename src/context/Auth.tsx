@@ -112,11 +112,10 @@ const USERS: UserRecord[] = [
     passwordHash:
       "a280c83819bfb890415512077b9268c92055e512bf59b6951c1914995f44fcb3",
     iterations: 310000,
-    role: "client",
+    role: "admin",
     name: "Jimmy",
     company: "Thoth AI",
-    allowedData: ["Welcome", "Data browser (demo dataset)", "Wirestock project", "Sample data"],
-    projects: ["wirestock", "samples"],
+    allowedData: ["Full platform", "All buckets", "Client connections"],
   },
   {
     email: "jay@aithoth.com",
@@ -124,11 +123,10 @@ const USERS: UserRecord[] = [
     passwordHash:
       "4cac49b88f9f8577d58c15eb15ce346e73179eb37cede752a865591dd2c8eccb",
     iterations: 310000,
-    role: "client",
+    role: "admin",
     name: "Jay",
     company: "Thoth AI",
-    allowedData: ["Welcome", "Data browser (demo dataset)", "Wirestock project", "Sample data"],
-    projects: ["wirestock", "samples"],
+    allowedData: ["Full platform", "All buckets", "Client connections"],
   },
 ];
 
@@ -484,7 +482,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // work without pasting a key. Lazy import keeps it off the public path.
       void import("../lib/adminVault")
         .then(async ({ unsealAdminVault }) => {
-          const creds = await unsealAdminVault(password);
+          const creds = await unsealAdminVault(user.email, password);
           if (creds) {
             const { saveAdminCreds } = await import("../lib/leadsAdmin");
             saveAdminCreds(creds);
