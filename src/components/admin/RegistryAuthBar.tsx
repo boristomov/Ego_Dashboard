@@ -34,6 +34,7 @@ import {
   signIn,
   signOut,
 } from "../../lib/registryApi";
+import { registryUserFor } from "../../context/Auth";
 
 export function useRegistryAuth() {
   const [signedIn, setSignedIn] = useState(isSignedIn);
@@ -175,7 +176,7 @@ export function SignInDialog({
     setBusy(true);
     setError(null);
     try {
-      await signIn(user.trim(), password);
+      await signIn(registryUserFor(user), password);
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Sign in failed");
@@ -222,13 +223,13 @@ export function SignInDialog({
 
         <label className="block">
           <span className="mb-1 flex items-center gap-1.5 text-[0.7rem] font-semibold uppercase tracking-wider text-text-muted">
-            <User size={11} /> Your name
+            <User size={11} /> Name or email
           </span>
           <input
             className="input-base"
             autoFocus
             value={user}
-            placeholder="boris"
+            placeholder="boris or you@aithoth.com"
             onChange={(e) => setUser(e.target.value)}
           />
         </label>

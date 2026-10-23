@@ -60,6 +60,12 @@ export type UserRecord = {
    * which tabs to offer, and makes sign-in fetch a project token too.
    */
   projects?: string[];
+  /**
+   * Admins: this person's name in the registry Worker's ADMIN_USERS. Sign-in
+   * trades the same password for a registry token, so Data operations,
+   * Monitoring and project deliveries open without a second sign-in.
+   */
+  registryUser?: string;
 };
 
 /** Safe projection of a user for display (no secrets). */
@@ -82,6 +88,7 @@ const USERS: UserRecord[] = [
     name: "Thoth Admin",
     company: "Thoth AI",
     allowedData: ["Full platform", "All buckets", "Client connections"],
+    registryUser: "boris",
   },
   {
     email: "johnson@genesis-ai.company",
@@ -116,6 +123,7 @@ const USERS: UserRecord[] = [
     name: "Jimmy",
     company: "Thoth AI",
     allowedData: ["Full platform", "All buckets", "Client connections"],
+    registryUser: "jimmy",
   },
   {
     email: "jay@aithoth.com",
@@ -127,8 +135,20 @@ const USERS: UserRecord[] = [
     name: "Jay",
     company: "Thoth AI",
     allowedData: ["Full platform", "All buckets", "Client connections"],
+    registryUser: "jay",
   },
 ];
+
+/**
+ * The registry name for what someone typed: a name as is, or an admin's
+ * dashboard email mapped to theirs (else its part before the "@").
+ */
+export function registryUserFor(input: string): string {
+  const v = input.trim().toLowerCase();
+  if (!v.includes("@")) return v;
+  const u = USERS.find((x) => x.email.toLowerCase() === v);
+  return u?.registryUser ?? v.split("@")[0];
+}
 
 /** The project deliveries an account is offered (admins: all of them). */
 export function userProjects(email: string | undefined, role: Role): string[] | "all" {
@@ -491,6 +511,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .catch(() => {
           /* vault unlock is best-effort */
         });
+      if (user.registryUser) {
+        // Awaited so the Data Browser has its token when it opens; a failure
+        // (e.g. a different registry password) only leaves the sign-in prompt.
+        const registryUser = user.registryUser;
+        await import("../lib/registryApi")
+          .then(({ REGISTRY_WRITE_CONFIGURED, signIn: signInRegistry }) =>
+            REGISTRY_WRITE_CONFIGURED ? signInRegistry(registryUser, password) : null,
+          )
+          .catch(() => null);
+      }
     } else {
       if (user.projects?.length) {
         // Same password, the projects Worker's own proof and token. Awaited so
@@ -530,6 +560,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       /* ignore */
     }
     void import("../lib/projectsApi").then(({ signOutProjects }) => signOutProjects());
+    void import("../lib/registryApi").then(({ signOut: signOutRegistry }) => signOutRegistry());
     setSession(null);
   }, []);
 
