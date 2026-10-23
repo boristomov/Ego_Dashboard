@@ -106,6 +106,30 @@ const USERS: UserRecord[] = [
     allowedData: ["Welcome", "Data browser (demo dataset)", "Wirestock project", "Sample data"],
     projects: ["wirestock", "samples"],
   },
+  {
+    email: "jimmy@aithoth.com",
+    salt: "63b5ae0c63239c1d9091eeb2539485df",
+    passwordHash:
+      "a280c83819bfb890415512077b9268c92055e512bf59b6951c1914995f44fcb3",
+    iterations: 310000,
+    role: "client",
+    name: "Jimmy",
+    company: "Wirestock",
+    allowedData: ["Welcome", "Data browser (demo dataset)", "Wirestock project", "Sample data"],
+    projects: ["wirestock", "samples"],
+  },
+  {
+    email: "jay@aithoth.com",
+    salt: "30445a2e5f3cf716ca1825c47fb65d42",
+    passwordHash:
+      "4cac49b88f9f8577d58c15eb15ce346e73179eb37cede752a865591dd2c8eccb",
+    iterations: 310000,
+    role: "client",
+    name: "Jay",
+    company: "Wirestock",
+    allowedData: ["Welcome", "Data browser (demo dataset)", "Wirestock project", "Sample data"],
+    projects: ["wirestock", "samples"],
+  },
 ];
 
 /** The project deliveries an account is offered (admins: all of them). */
