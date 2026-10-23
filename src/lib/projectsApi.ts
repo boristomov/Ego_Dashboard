@@ -44,6 +44,8 @@ export type ProjectClip = {
   device_model?: string;
   narration?: { language?: string; style?: string };
   checks_passed: boolean;
+  /** Admins only: whether the clip is in projects/<id>/delivery.json, i.e. what the client sees. */
+  in_delivery?: boolean;
   checks: ProjectCheck[];
   capture_format?: string;
   prefix: string;

@@ -55,6 +55,7 @@ type Item = {
   fps: unknown;
   checksPassed?: boolean;
   checks?: ProjectCheck[];
+  inDelivery?: boolean;
   preview?: string | null;
   thumb?: string | null;
   /** The folder the item's files sit in. */
@@ -79,6 +80,7 @@ function fromClip(c: ProjectClip): Item {
     fps: c.fps,
     checksPassed: c.checks_passed,
     checks: c.checks,
+    inDelivery: c.in_delivery,
     preview: c.preview,
     thumb: c.thumb,
     prefix: c.prefix,
@@ -190,7 +192,7 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
   const [showSignIn, setShowSignIn] = useState(false);
   const [search, setSearch] = useState("");
   const [task, setTask] = useState("");
-  const [checks, setChecks] = useState<"all" | "pass" | "fail">("all");
+  const [checks, setChecks] = useState<"all" | "pass" | "fail" | "delivery">("all");
 
   const load = useCallback(async () => {
     if (!PROJECTS_CONFIGURED || !hasProjectsSession()) {
@@ -256,6 +258,7 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
       if (task && i.title !== task) return false;
       if (checks === "pass" && i.checksPassed !== true) return false;
       if (checks === "fail" && i.checksPassed !== false) return false;
+      if (checks === "delivery" && !i.inDelivery) return false;
       if (q && !`${i.title} ${i.subtitle} ${i.description ?? ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -371,6 +374,7 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
             <option value="all">All recordings</option>
             <option value="pass">All checks pass</option>
             <option value="fail">Some checks fail</option>
+            {items.some((i) => i.inDelivery) && <option value="delivery">In client delivery</option>}
           </select>
         )}
       </div>
@@ -524,6 +528,11 @@ const ItemCard = memo(function ItemCard({
               </span>
             )
           ) : null}
+          {item.inDelivery && (
+            <span className="inline-flex items-center gap-1 rounded-md border border-sky-400/50 bg-sky-500/25 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-sky-100 backdrop-blur">
+              Client delivery
+            </span>
+          )}
         </div>
         <div className="absolute right-2 top-2">
           <span className="rounded-md border border-white/15 bg-black/55 px-1.5 py-0.5 font-mono text-[0.6rem] text-white/90 backdrop-blur">

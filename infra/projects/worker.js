@@ -11,7 +11,8 @@
 //   GET  /auth/params              salt + iterations for the client's proof
 //   POST /auth {user, proof}       client sign-in -> token naming its projects
 //   GET  /projects                 the projects the caller may open
-//   GET  /projects/<id>            the project's index.json, plus a file grant
+//   GET  /projects/<id>            the project's index.json, plus a file grant; clients see
+//                                  only projects/<id>/delivery.json's clips, without checks
 //   GET  /file?p=<id>&k=<key>&g=<grant>[&dl=1]
 //                                  302 to a presigned URL for that one file
 //   POST /projects/<id>/delete {item}
@@ -357,6 +358,39 @@ async function readIndex(env, id) {
 
 const entryId = (e) => e.clip_id || e.session;
 
+/** Fields only admins see: our own acceptance checks and where the raw take lives. */
+const INTERNAL_FIELDS = ["checks", "checks_passed", "raw_prefix", "task_as_recorded"];
+
+/** projects/<id>/delivery.json, {"clips": ["<clip id or session>", ...]}: what clients see. Null if absent. */
+async function readDelivery(env, id) {
+  const { url: u, headers } = await signGet({ ...creds(env), key: `projects/${id}/delivery.json` });
+  const res = await fetch(u, { headers });
+  if (res.status === 404 || res.status === 403) return null;
+  if (!res.ok) throw new Error(`could not read the project delivery list (${res.status})`);
+  const doc = JSON.parse(await res.text());
+  return Array.isArray(doc.clips) ? doc.clips.map(String) : null;
+}
+
+/**
+ * The index as a caller sees it. A client gets only the delivery's entries (all of them
+ * without a delivery list) and none of the internal fields; an admin gets everything,
+ * each entry marked in_delivery. Pure, for the self-test.
+ */
+export function viewIndex(index, delivery, admin) {
+  const field = index.clips ? "clips" : index.sessions ? "sessions" : null;
+  if (!field) return index;
+  const chosen = delivery ? new Set(delivery) : null;
+  const list = index[field] || [];
+  if (admin) {
+    return { ...index, [field]: list.map((e) => ({ ...e, in_delivery: chosen ? chosen.has(entryId(e)) : true })) };
+  }
+  const visible = chosen ? list.filter((e) => chosen.has(entryId(e))) : list;
+  return {
+    ...index,
+    [field]: visible.map((e) => Object.fromEntries(Object.entries(e).filter(([k]) => !INTERNAL_FIELDS.includes(k)))),
+  };
+}
+
 function deletesConfigured(env) {
   return !!(env.RAW_BUCKET && deleteCreds(env).accessKeyId && deleteCreds(env).secretAccessKey);
 }
@@ -489,9 +523,10 @@ export default {
         if (!res.ok) return json({ error: `could not read the project index (${res.status})` }, 502);
         const text = await res.text();
         if (text.length > MAX_INDEX_BYTES) return json({ error: "project index too large" }, 502);
+        const index = viewIndex(JSON.parse(text), await readDelivery(env, id), who.admin);
         const exp = Math.floor(Date.now() / 1000) + GRANT_TTL_S;
         const grant = await mint({ kind: "grant", p: id, sub: who.who, exp }, env.CLIENT_TOKEN_SECRET);
-        return json({ project: id, index: JSON.parse(text), grant, grantExp: exp, admin: who.admin });
+        return json({ project: id, index, grant, grantExp: exp, admin: who.admin });
       }
 
       const del = /^\/projects\/([a-z0-9-]+)\/delete$/.exec(path);
