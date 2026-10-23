@@ -123,9 +123,20 @@ export async function fetchMonitorClips(minutes: number, limit = 24): Promise<Mo
 
 export type Tone = "ok" | "warn" | "bad" | "muted";
 
+/**
+ * Frames per second the take actually recorded. From the frame yield when there is one:
+ * fpsMeasured is the recorder's last instantaneous reading, which on stereo-MP4 rigs
+ * (frames arrive in bursts) read 0.6-32 fps on takes that kept 99.7% of 60 fps.
+ */
+export function takeFps(q: MonitorQuality): number | null {
+  if (q.fpsNominal && q.frameYield != null) return q.fpsNominal * q.frameYield;
+  return q.fpsMeasured || null;
+}
+
 export function fpsTone(q: MonitorQuality): Tone {
-  if (!q.fpsMeasured || !q.fpsNominal) return "muted";
-  const r = q.fpsMeasured / q.fpsNominal;
+  const fps = takeFps(q);
+  if (!fps || !q.fpsNominal) return "muted";
+  const r = fps / q.fpsNominal;
   return r >= 0.95 ? "ok" : r >= 0.85 ? "warn" : "bad";
 }
 
@@ -173,7 +184,7 @@ export function clipTone(q: MonitorQuality): Tone {
 export function clipIssues(q: MonitorQuality): string[] {
   const out: string[] = [];
   if (statusTone(q.status) !== "ok" && statusTone(q.status) !== "muted") out.push(q.status);
-  if (fpsTone(q) === "bad" || fpsTone(q) === "warn") out.push(`Frame rate ${q.fpsMeasured?.toFixed(1)} of ${q.fpsNominal}`);
+  if (fpsTone(q) === "bad" || fpsTone(q) === "warn") out.push(`Frame rate ${takeFps(q)?.toFixed(1)} of ${q.fpsNominal}`);
   if (gapTone(q) !== "ok") out.push(`${q.gapViolations} frame gaps, longest ${Math.round(q.maxFrameGapMs ?? 0)} ms`);
   if (q.grabFailures > 0) out.push(`${q.grabFailures} camera read failures`);
   for (const e of q.exposure) {

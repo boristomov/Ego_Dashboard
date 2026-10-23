@@ -26,6 +26,7 @@ import {
   exposureTone,
   fetchMonitorClips,
   fpsTone,
+  takeFps,
   gapTone,
   grabTone,
   statusTone,
@@ -373,7 +374,7 @@ function ClipTile({ clip, size, onOpen }: { clip: MonitorClip; size: Size; onOpe
           </div>
         )}
         <div className="mt-1.5 flex flex-wrap gap-1.5">
-          <Metric tone={fpsTone(q)} label="FPS" value={q.fpsMeasured ? `${q.fpsMeasured.toFixed(1)}${q.fpsNominal ? `/${q.fpsNominal}` : ""}` : "—"} />
+          <Metric tone={fpsTone(q)} label="FPS" value={takeFps(q) ? `${takeFps(q)!.toFixed(1)}${q.fpsNominal ? `/${q.fpsNominal}` : ""}` : "—"} />
           <Metric tone={yieldTone(q)} label="Frames" value={q.frameYield != null ? `${(q.frameYield * 100).toFixed(1)}%` : "—"} />
           <Metric tone={gapTone(q)} label="Gaps" value={`${q.gapViolations}${q.maxFrameGapMs != null ? ` · ${Math.round(q.maxFrameGapMs)}ms` : ""}`} />
           {compact ? (
@@ -622,7 +623,7 @@ function ClipDetail({ clip, onClose }: { clip: MonitorClip; onClose: () => void 
           <div className="flex flex-col gap-3">
             <div className="text-xs font-semibold uppercase tracking-wider text-text-muted">Quality of the whole take</div>
             <div className="grid grid-cols-2 gap-2">
-              <BigMetric tone={fpsTone(q)} label="Frame rate" value={q.fpsMeasured ? q.fpsMeasured.toFixed(1) : "—"} sub={q.fpsNominal ? `of ${q.fpsNominal} fps` : undefined} />
+              <BigMetric tone={fpsTone(q)} label="Frame rate" value={takeFps(q) ? takeFps(q)!.toFixed(1) : "—"} sub={q.fpsNominal ? `of ${q.fpsNominal} fps` : undefined} />
               <BigMetric tone={yieldTone(q)} label="Frames kept" value={q.frameYield != null ? `${(q.frameYield * 100).toFixed(1)}%` : "—"} />
               <BigMetric tone={gapTone(q)} label="Frame gaps" value={String(q.gapViolations)} sub={q.maxFrameGapMs != null ? `longest ${Math.round(q.maxFrameGapMs)} ms` : undefined} />
               <BigMetric tone={grabTone(q)} label="Camera read failures" value={String(q.grabFailures)} />
