@@ -1,0 +1,231 @@
+{
+  "about": "Five new tasks, in English and Chinese: washing a car, shining shoes outdoors, sorting waste at a waste station, an outdoor barbecue, cooking a home-style dish. Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-24-five-tasks.json --user <you> --apply",
+  "defaults": {
+    "sites": ["Beijing"],
+    "state": "active",
+    "environmentIds": [],
+    "targetTakes": 40
+  },
+  "tasks": [
+    {
+      "slug": "wash-a-car-by-hand",
+      "name": "Washing a car by hand",
+      "headline": "Wash a dirty car by hand, top to bottom",
+      "description": "Wash a visibly dirty car by hand: rinse it, wash it with soapy water from the roof down, clean the wheels last with their own sponge, rinse again and dry it with towels. Where: outdoors, on a driveway, yard or car park with a water tap, in daylight. You need: a car, two buckets, car shampoo, a wash mitt or sponge, a separate wheel sponge or brush, a hose or watering can, microfibre towels.",
+      "steps": [
+        "Describe the car and where it is dirtiest.",
+        "Fill one bucket with soapy water and one with clean water.",
+        "Rinse the whole car to loosen the dirt.",
+        "Wash from the roof down, one panel at a time, rinsing the mitt in the clean bucket.",
+        "Clean the wheels and tyres last with the separate sponge or brush.",
+        "Rinse off all the soap, again from the top down.",
+        "Dry the car with the towels, glass first.",
+        "Walk around the clean car to show it, then stop recording."
+      ],
+      "pitfalls": [
+        "Keep the licence plate out of the frame.",
+        "Point the hose away from yourself: water on the head camera ends the take.",
+        "Choose a car that is actually dirty, and change the car or the spot between takes."
+      ],
+      "targetDurationSec": { "min": 480, "max": 900 },
+      "i18n": {
+        "zh": {
+          "name": "手工洗车",
+          "headline": "从上到下手工清洗一辆脏车",
+          "description": "手工清洗一辆明显很脏的车：先冲水，再用洗车液从车顶往下清洗，最后用单独的海绵清洗轮毂，再冲一遍水，用毛巾擦干。场所：户外有水龙头的车道、院子或停车场，白天光线充足时。所需物品：一辆车、两个水桶、洗车液、洗车手套或海绵、单独的轮毂海绵或刷子、水管或洒水壶、超细纤维毛巾。",
+          "steps": [
+            "描述这辆车以及最脏的部位。",
+            "一个水桶装洗车液水，另一个装清水。",
+            "先把整辆车冲一遍水，让污垢松动。",
+            "从车顶往下一块一块清洗，洗车手套在清水桶里涮干净再用。",
+            "最后用单独的海绵或刷子清洗轮毂和轮胎。",
+            "从上往下把泡沫全部冲干净。",
+            "用毛巾擦干车身，先擦玻璃。",
+            "绕车走一圈展示洗好的车，然后停止录制。"
+          ],
+          "pitfalls": [
+            "车牌不要出现在画面里。",
+            "水管不要对着自己：头戴相机被水淋到，这条录制就作废了。",
+            "选一辆确实脏的车，每次录制更换车辆或地点。"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "shine-shoes-outdoors",
+      "name": "Shining shoes outdoors",
+      "headline": "Clean and polish a pair of leather shoes outside",
+      "description": "Brush the dust and mud off a pair of leather shoes, work polish into the leather, then buff them to a shine. Where: outdoors in daylight: a doorstep, bench, balcony or yard. You need: a pair of leather shoes, a shoe brush, shoe polish or cream in the shoes' colour, a polishing cloth, an old cloth or mat to work on.",
+      "steps": [
+        "Lay the old cloth down and describe the shoes and how dirty they are.",
+        "Take out the laces if they are in the way.",
+        "Brush the dust and mud off both shoes, including the welt and heel.",
+        "Wipe the leather with a slightly damp cloth.",
+        "Apply polish in small circles over the whole of one shoe, then the other.",
+        "Buff both shoes with the brush.",
+        "Polish them with the cloth until they shine, and put the laces back.",
+        "Show the finished pair side by side, then stop recording."
+      ],
+      "pitfalls": [
+        "Work on a plain cloth or mat, not newspaper: readable print must stay out of the frame.",
+        "Keep the shoe, the brush and both hands in view rather than working on your lap.",
+        "Use shoes that really need cleaning, and change the shoes or the spot between takes."
+      ],
+      "targetDurationSec": { "min": 300, "max": 600 },
+      "i18n": {
+        "zh": {
+          "name": "户外擦皮鞋",
+          "headline": "在户外清洁并擦亮一双皮鞋",
+          "description": "刷掉一双皮鞋上的灰尘和泥土，把鞋油均匀擦进皮面，再抛光擦亮。场所：白天的户外：门口台阶、长椅、阳台或院子。所需物品：一双皮鞋、鞋刷、与鞋子同色的鞋油或鞋乳、擦鞋布、垫在下面的旧布或垫子。",
+          "steps": [
+            "铺好旧布，描述这双鞋以及脏的程度。",
+            "如果鞋带碍事，先把鞋带抽出来。",
+            "刷掉两只鞋上的灰尘和泥土，包括鞋沿和鞋跟。",
+            "用微湿的布擦一遍皮面。",
+            "用画小圈的方式把鞋油涂满一只鞋，再涂另一只。",
+            "用鞋刷把两只鞋刷匀。",
+            "用擦鞋布擦到发亮，再把鞋带穿回去。",
+            "把擦好的两只鞋并排展示，然后停止录制。"
+          ],
+          "pitfalls": [
+            "垫在素色的布或垫子上，不要用报纸：画面里不能出现能看清的文字。",
+            "鞋、鞋刷和双手都要在画面里，不要放在腿上擦。",
+            "用确实需要清洁的鞋，每次录制更换鞋子或地点。"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "sort-waste-at-a-waste-station",
+      "name": "Sorting household waste at a waste station",
+      "headline": "Sort a bag of mixed household waste into the right bins",
+      "description": "Bring a bag of mixed household waste to a waste sorting station and put every item into the right bin: food waste, recyclables, hazardous waste and other waste. Say what each item is and which bin it goes in. Where: a residential waste sorting station with labelled bins. You need: one or two bags of mixed household waste (food scraps, bottles, cans, cartons, paper, plastic packaging, and if available a used battery), gloves.",
+      "steps": [
+        "Describe the station and the bins for each kind of waste.",
+        "Put on the gloves and open the bag.",
+        "Take out the items one at a time and say what each one is.",
+        "Empty food scraps into the food waste bin; the empty bag goes in other waste.",
+        "Empty and flatten bottles, cans, cartons and boxes, then put them in recyclables.",
+        "Put batteries, bulbs or medicine in the hazardous waste bin.",
+        "Put everything else in other waste and close the lids.",
+        "Show the tidy station and your empty hands, then stop recording."
+      ],
+      "pitfalls": [
+        "Remove or turn over parcel labels, envelopes and receipts before you start: no names or addresses on camera.",
+        "Keep neighbours and other residents out of the frame.",
+        "Bring a real mix of waste, not one kind, and vary the items between takes."
+      ],
+      "targetDurationSec": { "min": 300, "max": 600 },
+      "i18n": {
+        "zh": {
+          "name": "在垃圾分类投放点分类投放生活垃圾",
+          "headline": "把一袋混合生活垃圾分类投进对应的垃圾桶",
+          "description": "把一袋混合生活垃圾带到垃圾分类投放点，把每件垃圾投进对应的桶：厨余垃圾、可回收物、有害垃圾和其他垃圾。说出每件是什么、投进哪个桶。场所：小区里带分类标识的垃圾投放点。所需物品：一到两袋混合生活垃圾（剩菜果皮、瓶子、易拉罐、纸盒、纸张、塑料包装，如有可加一节废电池）、手套。",
+          "steps": [
+            "描述投放点以及各类垃圾桶。",
+            "戴上手套，打开垃圾袋。",
+            "一件一件拿出来，说出每件是什么。",
+            "把厨余倒进厨余垃圾桶，空袋子投进其他垃圾。",
+            "把瓶子、易拉罐、纸盒倒空压扁，投进可回收物。",
+            "电池、灯泡或药品投进有害垃圾桶。",
+            "其余的投进其他垃圾，盖好桶盖。",
+            "展示整理好的投放点和空着的双手，然后停止录制。"
+          ],
+          "pitfalls": [
+            "开始前撕掉或翻过快递面单、信封和小票：画面里不能出现姓名或地址。",
+            "不要拍到邻居和其他居民。",
+            "带真正混合的垃圾，不要只有一种，每次录制更换物品。"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "grill-at-an-outdoor-barbecue",
+      "name": "Grilling at an outdoor barbecue",
+      "headline": "Grill skewers of meat and vegetables outdoors",
+      "description": "Grill a batch of meat and vegetable skewers on an outdoor barbecue: oil the grate, lay the skewers out, turn them, brush and season them, check they are cooked through and serve them on a plate. Start with the grill already lit and hot. Where: outdoors where grilling is allowed: a yard, rooftop or barbecue area. You need: a charcoal or gas grill, 8–15 skewers of meat and vegetables, tongs, a basting brush, oil, seasoning, a plate, water or an extinguisher nearby.",
+      "steps": [
+        "Describe the grill, the heat and the skewers you will cook.",
+        "Brush the grate with oil.",
+        "Lay the skewers out in rows, leaving space between them.",
+        "Turn each skewer with the tongs every minute or two, saying how it looks.",
+        "Brush on oil and sprinkle on seasoning as they cook.",
+        "Move any skewer that flares up to a cooler part of the grill.",
+        "Check the thickest piece is cooked through, then move the skewers to the plate.",
+        "Show the plate of skewers, then stop recording."
+      ],
+      "pitfalls": [
+        "Don't lean over the smoke or flames: it is a burn risk and smoke blinds the camera.",
+        "Don't record lighting the charcoal and waiting: start when the grill is ready.",
+        "Keep other people's faces out of the frame, and vary the food between takes."
+      ],
+      "targetDurationSec": { "min": 480, "max": 900 },
+      "i18n": {
+        "zh": {
+          "name": "户外烧烤",
+          "headline": "在户外烤一批肉串和蔬菜串",
+          "description": "在户外烤架上烤一批肉串和蔬菜串：给烤网刷油，摆好串，翻面，刷油撒料，确认烤熟后装盘。开始录制时烤架要已经点好、烧热。场所：允许烧烤的户外：院子、屋顶或烧烤区。所需物品：炭火或燃气烤架、8–15串肉串和蔬菜串、夹子、刷子、食用油、烧烤料、盘子，旁边备好水或灭火器。",
+          "steps": [
+            "描述烤架、火候和要烤的串。",
+            "给烤网刷一层油。",
+            "把串一排排摆好，中间留出空隙。",
+            "每隔一两分钟用夹子翻一次，说出烤的情况。",
+            "边烤边刷油、撒烧烤料。",
+            "哪串起明火，就挪到烤架温度低的一边。",
+            "确认最厚的一块已经烤熟，再把串放到盘子里。",
+            "展示装好盘的烤串，然后停止录制。"
+          ],
+          "pitfalls": [
+            "不要把头凑到烟和火上方：容易烫伤，烟也会挡住镜头。",
+            "不要录点炭和等火的过程：烤架准备好再开始。",
+            "不要拍到其他人的脸，每次录制更换食材。"
+          ]
+        }
+      }
+    },
+    {
+      "slug": "cook-a-home-style-dish",
+      "name": "Cooking a home-style dish",
+      "headline": "Cook one home-style dish on the stove, from raw ingredients to plate",
+      "description": "Cook one home-style dish on the stove from raw ingredients, for example tomato and egg stir-fry, stir-fried greens or fried rice: wash and cut the ingredients, heat the pan, cook them in order, season, plate the dish and turn off the stove. Say what you are doing and why as you go. Where: a home kitchen with a stove. You need: a wok or frying pan, a spatula, a cutting board and knife, the ingredients for one dish, oil and seasoning, a plate.",
+      "steps": [
+        "Say which dish you will cook and show the ingredients.",
+        "Wash the ingredients and cut them on the board.",
+        "Set out the cut ingredients and seasoning within reach of the stove.",
+        "Heat the pan and add the oil.",
+        "Cook the ingredients in order, saying when you change the heat.",
+        "Season the dish and taste it.",
+        "Turn off the stove and slide the dish onto the plate.",
+        "Show the finished dish, then stop recording."
+      ],
+      "pitfalls": [
+        "Keep your head back from hot oil: splashes can hit the camera.",
+        "Don't read out package labels, and keep them turned away from the camera.",
+        "Cook a different dish, or the same dish with different ingredients, every take."
+      ],
+      "targetDurationSec": { "min": 480, "max": 1200 },
+      "i18n": {
+        "zh": {
+          "name": "做一道家常菜",
+          "headline": "从生食材到装盘，在灶台上做一道家常菜",
+          "description": "用生食材在灶台上做一道家常菜，例如番茄炒蛋、清炒青菜或炒饭：洗菜切菜，热锅，按顺序下锅，调味，装盘，最后关火。边做边说你在做什么、为什么这样做。场所：有灶台的家庭厨房。所需物品：炒锅或平底锅、锅铲、砧板和菜刀、一道菜的食材、食用油和调料、盘子。",
+          "steps": [
+            "说出要做哪道菜，展示食材。",
+            "把食材洗净，在砧板上切好。",
+            "把切好的食材和调料放在灶台旁伸手可及的地方。",
+            "热锅，倒油。",
+            "按顺序下锅翻炒，调火时说出来。",
+            "调味并尝一尝。",
+            "关火，把菜盛到盘子里。",
+            "展示做好的菜，然后停止录制。"
+          ],
+          "pitfalls": [
+            "头部离热油远一点：油溅起来会打到镜头。",
+            "不要读出包装上的文字，包装标签不要对着镜头。",
+            "每次录制做不同的菜，或同一道菜换不同的食材。"
+          ]
+        }
+      }
+    }
+  ]
+}
