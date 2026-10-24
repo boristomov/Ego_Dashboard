@@ -1,0 +1,63 @@
+{
+  "about": "New task: organize a desk, in English and Chinese. Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-24-organize-a-desk.json --user <you> --apply",
+  "defaults": {
+    "sites": ["Beijing"],
+    "state": "active",
+    "environmentIds": []
+  },
+  "tasks": [
+    {
+      "slug": "organize-a-desk",
+      "name": "Organize a desk",
+      "headline": "Turn a cluttered desk into a tidy one",
+      "description": "Start with a desk that is clearly messy: pens, notebooks, books, cups, cables, chargers, sticky notes, small boxes and other everyday items scattered over the surface. Put everything in order: group similar items, put pens in a holder, stack books and notebooks, coil loose cables, take cups and rubbish off the desk, and wipe the cleared surface. Before you start, turn over or remove every paper, label or card that can be read, and keep computer and phone screens off. Make every take different: change the desk, the items, how they are scattered and where things end up.",
+      "steps": [
+        "Look over the whole messy desk so every item is in view.",
+        "Take rubbish and empty cups off the desk.",
+        "Gather pens and small items into a holder or tray.",
+        "Stack books and notebooks neatly, spines facing the same way.",
+        "Coil loose cables and chargers and set them to one side.",
+        "Wipe the cleared surface.",
+        "Put the remaining items in their places and look over the finished desk."
+      ],
+      "pitfalls": [
+        "Readable papers, labels or ID cards, or a screen that is on",
+        "Desk already tidy, or too few items to sort",
+        "Looking away so your hands and the items leave the frame",
+        "Turning the head quickly between the desk and a shelf or drawer",
+        "Same desk, same items and same layout every take"
+      ],
+      "objects": [
+        { "kind": "described", "label": "Pen holder" },
+        { "kind": "described", "label": "Books and notebooks" },
+        { "kind": "described", "label": "Cables and chargers" },
+        { "kind": "described", "label": "Cleaning cloth" }
+      ],
+      "targetTakes": 40,
+      "targetDurationSec": { "min": 60, "max": 300 },
+      "i18n": {
+        "zh": {
+          "name": "整理桌面",
+          "headline": "把杂乱的桌面整理整齐",
+          "description": "开始时桌面必须明显杂乱：笔、笔记本、书、杯子、数据线、充电器、便利贴、小盒子等日常物品散落在桌面上。把所有东西整理好：同类物品放在一起，把笔放进笔筒，把书和笔记本摞整齐，把散乱的线缆绕好，把杯子和垃圾从桌上拿走，再把腾出的桌面擦干净。开始前，把所有能看清字的纸张、标签和卡片翻过来或拿走，电脑和手机屏幕保持关闭。每次录制都要不同：更换桌子、物品、杂乱的摆放方式以及物品最后放置的位置。",
+          "steps": [
+            "看一遍整个杂乱的桌面，让所有物品都进入画面。",
+            "把垃圾和空杯子从桌上拿走。",
+            "把笔和小物件收进笔筒或收纳盘。",
+            "把书和笔记本摞整齐，书脊朝同一个方向。",
+            "把散乱的数据线和充电器绕好，放到一边。",
+            "把腾出的桌面擦干净。",
+            "把剩下的物品放到各自的位置，最后看一遍整理好的桌面。"
+          ],
+          "pitfalls": [
+            "能看清字的纸张、标签、证件，或开着的屏幕",
+            "桌面本来就整齐，或可整理的物品太少",
+            "视线离开桌面，导致双手和物品离开画面",
+            "在桌子和书架或抽屉之间快速转头",
+            "每次都是同一张桌子、同样的物品和同样的摆放"
+          ]
+        }
+      }
+    }
+  ]
+}
