@@ -28,6 +28,8 @@ const ENDPOINT = (ENV.VITE_REGISTRY_ENDPOINT || "").replace(/\/+$/, "");
 /** True when the admin panel can save. Everything below no-ops when false. */
 export const REGISTRY_WRITE_CONFIGURED = !!ENDPOINT;
 
+// localStorage, like the dashboard session it is obtained with: a new tab or a
+// restarted browser stays signed in until sign-out or the token's own expiry.
 const TOKEN_KEY = "ego_registry_token";
 
 export type RegistryKind = "task" | "operator" | "asset" | "environment" | "assignment" | "station";
@@ -42,7 +44,7 @@ export class RegistryApiError extends Error {
 
 function token(): string | null {
   try {
-    return sessionStorage.getItem(TOKEN_KEY);
+    return localStorage.getItem(TOKEN_KEY);
   } catch {
     return null;
   }
@@ -57,7 +59,7 @@ export function isSignedIn(): boolean {
 
 export function signOut(): void {
   try {
-    sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(TOKEN_KEY);
   } catch {
     /* private browsing */
   }
@@ -168,7 +170,7 @@ export async function signIn(user: string, password: string): Promise<void> {
     false,
   );
   try {
-    sessionStorage.setItem(TOKEN_KEY, t);
+    localStorage.setItem(TOKEN_KEY, t);
   } catch {
     /* private browsing — the session just will not persist across reloads */
   }

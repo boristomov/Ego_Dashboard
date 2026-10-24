@@ -496,6 +496,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
     setSession(next);
     await persistSession(next);
+    // Both tokens outlive a tab, and a client token takes precedence in the
+    // Data Browser, so whoever signs in starts without the previous one's.
+    await Promise.all([
+      import("../lib/projectsApi").then(({ signOutProjects }) => signOutProjects()),
+      import("../lib/registryApi").then(({ signOut: signOutRegistry }) => signOutRegistry()),
+    ]).catch(() => null);
 
     if (user.role === "admin") {
       // Unlock the encrypted admin vault so the registry/activity readers

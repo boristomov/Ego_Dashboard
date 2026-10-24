@@ -13,6 +13,7 @@ const ENDPOINT = (ENV.VITE_PROJECTS_ENDPOINT || "").replace(/\/+$/, "");
 
 export const PROJECTS_CONFIGURED = !!ENDPOINT;
 
+// localStorage, as the registry token: it lives as long as the dashboard session.
 const CLIENT_TOKEN_KEY = "ego_projects_token";
 
 export class ProjectsApiError extends Error {
@@ -102,7 +103,7 @@ export type ProjectDoc = {
 
 function clientToken(): string | null {
   try {
-    return sessionStorage.getItem(CLIENT_TOKEN_KEY);
+    return localStorage.getItem(CLIENT_TOKEN_KEY);
   } catch {
     return null;
   }
@@ -118,7 +119,7 @@ export function hasProjectsSession(): boolean {
 
 export function signOutProjects(): void {
   try {
-    sessionStorage.removeItem(CLIENT_TOKEN_KEY);
+    localStorage.removeItem(CLIENT_TOKEN_KEY);
   } catch {
     /* private browsing */
   }
@@ -175,7 +176,7 @@ export async function signInProjects(email: string, password: string): Promise<s
     false,
   );
   try {
-    sessionStorage.setItem(CLIENT_TOKEN_KEY, res.token);
+    localStorage.setItem(CLIENT_TOKEN_KEY, res.token);
   } catch {
     /* the session will not survive a reload */
   }
