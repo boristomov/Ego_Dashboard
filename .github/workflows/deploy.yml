@@ -117,23 +117,16 @@ jobs:
             node scripts/snapshot.mjs $FLAGS
           fi
 
-      # Poll the Vast.ai postprocessing fleet over SSH so the dashboard knows
-      # what each box is doing. Only runs if VAST_SSH_PRIVATE_KEY is set.
-      - name: Poll Vast.ai instances over SSH
+      # What the packaging boxes report: each writes its status to the
+      # production processed bucket (_packager/<name>/status.json) as it works,
+      # so this only reads. Same production-account credentials as the fleet.
+      - name: Collect packager status
         env:
-          VAST_SSH_PRIVATE_KEY: ${{ secrets.VAST_SSH_PRIVATE_KEY }}
-        run: |
-          if [ -z "${VAST_SSH_PRIVATE_KEY:-}" ]; then
-            echo "::warning::VAST_SSH_PRIVATE_KEY secret is not set; writing empty instances.json."
-            mkdir -p public
-            echo '{"generatedAt":"'"$(date -u +%FT%TZ)"'","instances":[]}' > public/instances.json
-          else
-            mkdir -p ~/.ssh
-            printf '%s\n' "$VAST_SSH_PRIVATE_KEY" > ~/.ssh/vast_instance_1
-            chmod 600 ~/.ssh/vast_instance_1
-            SSH_KEY=~/.ssh/vast_instance_1 node scripts/poll-instances.mjs
-            shred -u ~/.ssh/vast_instance_1 || rm -f ~/.ssh/vast_instance_1
-          fi
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_FLEET_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_FLEET_SECRET_ACCESS_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_FLEET_REGION || 'us-west-2' }}
+          S3_PROCESSED_BUCKET: ${{ vars.S3_PACKAGER_BUCKET || 'egodata-processed-prod-854929212137-us-west-2-an' }}
+        run: node scripts/poll-instances.mjs
 
       # Collect the recording stations' heartbeats. Stations push these to
       # s3://<raw bucket>/_fleet/ themselves, so this only reads — no extra

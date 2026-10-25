@@ -11,7 +11,7 @@ The current build ships:
 - A skeleton layout (header + sidebar + routed pages)
 - A **Dashboard** with per-stage live counts
 - A **Catalogue** page with thumbnails, artifact-availability badges, filters and search
-- A **Live postprocessing** page that polls the Vast.ai fleet over SSH (from GitHub Actions, no device or instance-side changes required)
+- A **Live postprocessing** page showing what the packaging boxes report to S3 (today the Wirestock packager on EC2)
 
 The frontend is React + Vite + TypeScript + Tailwind. A tiny Express proxy (`server/`) signs S3 requests during development; production reads a pre-generated static snapshot, so no creds ever ship to the browser.
 
@@ -64,7 +64,7 @@ Strategy: **bake a static snapshot at build time**, so the browser never needs A
 1. **Add repository secrets** (Settings → Secrets and variables → Actions → New repository secret):
    - `AWS_ACCESS_KEY_ID` — required for the catalogue snapshot
    - `AWS_SECRET_ACCESS_KEY` — required for the catalogue snapshot
-   - `VAST_SSH_PRIVATE_KEY` — *optional, required for the live postprocessing page*. Paste the **entire contents** of `~/.ssh/vast_instance_1` (PEM, including BEGIN/END lines). The instance list lives in `src/lib/instances.ts`; edit there to add/remove boxes.
+   - `AWS_FLEET_ACCESS_KEY_ID` / `AWS_FLEET_SECRET_ACCESS_KEY` — production-account key for the station heartbeats and the packager status on the live postprocessing page. The box list lives in `src/lib/instances.ts`.
 
 2. (Optional) Override defaults via **repository variables**:
    - `AWS_REGION` (default `ap-southeast-1`)
@@ -79,18 +79,14 @@ The first push to `main` (or a manual run of the workflow) will publish the site
 `.github/workflows/deploy.yml`:
 
 - Triggers: `push` to `main`, manual `workflow_dispatch`, and a `cron` every 5 min (GitHub Actions minimum).
-- Steps: install deps → restore the thumbnail cache → `scripts/snapshot.mjs --use-existing-thumbs` (only re-downloads new ones) → `scripts/poll-instances.mjs` (if `VAST_SSH_PRIVATE_KEY` is set) → `npm run build` with `VITE_DATA_SOURCE=static` → upload artifact → deploy via `actions/deploy-pages@v4`.
+- Steps: install deps → restore the thumbnail cache → `scripts/snapshot.mjs --use-existing-thumbs` (only re-downloads new ones) → `scripts/poll-instances.mjs` → `npm run build` with `VITE_DATA_SOURCE=static` → upload artifact → deploy via `actions/deploy-pages@v4`.
 - Result: every code change auto-deploys, and both the catalogue and the live-instance snapshot stay fresh ~every 5 min even without commits.
 
 ### How the "Live postprocessing" page works without your device
 
-`scripts/poll-instances.mjs` runs *inside* the GitHub Actions runner. For each box listed in `src/lib/instances.ts` it:
+Each box writes its own report to the production processed bucket as it works: the Wirestock packager (`scripts/wirestock_packager.py` in the recorder repo) rewrites `_packager/wirestock/status.json` at every step and at least once a minute, and marks it stopped before it shuts down. `scripts/poll-instances.mjs` runs in the GitHub Actions runner, reads each report and writes `public/instances.json`; a report more than 10 min old from a box that never said it stopped shows as offline.
 
-1. SSHes in using the key written from `VAST_SSH_PRIVATE_KEY`.
-2. Runs the same inspection bash you have in `monitor_handtrack_instance*.sh` — `pgrep -af '[p]ython.*vast_worker|…'`, plus `grep -E 'priority_tasks=|claimed session=|success session=|failure session='` on `/workspace/logs/vast_worker.log`, plus the latest progress line.
-3. Parses the output into structured events (claimed / success / failure / progress) and writes `public/instances.json`.
-
-The dashboard reads that file like it reads `catalogue.json`. No code changes on the postprocessing boxes are required. The polling cadence (~5 min) matches the Actions cron minimum; tighter "live" feel will need the boxes to push status to S3 or a webhook directly — easy follow-up once you're ready.
+The dashboard reads that file like it reads `catalogue.json`, so the page is at most one cron run (~5 min) behind the box.
 
 ### Manual local build (for testing the static path)
 
@@ -122,7 +118,7 @@ server/
   index.mjs          Express dev proxy (read-only S3)
 scripts/
   snapshot.mjs        CI: catalogue.json + thumbnails into public/
-  poll-instances.mjs  CI: SSH each Vast box, write instances.json
+  poll-instances.mjs  CI: packager status reports from S3 into instances.json
 .github/workflows/
   deploy.yml          GitHub Pages deploy (push + 5-min cron + manual)
 ```

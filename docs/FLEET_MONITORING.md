@@ -47,7 +47,7 @@ receive a POST.
 So the direction is inverted. Each station writes a small JSON document to a
 well-known S3 key on a timer; the deploy workflow reads those keys and bakes
 `public/stations.json` into the bundle, exactly as `poll-instances.mjs` does
-for the Vast.ai fleet.
+for the packaging boxes' status reports.
 
 This reuses the AWS credentials the recorder already has for the upload queue,
 so a station needs no new secret, and it adds no infrastructure.

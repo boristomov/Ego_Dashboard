@@ -1,76 +1,30 @@
-// Vast.ai postprocessing instances. Single source of truth: shared by the UI
-// (to render the cards even when no live status is available) and by
-// scripts/poll-instances.mjs (the GitHub-Action SSH poller).
-//
-// SSH targets are listed as primary + fallback so the poller can retry the
-// direct IP if the Vast proxy is unreachable. Add/remove rows here and the
-// dashboard + poller pick the change up automatically.
-
-export type SshTarget = {
-  /** Display label, e.g. "vast proxy" or "direct ip". */
-  label: string;
-  host: string;
-  port: number;
-};
+// Postprocessing boxes. Single source of truth for the UI (to render the cards
+// even when no live status is available); scripts/poll-instances.mjs reads each
+// box's own status report from S3 into public/instances.json.
 
 export type InstanceConfig = {
   id: string;
   name: string;
-  gpu: string;
-  /** Container hostname reported by `hostname` on the box. */
-  containerId: string;
-  ssh: SshTarget[];
-  /** Log file the poller tails for status. */
-  logPath: string;
+  /** What the box is, shown under its name. */
+  kind: string;
+  /** What it does, one line. */
+  role: string;
 };
 
 export const INSTANCES: InstanceConfig[] = [
   {
-    id: "prod-5060ti",
-    name: "Prod 5060 Ti",
-    gpu: "RTX 5060 Ti",
-    containerId: "13784570672c",
-    logPath: "/workspace/logs/vast_worker.log",
-    ssh: [
-      { label: "vast proxy", host: "ssh8.vast.ai", port: 21784 },
-      { label: "direct ip", host: "171.248.246.120", port: 10361 },
-    ],
-  },
-  {
-    id: "inst-1",
-    name: "Inst #1",
-    gpu: "RTX 5090",
-    containerId: "ec153aaef879",
-    logPath: "/workspace/logs/vast_worker.log",
-    ssh: [
-      { label: "vast proxy", host: "ssh8.vast.ai", port: 18214 },
-      { label: "direct ip", host: "110.171.40.190", port: 28694 },
-    ],
-  },
-  {
-    id: "inst-2",
-    name: "Inst #2",
-    gpu: "RTX 5060 Ti",
-    containerId: "19478f578bb3",
-    logPath: "/workspace/logs/vast_worker.log",
-    ssh: [
-      { label: "vast proxy", host: "ssh1.vast.ai", port: 18830 },
-      { label: "direct ip", host: "222.227.204.99", port: 60320 },
-    ],
-  },
-  {
-    id: "inst-3",
-    name: "Inst #3",
-    gpu: "RTX 5090",
-    containerId: "b8c15b6ce274",
-    logPath: "/workspace/logs/vast_worker.log",
-    ssh: [{ label: "direct ip", host: "82.169.119.213", port: 51072 }],
+    id: "wirestock-packager",
+    name: "Wirestock packager",
+    kind: "EC2 us-west-2 · GPU when available",
+    role:
+      "Packages described takes into Wirestock clips (MP4s, MCAP, sidecar) and publishes them to the project. " +
+      "Started from CloudShell; terminates itself when there is nothing left to package.",
   },
 ];
 
 // ---------- Runtime data model (what the poller writes to instances.json) ----------
 
-export type InstanceStatus = "working" | "idle" | "offline" | "unknown";
+export type InstanceStatus = "working" | "idle" | "stopped" | "offline" | "unknown";
 
 export type InstanceActivityEvent = {
   ts: string | null;
@@ -81,22 +35,48 @@ export type InstanceActivityEvent = {
   taskName?: string;
 };
 
+export type InstanceCurrent = {
+  sessionId: string;
+  taskName?: string;
+  step: string;
+  since: string | null;
+};
+
+export type InstanceQueue = {
+  toPublish: number | null;
+  waitingDescription: number | null;
+  /** SVO2 takes this box can't convert (no ZED SDK). */
+  waitingZed: number;
+  published: number;
+  failed: number;
+};
+
 export type InstanceLiveStatus = {
   id: string;
   status: InstanceStatus;
-  /** Which SSH target answered (or null if both failed). */
-  ssh?: { label: string; host: string; port: number } | null;
-  /** Most recent line matching the in-progress pattern. */
-  progressLine?: string | null;
-  /** Currently-claimed session (last `claimed session=` event). */
+  /** The box's own word: starting, working, idle, stopped. */
+  state?: string | null;
+  note?: string | null;
+  instanceId?: string | null;
+  instanceType?: string | null;
+  gpu?: string | null;
+  zedSdk?: boolean | null;
+  startedAt?: string | null;
+  /** When the box's time limit stops it. */
+  stopsBy?: string | null;
+  idleSince?: string | null;
+  idleStopMin?: number | null;
+  queue?: InstanceQueue;
+  /** Takes in hand, one per worker. */
+  current?: InstanceCurrent[];
+  /** The first take in hand. */
   currentSession?: { sessionId: string; taskName?: string } | null;
-  /** Worker processes pgrep matched. */
-  workerProcesses?: string[];
-  /** Last activity events parsed from the tail of the log. */
+  progressLine?: string | null;
+  /** Last activity events, newest first. */
   recentEvents?: InstanceActivityEvent[];
-  /** UNIX-mtime of the log file (seconds since epoch). */
+  /** When the box last reported (seconds since epoch). */
   logMtime?: number | null;
-  /** Free-text error if polling failed. */
+  /** Free-text error if polling failed or the box went quiet. */
   error?: string | null;
   /** ISO timestamp the poller wrote this entry. */
   polledAt: string;

@@ -9,13 +9,14 @@ import {
   Loader2,
   Info,
   AlertTriangle,
-  Terminal,
+  Power,
 } from "lucide-react";
 import { useInstances } from "../hooks/useInstances";
 import type {
   InstanceLiveStatus,
   InstanceConfig,
   InstanceActivityEvent,
+  InstanceStatus,
 } from "../lib/instances";
 
 export function PostprocessingPage() {
@@ -28,8 +29,8 @@ export function PostprocessingPage() {
       reachable: live.length,
       working: live.filter((i) => i.live!.status === "working").length,
       idle: live.filter((i) => i.live!.status === "idle").length,
-      offline: live.filter(
-        (i) => i.live!.status === "offline" || i.live!.status === "unknown",
+      stopped: instances.filter(
+        (i) => !i.live || ["stopped", "offline", "unknown"].includes(i.live.status),
       ).length,
     };
   }, [instances]);
@@ -43,9 +44,9 @@ export function PostprocessingPage() {
             <span className="text-text-muted">instances</span>
           </h1>
           <p className="mt-1 text-[0.78rem] text-text-muted">
-            What the Vast.ai fleet is doing right now — claimed sessions, recent
-            successes/failures and the latest progress line. Polled from the
-            box logs every ~5 min by the GitHub Action.
+            What the packaging boxes are doing: takes in hand, what is left,
+            recent successes and failures. Each box reports to S3 as it works;
+            the GitHub Action picks the reports up every ~5 min.
           </p>
         </div>
         <FreshnessBadge generatedAt={snapshot?.generatedAt} loading={loading} />
@@ -56,7 +57,7 @@ export function PostprocessingPage() {
         <Stat label="Configured" value={summary.configured} accent="slate" />
         <Stat label="Working" value={summary.working} accent="ok" />
         <Stat label="Idle" value={summary.idle} accent="cyan" />
-        <Stat label="Offline / unknown" value={summary.offline} accent="err" />
+        <Stat label="Stopped / offline" value={summary.stopped} accent="slate" />
       </div>
 
       {!snapshot && !loading && <SetupHint />}
@@ -79,50 +80,43 @@ function SetupHint() {
       <AlertTriangle size={18} className="mt-0.5 flex-shrink-0 text-amber-300" />
       <div className="space-y-2">
         <div>
-          <span className="font-semibold">No live data yet.</span> Add the SSH
-          private key as a GitHub Actions secret so the workflow can poll the
-          Vast boxes:
+          <span className="font-semibold">No status yet.</span> The{" "}
+          <a
+            href="https://github.com/boristomov/Ego_Dashboard/actions/workflows/deploy.yml"
+            target="_blank"
+            rel="noopener"
+            className="text-accent-hover underline"
+          >
+            Deploy workflow
+          </a>{" "}
+          writes <code>instances.json</code> from each box's report in S3 (
+          <code className="rounded bg-input px-1.5 py-0.5 text-text">
+            _packager/wirestock/status.json
+          </code>{" "}
+          in the processed bucket), read with the fleet credentials.
         </div>
-        <ol className="ml-4 list-decimal space-y-1 text-text-muted">
-          <li>
-            <code className="rounded bg-input px-1.5 py-0.5 text-amber-200">
-              VAST_SSH_PRIVATE_KEY
-            </code>{" "}
-            — paste the entire contents of{" "}
-            <code className="rounded bg-input px-1.5 py-0.5 text-text">
-              ~/.ssh/vast_instance_1
-            </code>{" "}
-            (PEM, including the BEGIN/END lines).
-          </li>
-          <li>
-            Re-run the{" "}
-            <a
-              href="https://github.com/boristomov/Ego_Dashboard/actions/workflows/deploy.yml"
-              target="_blank"
-              rel="noopener"
-              className="text-accent-hover underline"
-            >
-              Deploy workflow
-            </a>{" "}
-            — the next deploy will include <code>instances.json</code>.
-          </li>
-          <li>
-            The instance list lives in{" "}
-            <code className="rounded bg-input px-1.5 py-0.5 text-text">
-              src/lib/instances.ts
-            </code>
-            ; edit there to add/remove boxes.
-          </li>
-        </ol>
+        <div className="text-text-muted">
+          The box list lives in{" "}
+          <code className="rounded bg-input px-1.5 py-0.5 text-text">
+            src/lib/instances.ts
+          </code>
+          .
+        </div>
       </div>
     </div>
   );
 }
 
 const STATUS_STYLES: Record<
-  "working" | "idle" | "offline" | "unknown",
+  InstanceStatus,
   { ring: string; chip: string; icon: string; label: string }
 > = {
+  stopped: {
+    ring: "border-border hover:border-text-muted",
+    chip: "border-border bg-input text-text-muted",
+    icon: "text-text-muted",
+    label: "Stopped",
+  },
   working: {
     ring: "border-ok/50 hover:border-ok/80",
     chip: "border-ok/50 bg-ok/15 text-emerald-300",
@@ -186,40 +180,40 @@ function InstanceCard({
               {style.label}
             </span>
           </div>
-          <div className="mt-0.5 flex items-center gap-2 text-[0.7rem] text-text-muted">
+          <div className="mt-0.5 flex flex-wrap items-center gap-x-2 text-[0.7rem] text-text-muted">
             <span className="inline-flex items-center gap-1">
-              <Cpu size={11} /> {config.gpu}
+              <Cpu size={11} />{" "}
+              {live?.instanceType
+                ? [live.instanceType, live.gpu].filter(Boolean).join(" · ")
+                : config.kind}
             </span>
-            <span className="text-text-dim">·</span>
-            <span className="font-mono">{config.containerId}</span>
+            {live?.instanceId && (
+              <>
+                <span className="text-text-dim">·</span>
+                <span className="font-mono">{live.instanceId}</span>
+              </>
+            )}
+            {live?.instanceType && live.zedSdk === false && (
+              <>
+                <span className="text-text-dim">·</span>
+                <span className="text-amber-300">no ZED SDK: SVO2 takes wait</span>
+              </>
+            )}
           </div>
         </div>
         <FreshnessBadge generatedAt={live?.polledAt} small loading={false} />
       </div>
 
-      {/* SSH targets */}
-      <div className="flex flex-wrap gap-1.5">
-        {config.ssh.map((t, i) => {
-          const isUsed =
-            live?.ssh && live.ssh.host === t.host && live.ssh.port === t.port;
-          return (
-            <span
-              key={i}
-              className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 font-mono text-[0.65rem] ${
-                isUsed
-                  ? "border-ok/40 bg-ok/10 text-emerald-300"
-                  : "border-border bg-input text-text-muted"
-              }`}
-              title={t.label + (isUsed ? " (used)" : "")}
-            >
-              <span className="rounded-sm bg-black/30 px-1 text-[0.55rem] uppercase tracking-wider text-text-dim">
-                {t.label}
-              </span>
-              {t.host}:{t.port}
-            </span>
-          );
-        })}
-      </div>
+      <p className="text-[0.72rem] leading-relaxed text-text-muted">{config.role}</p>
+
+      {live?.note && (
+        <div className="flex items-start gap-2 rounded-md border border-border bg-input/50 px-3 py-2 text-[0.74rem] text-text-muted">
+          <Power size={13} className="mt-0.5 flex-shrink-0" />
+          <span>{live.note}</span>
+        </div>
+      )}
+
+      {live?.queue && <QueueBar live={live} />}
 
       {/* Error banner */}
       {live?.error && (
@@ -231,49 +225,32 @@ function InstanceCard({
 
       {/* Current activity */}
       <div className="grid gap-2">
-        <SectionLabel>Current activity</SectionLabel>
-        {live?.currentSession ? (
-          <div className="rounded-md border border-border bg-input/60 px-3 py-2 text-[0.78rem]">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <div className="truncate font-semibold text-text">
-                  {live.currentSession.taskName || "—"}
+        <SectionLabel>In hand</SectionLabel>
+        {live?.current && live.current.length > 0 ? (
+          <ul className="flex flex-col gap-1">
+            {live.current.map((c) => (
+              <li
+                key={c.sessionId}
+                className="flex items-center justify-between gap-2 rounded-md border border-border bg-input/60 px-3 py-1.5 text-[0.75rem]"
+              >
+                <div className="min-w-0">
+                  <div className="truncate font-semibold text-text">{c.taskName || "—"}</div>
+                  <div className="font-mono text-[0.65rem] text-text-muted">{c.sessionId}</div>
                 </div>
-                <div className="font-mono text-[0.7rem] text-text-muted">
-                  {live.currentSession.sessionId}
+                <div className="flex flex-shrink-0 items-center gap-1.5 text-[0.68rem] text-emerald-300">
+                  <Activity size={12} />
+                  {c.step}
+                  {c.since && (
+                    <span className="text-text-dim">{relativeAge(new Date(c.since).getTime())}</span>
+                  )}
                 </div>
-              </div>
-              <Activity size={14} className="text-ok flex-shrink-0" />
-            </div>
-            {live.progressLine && (
-              <pre className="mt-2 max-h-24 overflow-auto whitespace-pre-wrap break-words rounded bg-bg/60 p-2 font-mono text-[0.65rem] text-text-muted">
-                {live.progressLine}
-              </pre>
-            )}
-          </div>
+              </li>
+            ))}
+          </ul>
         ) : (
           <div className="rounded-md border border-dashed border-border bg-input/40 px-3 py-2 text-[0.75rem] text-text-dim">
-            No active session
+            Nothing in hand
           </div>
-        )}
-
-        {live?.workerProcesses && live.workerProcesses.length > 0 && (
-          <details className="rounded-md border border-border bg-input/40 px-3 py-1.5 text-[0.7rem]">
-            <summary className="cursor-pointer text-text-muted">
-              <Terminal size={11} className="mr-1 inline" />
-              {live.workerProcesses.length} worker process(es)
-            </summary>
-            <div className="mt-1.5 space-y-1">
-              {live.workerProcesses.map((p, i) => (
-                <pre
-                  key={i}
-                  className="overflow-x-auto whitespace-pre rounded bg-bg/60 p-1.5 font-mono text-[0.62rem] text-text-muted"
-                >
-                  {p}
-                </pre>
-              ))}
-            </div>
-          </details>
         )}
       </div>
 
@@ -288,15 +265,62 @@ function InstanceCard({
           </ul>
         ) : (
           <div className="rounded-md border border-dashed border-border bg-input/40 px-3 py-2 text-[0.75rem] text-text-dim">
-            No events parsed from log
+            No events yet
           </div>
         )}
       </div>
 
-      {/* Log mtime */}
       {live?.logMtime != null && (
-        <div className="flex items-center gap-1.5 text-[0.65rem] text-text-dim">
-          <Info size={11} /> Log updated {relativeAge(live.logMtime * 1000)}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.65rem] text-text-dim">
+          <span className="inline-flex items-center gap-1.5">
+            <Info size={11} /> Reported {relativeAge(live.logMtime * 1000)}
+          </span>
+          {live.status !== "stopped" && live.idleSince && live.idleStopMin != null && (
+            <span>
+              idle since {new Date(live.idleSince).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+              , stops after {live.idleStopMin} min idle
+            </span>
+          )}
+          {live.status !== "stopped" && live.stopsBy && (
+            <span>
+              stops by {new Date(live.stopsBy).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })} at the latest
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function QueueBar({ live }: { live: InstanceLiveStatus }) {
+  const q = live.queue!;
+  const left = q.toPublish ?? 0;
+  const total = q.published + q.failed + left;
+  const pct = total ? Math.round(((q.published + q.failed) / total) * 100) : 0;
+  return (
+    <div className="grid gap-1.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-[0.72rem]">
+        <span className="text-text">
+          <span className="font-semibold text-emerald-300">{q.published}</span> published this run
+          {q.failed > 0 && (
+            <>
+              , <span className="font-semibold text-red-300">{q.failed}</span> failed
+            </>
+          )}
+          {live.status !== "stopped" && (
+            <>
+              , <span className="font-semibold">{left}</span> to go
+            </>
+          )}
+        </span>
+        <span className="text-text-muted">
+          {q.waitingDescription != null && <>{q.waitingDescription} waiting for a description</>}
+          {q.waitingZed > 0 && <> · {q.waitingZed} SVO2 waiting for a ZED SDK machine</>}
+        </span>
+      </div>
+      {total > 0 && (
+        <div className="h-1.5 overflow-hidden rounded-full bg-input">
+          <div className="h-full rounded-full bg-ok/70" style={{ width: `${pct}%` }} />
         </div>
       )}
     </div>
