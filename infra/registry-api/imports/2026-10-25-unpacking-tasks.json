@@ -1,0 +1,161 @@
+{
+ "about": "3 new tasks in English and Chinese, the reverse of three packing tasks: unboxing and taking apart a desk fan, unpacking an order back onto the shelves, and unwrapping and unloading a pallet. Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-25-unpacking-tasks.json --user <you> --apply",
+ "defaults": {
+  "sites": [
+   "Beijing"
+  ],
+  "state": "active",
+  "environmentIds": [],
+  "targetTakes": 40
+ },
+ "tasks": [
+  {
+   "slug": "unbox-and-disassemble-a-desk-fan",
+   "name": "Unboxing a desk fan and taking it apart",
+   "headline": "Unbox a desk fan, check that it runs, and take it apart into its parts",
+   "description": "Open a sealed desk fan box, take out the padding and the fan, test it on power, then take it apart in reverse order (front guard, blade, rear guard, motor, stand) and lay the parts out ready to be assembled again. Where: a workbench in an assembly workshop. You need: a boxed desk fan, box cutter, Phillips screwdriver, a parts tray.",
+   "steps": [
+    "Describe the bench and the sealed fan box.",
+    "Slit the tape along the top seam with the box cutter, blade pointing away from you, and open the flaps.",
+    "Lift out the foam padding, then the fan, and stand it on the bench.",
+    "Plug it in and test each speed, then unplug it.",
+    "Unclip the front guard and take off the blade.",
+    "Undo the rear guard nut and take off the rear guard.",
+    "Lift the motor off the stand, then unscrew the stand from the base.",
+    "Lay the parts out in a row, put the padding back in the box, name each part, then stop recording."
+   ],
+   "pitfalls": [
+    "Unplug the fan before taking anything apart.",
+    "Cut only through the tape, not into the box, so the box can be used again.",
+    "Alternate with 'Assembling a desk fan and boxing it': each take leaves the materials ready for the other."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Furniture and artifact assembly"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "拆箱并拆解桌面风扇",
+     "headline": "打开风扇包装盒，通电测试后拆成散件",
+     "description": "打开封好的桌面风扇包装盒，取出泡沫衬垫和风扇，通电测试，再按相反的顺序（前网罩、扇叶、后网罩、电机、立柱）拆开，把零件摆好，留着下次组装。场所：组装车间的工作台。所需物品：装好盒的桌面风扇、美工刀、十字螺丝刀、零件盘。",
+     "steps": [
+      "描述工作台和封好的风扇包装盒。",
+      "用美工刀沿顶部接缝划开胶带，刀口朝外，打开盒盖。",
+      "取出泡沫衬垫，再取出风扇，立在工作台上。",
+      "插电测试各档风速，然后拔掉插头。",
+      "松开前网罩的卡扣，取下扇叶。",
+      "拧下后网罩的固定螺母，取下后网罩。",
+      "把电机从立柱上取下来，再拧下立柱和底座之间的螺丝。",
+      "把零件排成一排，衬垫放回盒子里，逐个说出零件名称，然后停止录制。"
+     ],
+     "pitfalls": [
+      "拆之前先拔掉插头。",
+      "只划开胶带，不要划破盒子，包装盒还能再用。",
+      "可以和“组装桌面风扇并装盒”交替录制，每一条都为下一条准备好材料。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "unpack-an-order",
+   "name": "Unpacking an order and returning the items to the shelves",
+   "headline": "Open a packed order box, check the items and put them back on the shelves",
+   "description": "Open a sealed order box, take out the filler and unwrap the bubble wrap, check and count each item, return every item to its shelf location with the picking cart, then flatten the box and keep the packing materials for reuse. Where: the packing table and shelving area of a warehouse. You need: a sealed order box, box cutter, picking cart, a bin for filler, work gloves.",
+   "steps": [
+    "Describe the packing table, the sealed box and the shelving area.",
+    "Slit the tape along the top seam, blade pointing away from you, and open the flaps.",
+    "Take out the filler and put it in the bin.",
+    "Lift out each item, unwrap any bubble wrap and check it for damage.",
+    "Say what each item is and how many there are, and put them on the cart.",
+    "Push the cart to each shelf location and put the items back in place.",
+    "Back at the table, flatten the box and stack the bubble wrap and filler for reuse.",
+    "Show the cleared table and the restocked shelves, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep the box label and any packing slip away from the camera and do not read them.",
+    "Alternate with 'Picking and packing an order': each take leaves the materials ready for the other."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Retail and logistics"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "拆开订单包裹并把商品放回货架",
+     "headline": "打开打包好的订单纸箱，核对商品后放回货架",
+     "description": "打开封好的订单纸箱，取出填充物，拆开气泡膜，逐件检查有无破损并清点数量，用拣货车把商品放回各自的货位，最后把纸箱压平，包装材料留着再用。场所：仓库的打包台和货架区。所需物品：封好的订单纸箱、美工刀、拣货车、装填充物的箱子、工作手套。",
+     "steps": [
+      "描述打包台、封好的纸箱和货架区。",
+      "沿顶部接缝划开胶带，刀口朝外，打开箱盖。",
+      "取出填充物，放进箱子里。",
+      "逐件取出商品，拆开气泡膜，检查有无破损。",
+      "说出每件商品的种类和数量，放到拣货车上。",
+      "推车到各个货位，把商品放回原位。",
+      "回到打包台，压平纸箱，把气泡膜和填充物叠好留着再用。",
+      "展示清空的打包台和补好的货架，然后停止录制。"
+     ],
+     "pitfalls": [
+      "箱签和装箱单不要对着镜头，不读上面的文字。",
+      "可以和“仓库拣货并打包订单”交替录制，每一条都为下一条准备好材料。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "unwrap-a-pallet",
+   "name": "Unwrapping and unloading a pallet",
+   "headline": "Cut the stretch film off a pallet and unstack the boxes",
+   "description": "Cut and peel the stretch film off a wrapped pallet, roll it up for recycling, take off the corner boards, and unstack the boxes from the top down onto a trolley or the floor. Where: the inbound area of a warehouse. You need: a stretch-wrapped pallet, safety box cutter, a bag or bin for used film, hand trolley, work gloves.",
+   "steps": [
+    "Describe the wrapped pallet and the space around it.",
+    "Find the tail of the film, or make a shallow cut down one corner, blade pointing away from you.",
+    "Walk around the pallet peeling the film off, from the top down.",
+    "Roll the film into a ball and put it in the bag.",
+    "Take off the four corner boards and stack them.",
+    "Unstack the boxes from the top down, lifting with your legs, onto the trolley or the floor.",
+    "Stack the boxes by size, labels facing inward.",
+    "Show the empty pallet and the unstacked boxes, then stop recording."
+   ],
+   "pitfalls": [
+    "Cut only the film: keep the blade shallow so the boxes underneath are not damaged.",
+    "Walk and turn slowly around the pallet so the picture does not swing.",
+    "Alternate with 'Stretch-wrapping a pallet': each take leaves the materials ready for the other."
+   ],
+   "targetDurationSec": {
+    "min": 360,
+    "max": 600
+   },
+   "tags": [
+    "Retail and logistics"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "拆除托盘缠绕膜并卸货",
+     "headline": "割开托盘上的缠绕膜，把纸箱卸下来",
+     "description": "割开并剥下托盘货物上的缠绕膜，卷好回收，取下护角，再从上往下把纸箱卸到推车上或地上。场所：仓库的收货区。所需物品：缠好膜的托盘货物、安全美工刀、装废膜的袋子或箱子、手推车、工作手套。",
+     "steps": [
+      "描述缠好膜的托盘和周围的空间。",
+      "找到膜尾，或者刀口朝外，在一个角上浅浅地竖着划一刀。",
+      "绕着托盘走，从上往下把缠绕膜剥下来。",
+      "把膜卷成一团，放进袋子里。",
+      "取下四个护角，叠放好。",
+      "从上往下卸纸箱，用腿发力抬起，放到推车上或地上。",
+      "按大小把纸箱码好，箱签朝里。",
+      "展示空托盘和卸下的纸箱，然后停止录制。"
+     ],
+     "pitfalls": [
+      "只割膜：下刀要浅，别划伤里面的纸箱。",
+      "绕托盘时慢慢走、慢慢转身，避免画面快速晃动。",
+      "可以和“托盘货物缠绕膜打包”交替录制，每一条都为下一条准备好材料。"
+     ]
+    }
+   }
+  }
+ ]
+}
