@@ -1,0 +1,465 @@
+{
+ "about": "8 new car care tasks in English and Chinese, plus washing a car by hand (already in the registry; this only adds it to the Car care tag). Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-25-nine-car-tasks.json --user <you> --apply",
+ "defaults": {
+  "sites": [
+   "Beijing"
+  ],
+  "state": "active",
+  "environmentIds": [],
+  "targetTakes": 40
+ },
+ "tasks": [
+  {
+   "slug": "wash-a-car-by-hand",
+   "name": "Washing a car by hand",
+   "headline": "Wash a dirty car by hand, top to bottom",
+   "description": "Wash a visibly dirty car by hand: rinse it, wash it with soapy water from the roof down, clean the wheels last with their own sponge, rinse again and dry it with towels. Where: outdoors, on a driveway, yard or car park with a water tap, in daylight. You need: a car, two buckets, car shampoo, a wash mitt or sponge, a separate wheel sponge or brush, a hose or watering can, microfibre towels.",
+   "steps": [
+    "Describe the car and where it is dirtiest.",
+    "Fill one bucket with soapy water and one with clean water.",
+    "Rinse the whole car to loosen the dirt.",
+    "Wash from the roof down, one panel at a time, rinsing the mitt in the clean bucket.",
+    "Clean the wheels and tyres last with the separate sponge or brush.",
+    "Rinse off all the soap, again from the top down.",
+    "Dry the car with the towels, glass first.",
+    "Walk around the clean car to show it, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep the licence plate out of the frame.",
+    "Point the hose away from yourself: water on the head camera ends the take.",
+    "Choose a car that is actually dirty, and change the car or the spot between takes."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Car care"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "手工洗车",
+     "headline": "从上到下手工清洗一辆脏车",
+     "description": "手工清洗一辆明显很脏的车：先冲水，再用洗车液从车顶往下清洗，最后用单独的海绵清洗轮毂，再冲一遍水，用毛巾擦干。场所：户外有水龙头的车道、院子或停车场，白天光线充足时。所需物品：一辆车、两个水桶、洗车液、洗车手套或海绵、单独的轮毂海绵或刷子、水管或洒水壶、超细纤维毛巾。",
+     "steps": [
+      "描述这辆车以及最脏的部位。",
+      "一个水桶装洗车液水，另一个装清水。",
+      "先把整辆车冲一遍水，让污垢松动。",
+      "从车顶往下一块一块清洗，洗车手套在清水桶里涮干净再用。",
+      "最后用单独的海绵或刷子清洗轮毂和轮胎。",
+      "从上往下把泡沫全部冲干净。",
+      "用毛巾擦干车身，先擦玻璃。",
+      "绕车走一圈展示洗好的车，然后停止录制。"
+     ],
+     "pitfalls": [
+      "车牌不要出现在画面里。",
+      "水管不要对着自己：头戴相机被水淋到，这条录制就作废了。",
+      "选一辆确实脏的车，每次录制更换车辆或地点。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "top-up-washer-fluid",
+   "name": "Topping up the windscreen washer fluid",
+   "headline": "Open the bonnet, find the washer reservoir and fill it up",
+   "description": "Open the bonnet and prop it up, find the windscreen washer reservoir by the symbol on its cap, fill it through a funnel, close everything up and spray the washers once to show they work. Where: a car parked outdoors or in a garage, engine off. You need: a car, a bottle of windscreen washer fluid, a funnel, a cloth.",
+   "steps": [
+    "Show the front of the car and the bottle of washer fluid.",
+    "Pull the bonnet release inside the car, then lift the bonnet and free the safety catch.",
+    "Prop the bonnet on its stay rod, or check that it stays up by itself.",
+    "Find the washer reservoir by the windscreen-and-spray symbol on its cap and open the cap.",
+    "Put the funnel in and pour the fluid slowly until it reaches the neck.",
+    "Close the cap, wipe up any drips and lower the bonnet, then press it shut.",
+    "Switch the ignition on and spray the washers once.",
+    "Show the windscreen, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep the licence plate out of the frame.",
+    "Check the symbol before pouring: the coolant and brake fluid caps look similar.",
+    "Pour low in front of you so the funnel and the fluid level stay in view."
+   ],
+   "targetDurationSec": {
+    "min": 180,
+    "max": 360
+   },
+   "tags": [
+    "Car care"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "加注玻璃水",
+     "headline": "打开引擎盖，找到玻璃水壶并加满",
+     "description": "打开引擎盖并撑好，根据壶盖上的图标找到玻璃水壶，用漏斗加满玻璃水，盖好所有盖子，再喷一次玻璃水证明可以正常使用。场所：停在户外或车库里的车，发动机熄火。所需物品：一辆车、一瓶玻璃水、漏斗、抹布。",
+     "steps": [
+      "展示车头和那瓶玻璃水。",
+      "在车内拉开引擎盖开关，再抬起引擎盖，松开安全锁扣。",
+      "用支撑杆撑好引擎盖，或确认它能自己撑住。",
+      "根据壶盖上挡风玻璃加喷水的图标找到玻璃水壶，打开盖子。",
+      "插好漏斗，慢慢倒入玻璃水，直到液面到达瓶口。",
+      "盖好壶盖，擦掉洒出的液体，放下引擎盖并按紧。",
+      "打开点火开关，喷一次玻璃水。",
+      "展示挡风玻璃，然后停止录制。"
+     ],
+     "pitfalls": [
+      "车牌不要出现在画面里。",
+      "倒之前先看清图标：冷却液和刹车油的盖子看起来很像。",
+      "在面前低处倒，让漏斗和液面一直在画面里。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "check-engine-oil",
+   "name": "Checking the engine oil with the dipstick",
+   "headline": "Pull the dipstick, wipe it, dip it again and read the oil level",
+   "description": "With the car on level ground and the engine cool, open the bonnet, pull out the dipstick, wipe it, push it back in and pull it out again, read where the oil sits between the marks, and top up a little oil if it is low. Where: a car parked on level ground, engine off for at least ten minutes. You need: a car, a clean rag or paper towel, disposable gloves, the right engine oil and a funnel (only if it needs topping up).",
+   "steps": [
+    "Show the car and say how long the engine has been off.",
+    "Open the bonnet and prop it up.",
+    "Find the dipstick by its coloured handle and pull it all the way out.",
+    "Wipe the dipstick clean with the rag.",
+    "Push it all the way back in, wait a moment and pull it out again.",
+    "Hold the tip up in front of you and say where the oil is between the two marks and what colour it is.",
+    "If it is below the lower mark, add a little oil through the filler cap, wait a minute and check again.",
+    "Push the dipstick back in, close the bonnet, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep the licence plate out of the frame.",
+    "Only open the bonnet once the engine is cool: parts near it burn.",
+    "Hold the dipstick still for a few seconds so the marks can be read on camera."
+   ],
+   "targetDurationSec": {
+    "min": 180,
+    "max": 360
+   },
+   "tags": [
+    "Car care"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "用机油尺检查机油",
+     "headline": "拔出机油尺，擦净后再插一次，读出机油油位",
+     "description": "车停在平地上、发动机冷却后，打开引擎盖，拔出机油尺擦净，插回去再拔出来，读出油位在两个刻度之间的哪个位置，油位偏低时补加少量机油。场所：停在平地上的车，发动机已熄火至少十分钟。所需物品：一辆车、干净的抹布或纸巾、一次性手套、与车型匹配的机油和漏斗（需要补加时才用）。",
+     "steps": [
+      "展示这辆车，说出发动机熄火多久了。",
+      "打开引擎盖并撑好。",
+      "根据彩色手柄找到机油尺，把它完全拔出来。",
+      "用抹布把机油尺擦干净。",
+      "把机油尺完全插回去，稍等一下再拔出来。",
+      "把尺头举到面前，说出油位在两个刻度之间的哪个位置，以及机油是什么颜色。",
+      "如果低于下刻度，从加油口补加少量机油，等一分钟再检查一次。",
+      "把机油尺插回去，合上引擎盖，然后停止录制。"
+     ],
+     "pitfalls": [
+      "车牌不要出现在画面里。",
+      "发动机冷却后再打开引擎盖：附近的部件很烫。",
+      "机油尺拿稳几秒钟，让镜头能看清刻度。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "check-and-inflate-tyres",
+   "name": "Checking tyre pressure and inflating with a compressor",
+   "headline": "Measure each tyre's pressure and pump it back up with a compressor",
+   "description": "Read the recommended tyre pressure off the car's sticker, measure each tyre with a gauge, let a little air out if a tyre is already full so there is something to pump, then inflate it back to the recommended pressure with a compressor and refit the valve cap. Where: a car parked on level ground, with tyres cold (not just driven). You need: a car, a portable 12 V or mains tyre compressor, a tyre pressure gauge, if the compressor has none.",
+   "steps": [
+    "Find the pressure sticker in the driver's door frame or the fuel flap and read the pressure out.",
+    "Kneel at the first tyre, unscrew the valve cap and put it in your pocket.",
+    "Press the gauge onto the valve and read the pressure out.",
+    "If it is already at the right pressure, press the valve pin briefly to let out a little air (about 0.1–0.2 bar, 2–3 psi) and measure again.",
+    "Fit the compressor hose onto the valve and switch the compressor on.",
+    "Pump the tyre up to the recommended pressure, watching the reading.",
+    "Take the hose off, check once more with the gauge and screw the valve cap back on.",
+    "Do the other tyres the same way, then show the compressor and stop recording."
+   ],
+   "pitfalls": [
+    "Keep the licence plate out of the frame.",
+    "Let out only a little air, and always pump every tyre back to the recommended pressure before the car is driven.",
+    "Kneel beside the wheel so the valve is in front of you, not hidden under your chin."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Car care"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "检查胎压并用打气泵充气",
+     "headline": "测量每个轮胎的胎压，用打气泵充到标准值",
+     "description": "从车上的标签读出推荐胎压，用胎压计测量每个轮胎；如果轮胎本来就是满的，先放掉一点气以便充气，再用打气泵充回推荐胎压，拧回气门帽。场所：停在平地上的车，轮胎是冷的（不是刚开过）。所需物品：一辆车、便携式车载或插电打气泵、胎压计（打气泵没有压力表时）。",
+     "steps": [
+      "在驾驶座车门框或加油口盖内找到胎压标签，读出推荐胎压。",
+      "蹲到第一个轮胎旁，拧下气门帽放进口袋。",
+      "把胎压计按在气门嘴上，读出胎压。",
+      "如果胎压已经达标，短按气门芯放掉一点气（约0.1–0.2 bar，2–3 psi），再测一次。",
+      "把打气泵的气管接到气门嘴上，打开打气泵。",
+      "边看读数边充气，充到推荐胎压。",
+      "取下气管，再用胎压计确认一次，拧回气门帽。",
+      "其余轮胎同样操作，然后展示打气泵并停止录制。"
+     ],
+     "pitfalls": [
+      "车牌不要出现在画面里。",
+      "只放一点点气，车开走前每个轮胎都必须充回推荐胎压。",
+      "蹲在车轮旁边，让气门嘴在面前，不要被下巴挡住。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "wipe-car-interior",
+   "name": "Wiping down a car's interior",
+   "headline": "Clear out a car, shake out the mats and wipe every surface inside",
+   "description": "Take the rubbish and loose things out of a car, shake out the floor mats, wipe the dashboard, console, steering wheel and door panels with interior cleaner, clean the inside of the glass and put the mats back. Where: a parked car, doors open, in daylight. You need: a car, interior cleaner or a damp cloth, glass cleaner, three microfibre cloths, a rubbish bag, a soft brush for the air vents (optional).",
+   "steps": [
+    "Sit in the car and point out where it is dirtiest.",
+    "Put the rubbish and loose things into the bag.",
+    "Take the floor mats out, shake them away from the car and lay them aside.",
+    "Wipe the dashboard and centre console, brushing the dust out of the vents.",
+    "Wipe the steering wheel, gear lever, door handles and door panels.",
+    "Clean the inside of the windscreen and windows with glass cleaner and a separate cloth.",
+    "Put the floor mats back in.",
+    "Show the clean interior, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep the licence plate out of the frame.",
+    "Spray the cleaner onto the cloth, not onto screens or buttons.",
+    "Turn papers, receipts and anything with a name or address face down before you start."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Car care"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "擦拭汽车内饰",
+     "headline": "清空车内杂物，抖净脚垫，把车内每个表面擦一遍",
+     "description": "把车里的垃圾和零散物品拿出来，抖净脚垫，用内饰清洁剂擦拭仪表台、中控台、方向盘和车门内板，擦净玻璃内侧，再放回脚垫。场所：停好的车，车门打开，白天光线充足时。所需物品：一辆车、内饰清洁剂或湿抹布、玻璃清洁剂、三块超细纤维抹布、垃圾袋、清理出风口的软毛刷（可选）。",
+     "steps": [
+      "坐进车里，指出最脏的地方。",
+      "把垃圾和零散物品装进垃圾袋。",
+      "取出脚垫，在车外抖干净，放在一边。",
+      "擦拭仪表台和中控台，用刷子刷掉出风口里的灰尘。",
+      "擦拭方向盘、挡杆、车门把手和车门内板。",
+      "用玻璃清洁剂和另一块抹布擦净挡风玻璃和车窗内侧。",
+      "把脚垫放回车里。",
+      "展示清洁好的车内，然后停止录制。"
+     ],
+     "pitfalls": [
+      "车牌不要出现在画面里。",
+      "把清洁剂喷在抹布上，不要直接喷到屏幕或按键上。",
+      "开始前把纸张、小票和任何带有姓名或地址的东西翻过来扣着放。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "replace-wiper-blades",
+   "name": "Replacing windscreen wiper blades",
+   "headline": "Take the old wiper blades off and fit new ones",
+   "description": "Lift each wiper arm, unclip the old blade, compare it with the new one, clip the new blade on until it clicks, lower the arm gently and test the wipers with washer fluid. Where: a parked car, outdoors or in a garage. You need: a car, a pair of new wiper blades of the right length, a folded towel, a cloth.",
+   "steps": [
+    "Show the old wiper blades and the new ones.",
+    "Lift a wiper arm away from the glass and lay the folded towel on the windscreen under it.",
+    "Press the release tab and slide the old blade off the hook at the end of the arm.",
+    "Hold the old and new blades side by side to check they are the same length.",
+    "Slide the new blade onto the hook until it clicks.",
+    "Lower the arm gently onto the glass, then do the other side.",
+    "Switch the ignition on, spray washer fluid and run the wipers once.",
+    "Show the new wipers, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep the licence plate out of the frame.",
+    "Hold the arm while it is lifted: without a blade it can snap back and crack the windscreen.",
+    "For the next take, use another car or put the old blades back on first."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Car care"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "更换雨刮片",
+     "headline": "取下旧雨刮片，装上新雨刮片",
+     "description": "抬起雨刮臂，拆下旧雨刮片，和新雨刮片对比长度，把新雨刮片装上直到听到咔嗒声，轻轻放下雨刮臂，再喷玻璃水试刮。场所：停好的车，户外或车库里。所需物品：一辆车、一对长度合适的新雨刮片、一条叠好的毛巾、抹布。",
+     "steps": [
+      "展示旧雨刮片和新雨刮片。",
+      "把雨刮臂从玻璃上抬起来，在下面的挡风玻璃上垫好毛巾。",
+      "按下卡扣，把旧雨刮片从雨刮臂末端的挂钩上滑下来。",
+      "把新旧雨刮片并排对比，确认长度一样。",
+      "把新雨刮片滑进挂钩，直到听到咔嗒声。",
+      "轻轻把雨刮臂放回玻璃上，另一侧重复。",
+      "打开点火开关，喷玻璃水，让雨刮刮一次。",
+      "展示装好的雨刮，然后停止录制。"
+     ],
+     "pitfalls": [
+      "车牌不要出现在画面里。",
+      "抬起雨刮臂时要扶住：没有雨刮片时它会弹回去，砸裂挡风玻璃。",
+      "下一次录制换一辆车，或先把旧雨刮片装回去。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "wipe-engine-bay",
+   "name": "Wiping the engine bay clean",
+   "headline": "Brush and wipe the dust and dirt off the engine bay by hand",
+   "description": "Open the bonnet of a cold car, brush out leaves and loose dirt, wipe the engine cover, reservoir tops, battery cover and the edges of the bay with a cleaner-dampened cloth, then go over everything with a dry cloth. Where: a parked car, engine off and cold, key out. You need: a car, a soft brush, an all-purpose or engine-bay cleaner, four cloths, disposable gloves.",
+   "steps": [
+    "Open the bonnet, prop it up and point out the dirtiest parts.",
+    "Brush leaves and loose dirt off the covers and out of the corners.",
+    "Spray the cleaner onto a cloth.",
+    "Wipe the engine cover, the tops of the reservoirs and the battery cover.",
+    "Wipe along the edges of the bay and the rubber seals.",
+    "Go over everything again with a dry cloth.",
+    "Check that all the caps are still tight and show the clean engine bay.",
+    "Close the bonnet, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep the licence plate out of the frame.",
+    "Never spray water or cleaner straight into the engine bay: only wipe with a damp cloth, so nothing wet reaches the electrics.",
+    "Keep the cloth and your hands away from the belts and the fan."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Car care"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "擦拭清洁发动机舱",
+     "headline": "用刷子和抹布手工清除发动机舱的灰尘和污垢",
+     "description": "在发动机冷却的车上打开引擎盖，刷掉树叶和浮土，用沾了清洁剂的抹布擦拭发动机罩盖、各液壶顶部、电瓶盖和舱体边缘，最后用干抹布再擦一遍。场所：停好的车，发动机熄火并已冷却，钥匙拔出。所需物品：一辆车、软毛刷、多功能清洁剂或发动机舱清洁剂、四块抹布、一次性手套。",
+     "steps": [
+      "打开引擎盖并撑好，指出最脏的地方。",
+      "用刷子刷掉罩盖上和角落里的树叶和浮土。",
+      "把清洁剂喷在抹布上。",
+      "擦拭发动机罩盖、各液壶顶部和电瓶盖。",
+      "沿着发动机舱边缘和橡胶密封条擦一遍。",
+      "用干抹布把所有地方再擦一遍。",
+      "检查所有盖子是否仍然拧紧，展示清洁好的发动机舱。",
+      "合上引擎盖，然后停止录制。"
+     ],
+     "pitfalls": [
+      "车牌不要出现在画面里。",
+      "不要把水或清洁剂直接喷进发动机舱：只用湿抹布擦，别让水碰到电路。",
+      "抹布和手远离皮带和风扇。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "mime-fuelling-a-car",
+   "name": "Fuelling a car (mimed)",
+   "headline": "Open the fuel flap and cap and go through refuelling with an empty can",
+   "description": "With the engine off, open the fuel flap, unscrew the fuel cap, read the fuel type, put the spout of an empty fuel can (or a petrol pump nozzle) into the filler neck and hold it as if filling, then screw the cap back on until it clicks and close the flap. Where: a parked car; a petrol station only with the staff's permission. You need: a car, a clean, empty fuel can with a spout, or a petrol pump.",
+   "steps": [
+    "Show the car and the fuel can or pump.",
+    "Switch off the engine and open the fuel flap with its release or by pressing it.",
+    "Unscrew the fuel cap and hang it in the holder on the flap.",
+    "Read out the fuel type printed inside the flap.",
+    "Lift the can or nozzle and put its spout into the filler neck.",
+    "Hold it there as if filling for about half a minute, then lift it out.",
+    "Screw the cap back on until it clicks and close the flap.",
+    "Put the can or nozzle back, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep the licence plate out of the frame.",
+    "Use a can that has never held fuel, and don't pour anything into the tank.",
+    "At a petrol station, follow the staff's rules and don't use a phone at the pump."
+   ],
+   "targetDurationSec": {
+    "min": 180,
+    "max": 360
+   },
+   "tags": [
+    "Car care"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "模拟给汽车加油",
+     "headline": "打开油箱盖和油箱口，用空油桶完整走一遍加油流程",
+     "description": "发动机熄火后，打开油箱盖，拧下油箱口盖，读出燃油标号，把空油桶（或加油枪）的油嘴插进加油口，保持像在加油一样，然后拧回油箱口盖直到听到咔嗒声，关好油箱盖。场所：停好的车；只有在工作人员允许时才去加油站录制。所需物品：一辆车、干净的空油桶（带油嘴），或加油站的加油枪。",
+     "steps": [
+      "展示这辆车和油桶或加油枪。",
+      "发动机熄火，用开关或按压打开油箱盖。",
+      "拧下油箱口盖，挂在油箱盖内侧的卡槽上。",
+      "读出油箱盖内侧标注的燃油标号。",
+      "拿起油桶或加油枪，把油嘴插进加油口。",
+      "保持像在加油一样约半分钟，然后拔出来。",
+      "拧回油箱口盖直到听到咔嗒声，关好油箱盖。",
+      "把油桶或加油枪放回原处，然后停止录制。"
+     ],
+     "pitfalls": [
+      "车牌不要出现在画面里。",
+      "使用从未装过汽油的油桶，不要往油箱里倒任何东西。",
+      "在加油站要遵守工作人员的规定，加油机旁不要使用手机。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "remove-and-refit-a-wheel-bolt",
+   "name": "Removing and refitting a wheel bolt",
+   "headline": "Loosen and take out one wheel bolt with a wrench, then refit and tighten it",
+   "description": "With the car on the ground and the handbrake on, take off the hubcap or bolt cover, loosen one wheel bolt with the wheel wrench, unscrew it and show it, then screw it back in by hand and tighten it fully, one bolt at a time. Only for operators who know how to do this. Where: a car parked on level, firm ground, handbrake on, in gear or Park. You need: a car, the car's wheel wrench or a socket wrench of the right size, a torque wrench, if you have one, the locking-bolt key, if the wheel has one.",
+   "steps": [
+    "Show the wheel and the wrench, and check the handbrake is on.",
+    "Pull off the hubcap or bolt cover if the wheel has one.",
+    "Fit the wrench squarely on one bolt and turn it anticlockwise to loosen it.",
+    "Unscrew it the rest of the way by hand and show the bolt.",
+    "Screw it back in by hand, checking that it turns smoothly and isn't cross-threaded.",
+    "Tighten it fully with the wrench, or to the car's torque with the torque wrench.",
+    "Do one or two more bolts the same way, one at a time.",
+    "Refit the cover, show the wheel, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep the licence plate out of the frame.",
+    "Only do this task if you know how; if you're unsure, record a different one.",
+    "Keep the wheel on the ground and take out only one bolt at a time; never jack the car up for this task.",
+    "Check every bolt you touched is fully tight before the car moves."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Car care"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "拆装车轮螺栓",
+     "headline": "用扳手拧松并拆下一颗车轮螺栓，再装回拧紧",
+     "description": "车轮着地、拉好手刹，取下轮毂盖或螺栓帽，用轮胎扳手拧松一颗车轮螺栓，拧下来展示，再用手拧回去并彻底拧紧，一次只拆一颗。只适合懂得操作的操作员。场所：停在平整坚实地面上的车，拉好手刹，挂挡或挂P挡。所需物品：一辆车、随车轮胎扳手或尺寸合适的套筒扳手、扭力扳手（如果有）、防盗螺栓钥匙（如果车轮有）。",
+     "steps": [
+      "展示车轮和扳手，确认手刹已拉好。",
+      "如果有轮毂盖或螺栓帽，先取下来。",
+      "把扳手正对一颗螺栓套好，逆时针拧松。",
+      "用手把螺栓拧下来，展示螺栓。",
+      "用手把螺栓拧回去，确认拧得顺畅、没有错扣。",
+      "用扳手彻底拧紧，或用扭力扳手拧到车辆规定的扭矩。",
+      "同样的方法再做一两颗螺栓，一次只拆一颗。",
+      "装回轮毂盖，展示车轮，然后停止录制。"
+     ],
+     "pitfalls": [
+      "车牌不要出现在画面里。",
+      "只有懂得操作才做这个任务；没把握就录别的任务。",
+      "车轮保持着地，一次只拆一颗螺栓；这个任务不要用千斤顶顶车。",
+      "车辆开动前，确认动过的每颗螺栓都已彻底拧紧。"
+     ]
+    }
+   }
+  }
+ ]
+}
