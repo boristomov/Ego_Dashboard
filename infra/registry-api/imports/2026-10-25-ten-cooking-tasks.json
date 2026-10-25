@@ -1,0 +1,503 @@
+{
+ "about": "10 new tasks in English and Chinese: 5 culinary work, 5 knife work. Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-25-ten-cooking-tasks.json --user <you> --apply",
+ "defaults": {
+  "sites": [
+   "Beijing"
+  ],
+  "state": "active",
+  "environmentIds": [],
+  "targetTakes": 40
+ },
+ "tasks": [
+  {
+   "slug": "steam-egg-custard",
+   "name": "Steaming egg custard",
+   "headline": "Beat eggs with water, strain them and steam a smooth egg custard",
+   "description": "Beat eggs with warm water and a pinch of salt, strain the mixture into a bowl, skim off the bubbles, cover it and steam it until just set, then finish it with soy sauce and sesame oil. Where: a home or canteen kitchen with a stove. You need: two or three eggs, warm water, salt, a bowl and a whisk or chopsticks, a fine sieve, a heatproof bowl, a plate or cling film to cover it, a pot or steamer with a lid, soy sauce and sesame oil.",
+   "steps": [
+    "Show the eggs and the bowls.",
+    "Crack the eggs into the bowl and beat them with a pinch of salt.",
+    "Add the warm water and beat again until even.",
+    "Pour the mixture through the sieve into the heatproof bowl.",
+    "Skim the bubbles off the top with a spoon and cover the bowl.",
+    "Steam it over boiling water until the centre is just set.",
+    "Lift the bowl out with a cloth and add a little soy sauce and sesame oil.",
+    "Show the custard, then stop recording."
+   ],
+   "pitfalls": [
+    "Lean back when you lift the lid: steam fogs the camera.",
+    "Lift the hot bowl with a cloth or clamp, never bare-handed."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "蒸鸡蛋羹",
+     "headline": "鸡蛋加水打散、过筛，蒸一碗嫩滑的鸡蛋羹",
+     "description": "把鸡蛋加温水和少许盐打散，过筛倒进碗里，撇去浮沫，盖好后上锅蒸到刚刚凝固，最后淋上酱油和香油。场所：有灶台的家庭或食堂厨房。所需物品：两三个鸡蛋、温水、盐、碗和打蛋器或筷子、细筛网、耐热碗、盖碗用的盘子或保鲜膜、带盖的锅或蒸锅、酱油和香油。",
+     "steps": [
+      "展示鸡蛋和碗。",
+      "把鸡蛋磕进碗里，加少许盐打散。",
+      "加入温水，再搅打均匀。",
+      "把蛋液用筛网过滤到耐热碗里。",
+      "用勺子撇去表面的浮沫，盖好碗。",
+      "水开后上锅蒸，蒸到中间刚刚凝固。",
+      "用布把碗端出来，淋少许酱油和香油。",
+      "展示鸡蛋羹，然后停止录制。"
+     ],
+     "pitfalls": [
+      "掀锅盖时身体往后靠：蒸汽会让镜头起雾。",
+      "用布或夹子端热碗，不要徒手拿。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "fry-eggs",
+   "name": "Frying eggs in a pan",
+   "headline": "Fry eggs one by one in a pan and plate them",
+   "description": "Heat a pan with a little oil, crack eggs in one at a time, fry them until the whites are set and the edges are crisp, flip them if you like them cooked through, and slide them onto a plate. Where: a home or canteen kitchen with a stove. You need: three or four eggs, cooking oil, salt or soy sauce, a frying pan, a spatula, a small bowl, a plate.",
+   "steps": [
+    "Show the eggs and the pan.",
+    "Heat the pan and add a little oil.",
+    "Crack the first egg into the small bowl, then slide it into the pan.",
+    "Fry it until the white is set and the edge turns golden.",
+    "Flip it with the spatula if you want it cooked through.",
+    "Slide it onto the plate and season it.",
+    "Fry the rest the same way, one at a time, then turn off the stove.",
+    "Show the plate of eggs, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep your head back from hot oil: splashes can hit the camera.",
+    "Fry at least three eggs so the cracking and flipping repeat."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "煎荷包蛋",
+     "headline": "在平底锅里一个个煎荷包蛋并装盘",
+     "description": "平底锅里放少许油烧热，一次磕一个鸡蛋下锅，煎到蛋白凝固、边缘焦脆，喜欢全熟的话翻面再煎，然后滑到盘子里。场所：有灶台的家庭或食堂厨房。所需物品：三四个鸡蛋、食用油、盐或酱油、平底锅、锅铲、小碗、盘子。",
+     "steps": [
+      "展示鸡蛋和锅。",
+      "热锅，倒少许油。",
+      "先把第一个鸡蛋磕进小碗，再滑进锅里。",
+      "煎到蛋白凝固、边缘变金黄。",
+      "想要全熟的话用锅铲翻面。",
+      "把蛋滑到盘子里，调味。",
+      "其余的鸡蛋同样一个一个煎好，然后关火。",
+      "展示一盘荷包蛋，然后停止录制。"
+     ],
+     "pitfalls": [
+      "头部离热油远一点：油溅起来会打到镜头。",
+      "至少煎三个，让磕蛋和翻面的动作多次重复。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "pan-fry-frozen-dumplings",
+   "name": "Pan-frying frozen dumplings",
+   "headline": "Pan-fry frozen dumplings until crisp on the bottom and serve with a dip",
+   "description": "Arrange frozen dumplings in an oiled pan, fry them until the bottoms brown, add water and cover to steam them through, cook off the water until the bottoms are crisp again, and serve them with a vinegar dip. Where: a home or canteen kitchen with a stove. You need: a bag of frozen dumplings, cooking oil, water in a cup, a frying pan with a lid, a spatula, a plate, vinegar and a small dish.",
+   "steps": [
+    "Show the frozen dumplings and the pan.",
+    "Heat the pan with a little oil and arrange the dumplings in rows.",
+    "Fry them until the bottoms start to brown.",
+    "Pour in water to about a third of the dumplings' height and cover the pan straight away.",
+    "Let them steam until the water is almost gone.",
+    "Take off the lid and fry until the bottoms are crisp.",
+    "Loosen them with the spatula, turn them out onto the plate and pour vinegar into the small dish.",
+    "Show the dumplings, then stop recording."
+   ],
+   "pitfalls": [
+    "Stand back when the water goes in: it spits and steams.",
+    "Keep the dumpling bag's label turned away from the camera."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "煎速冻饺子",
+     "headline": "把速冻饺子煎到底部焦脆，配蘸料上桌",
+     "description": "平底锅刷油，把速冻饺子排好，煎到底部微黄，加水后马上盖盖焖熟，等水快收干时开盖煎到底部再次焦脆，配醋碟上桌。场所：有灶台的家庭或食堂厨房。所需物品：一袋速冻饺子、食用油、一杯水、带盖的平底锅、锅铲、盘子、醋和小碟。",
+     "steps": [
+      "展示速冻饺子和锅。",
+      "锅里放少许油烧热，把饺子一排排摆好。",
+      "煎到饺子底部开始变黄。",
+      "倒水到饺子高度的三分之一左右，马上盖上锅盖。",
+      "焖到锅里的水快要收干。",
+      "打开锅盖，煎到底部焦脆。",
+      "用锅铲把饺子铲松，倒扣到盘子里，往小碟里倒上醋。",
+      "展示煎饺，然后停止录制。"
+     ],
+     "pitfalls": [
+      "倒水时站远一点：会溅油、冒蒸汽。",
+      "饺子包装袋上的标签不要对着镜头。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "blanch-and-dress-spinach",
+   "name": "Blanching and dressing spinach",
+   "headline": "Blanch spinach, squeeze it dry, cut it and dress it with garlic and vinegar",
+   "description": "Wash and trim a bunch of spinach, blanch it in boiling water for a few seconds, cool it in cold water, squeeze it dry by the handful, cut it into short lengths and dress it with minced garlic, vinegar, soy sauce and sesame oil. Where: a home or canteen kitchen with a stove. You need: a bunch of spinach, a pot of boiling water, a bowl of cold water, chopsticks or tongs, a knife and cutting board, garlic, vinegar, soy sauce, salt and sesame oil, a plate.",
+   "steps": [
+    "Show the spinach and the seasonings.",
+    "Wash the spinach and trim the roots.",
+    "Put the spinach into the boiling water for a few seconds, then lift it out with the chopsticks.",
+    "Drop it into the cold water to cool.",
+    "Squeeze it dry, one handful at a time.",
+    "Cut the squeezed spinach into short lengths and put it on the plate.",
+    "Add the minced garlic and seasonings and toss it with the chopsticks.",
+    "Show the dish, then stop recording."
+   ],
+   "pitfalls": [
+    "Lean back over the boiling pot: steam fogs the camera.",
+    "Squeeze over the sink or a bowl, in front of you, so the water stays off the camera."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "凉拌菠菜",
+     "headline": "菠菜焯水、挤干、切段，用蒜泥和醋拌好",
+     "description": "把一把菠菜洗净去根，在开水里焯几秒，放进凉水里过凉，一把一把挤干水分，切成小段，加入蒜末、醋、酱油和香油拌匀。场所：有灶台的家庭或食堂厨房。所需物品：一把菠菜、一锅开水、一碗凉水、筷子或夹子、刀和砧板、大蒜、醋、酱油、盐和香油、盘子。",
+     "steps": [
+      "展示菠菜和调料。",
+      "把菠菜洗净，切掉根部。",
+      "把菠菜放进开水里焯几秒，用筷子捞出来。",
+      "放进凉水里过凉。",
+      "一把一把挤干水分。",
+      "把挤干的菠菜切成小段，放到盘子里。",
+      "加入蒜末和调料，用筷子拌匀。",
+      "展示拌好的菠菜，然后停止录制。"
+     ],
+     "pitfalls": [
+      "在开水锅上方时身体往后靠：蒸汽会让镜头起雾。",
+      "在面前的水槽或碗上方挤水，别让水溅到镜头上。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "tear-and-stir-fry-cabbage",
+   "name": "Tearing cabbage by hand and stir-frying it",
+   "headline": "Tear a cabbage into pieces by hand and stir-fry it with garlic and chilli",
+   "description": "Peel the outer leaves off a cabbage, tear the leaves into bite-sized pieces by hand and remove the thick ribs, wash and drain them, then stir-fry them quickly in a hot wok with garlic and dried chilli and season with vinegar and soy sauce. Where: a home or canteen kitchen with a stove. You need: half a cabbage, a colander, garlic, dried chillies (optional), cooking oil, vinegar, soy sauce and salt, a wok or frying pan, a spatula, a plate.",
+   "steps": [
+    "Show the cabbage and the seasonings.",
+    "Peel off the outer leaves and throw away any damaged ones.",
+    "Tear the leaves into bite-sized pieces by hand, pulling out the thick ribs.",
+    "Wash the pieces and leave them to drain in the colander.",
+    "Heat the wok, add oil, then the garlic and chilli.",
+    "Add the cabbage and stir-fry it quickly over high heat.",
+    "Season with vinegar, soy sauce and salt, toss and turn off the stove.",
+    "Plate the cabbage, show it, then stop recording."
+   ],
+   "pitfalls": [
+    "Drain the cabbage well: wet leaves make the oil spit toward the camera.",
+    "Keep your head back over the hot wok."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "手撕包菜",
+     "headline": "用手把包菜撕成小块，加蒜和辣椒爆炒",
+     "description": "剥掉包菜的外层叶子，用手把叶子撕成一口大小，去掉粗硬的菜梗，洗净沥干，再在热锅里加蒜和干辣椒快速翻炒，用醋和酱油调味。场所：有灶台的家庭或食堂厨房。所需物品：半个包菜、沥水篮、大蒜、干辣椒（可选）、食用油、醋、酱油和盐、炒锅或平底锅、锅铲、盘子。",
+     "steps": [
+      "展示包菜和调料。",
+      "剥掉外层叶子，扔掉坏叶。",
+      "用手把叶子撕成一口大小，扯掉粗硬的菜梗。",
+      "把菜叶洗净，放进沥水篮里沥干。",
+      "热锅倒油，下蒜和辣椒。",
+      "放入包菜，大火快速翻炒。",
+      "加醋、酱油和盐调味，翻匀后关火。",
+      "把包菜盛到盘子里展示，然后停止录制。"
+     ],
+     "pitfalls": [
+      "包菜一定要沥干：叶子带水下锅，油会朝镜头溅。",
+      "在热锅上方时头部往后靠。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "smash-cucumber-salad",
+   "name": "Making a smashed cucumber salad",
+   "headline": "Smash cucumbers with the flat of a cleaver, cut them and dress them",
+   "description": "Wash cucumbers, smash them with the flat of a cleaver until they crack open, cut them into bite-sized pieces at an angle, salt them briefly, and dress them with garlic, vinegar, soy sauce and sesame oil. Where: a kitchen worktop. You need: two cucumbers, a cleaver or wide chef's knife, a cutting board, a damp cloth under the board, garlic, vinegar, soy sauce, salt, sugar and sesame oil, a mixing bowl, a plate.",
+   "steps": [
+    "Show the cucumbers and the knife.",
+    "Wash the cucumbers and cut off the ends.",
+    "Lay a cucumber on the board, put the flat of the blade on it and press down hard with your palm until it cracks.",
+    "Smash it along its whole length.",
+    "Cut the smashed cucumber into bite-sized pieces at an angle.",
+    "Toss the pieces with a little salt in the bowl, wait a moment and pour off the water.",
+    "Add the minced garlic and seasonings and toss again.",
+    "Plate the salad, show it, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Press on the flat of the blade with your palm, with the edge facing away from you.",
+    "Smash on the board in front of you so the crack is visible to the camera."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "拍黄瓜",
+     "headline": "用菜刀刀面把黄瓜拍裂，切块后调味",
+     "description": "把黄瓜洗净，用菜刀刀面拍到裂开，斜刀切成一口大小，先用盐腌一会儿，再加入蒜末、醋、酱油和香油拌匀。场所：厨房台面。所需物品：两根黄瓜、菜刀或宽刃厨师刀、砧板、垫在砧板下的湿布、大蒜、醋、酱油、盐、糖和香油、拌菜盆、盘子。",
+     "steps": [
+      "展示黄瓜和刀。",
+      "把黄瓜洗净，切掉两头。",
+      "把黄瓜放在砧板上，刀面压在黄瓜上，用手掌用力往下按，直到黄瓜裂开。",
+      "沿着整根黄瓜拍一遍。",
+      "把拍好的黄瓜斜刀切成一口大小。",
+      "在盆里加少许盐拌匀，稍等片刻，倒掉渗出的水。",
+      "加入蒜末和调料，再拌一次。",
+      "装盘展示，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "用手掌按刀面，刀刃朝外。",
+      "在面前的砧板上拍，让镜头能看到黄瓜裂开。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "cube-tofu-with-scallion",
+   "name": "Cutting soft tofu into cubes for a scallion tofu salad",
+   "headline": "Cut a block of soft tofu into neat cubes and dress it with scallion",
+   "description": "Turn a block of soft tofu out of its box, cut it into even cubes on the board or in the palm of your hand, slide it onto a plate without breaking it, and top it with chopped scallion, salt and sesame oil. Where: a kitchen worktop. You need: a box of soft or medium tofu, two scallions, a knife, a cutting board, a plate, salt, soy sauce and sesame oil.",
+   "steps": [
+    "Show the box of tofu and the scallions.",
+    "Open the box, pour off the water and turn the tofu out onto the board.",
+    "Cut the block into slices without moving it.",
+    "Turn the board, cut across the slices, then cut horizontally to make cubes.",
+    "Slide the knife under the cubes and move them onto the plate without breaking them.",
+    "Chop the scallions finely.",
+    "Scatter the scallion over the tofu and season it.",
+    "Show the dish, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Soft tofu breaks easily: move it with the flat of the knife, never by hand.",
+    "If you cut in the palm, use only gentle downward cuts and keep the blade in view."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "切豆腐丁做小葱拌豆腐",
+     "headline": "把一块嫩豆腐切成整齐的小块，撒上葱花拌好",
+     "description": "把一盒嫩豆腐倒出来，在砧板上或手掌上切成均匀的小块，完整地移到盘子里，撒上葱花、盐和香油。场所：厨房台面。所需物品：一盒嫩豆腐或北豆腐、两根葱、刀、砧板、盘子、盐、酱油和香油。",
+     "steps": [
+      "展示一盒豆腐和葱。",
+      "打开盒子，倒掉水，把豆腐扣到砧板上。",
+      "不移动豆腐，先切成片。",
+      "转一下砧板，横着切一遍，再平刀片一刀，切成小块。",
+      "把刀插到豆腐块下面，完整地移到盘子里。",
+      "把葱切成细葱花。",
+      "把葱花撒在豆腐上，调味。",
+      "展示这道菜，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "嫩豆腐很容易碎：用刀面托着移动，不要用手拿。",
+      "如果在手掌上切，只轻轻往下切，刀刃保持在画面里。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "cut-tomatoes-with-sugar",
+   "name": "Cutting tomatoes into wedges and slices",
+   "headline": "Core tomatoes, cut some into wedges and some into slices, and make sugared tomatoes",
+   "description": "Wash tomatoes, cut out the stem core, cut half of them into even wedges and half into round slices, arrange the slices on a plate and sprinkle them with sugar. Where: a kitchen worktop. You need: four ripe tomatoes, a sharp knife, a cutting board, a damp cloth under the board, a bowl, a plate, white sugar.",
+   "steps": [
+    "Show the tomatoes and the knife.",
+    "Wash the tomatoes.",
+    "Cut out the stem core of each tomato with the tip of the knife.",
+    "Halve two tomatoes, then cut each half into even wedges and put them in the bowl.",
+    "Lay the other two on their side and cut them into round slices.",
+    "Arrange the slices on the plate, overlapping.",
+    "Sprinkle sugar over the slices.",
+    "Show the wedges and the sugared slices, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Use a sharp knife and let it slice rather than pressing, or the tomato squashes.",
+    "Wipe the juice off the board as you go so the tomatoes do not slide."
+   ],
+   "targetDurationSec": {
+    "min": 240,
+    "max": 600
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "西红柿切块切片",
+     "headline": "西红柿去蒂，一部分切块、一部分切片，做糖拌西红柿",
+     "description": "把西红柿洗净，挖掉蒂，一半切成均匀的块，一半切成圆片，把圆片摆在盘子里，撒上白糖。场所：厨房台面。所需物品：四个熟透的西红柿、锋利的刀、砧板、垫在砧板下的湿布、碗、盘子、白糖。",
+     "steps": [
+      "展示西红柿和刀。",
+      "把西红柿洗净。",
+      "用刀尖挖掉每个西红柿的蒂。",
+      "把两个西红柿对半切开，每一半切成均匀的块，放进碗里。",
+      "把另外两个侧放，切成圆片。",
+      "把圆片层层叠叠地摆在盘子里。",
+      "在西红柿片上撒白糖。",
+      "展示西红柿块和糖拌西红柿，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "用锋利的刀，让刀自己切下去，不要用力压，否则西红柿会被压扁。",
+      "边切边擦掉砧板上的汁水，防止西红柿打滑。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "slice-and-score-mushrooms",
+   "name": "Slicing mushrooms and scoring shiitake caps",
+   "headline": "Trim mushrooms, slice some and score a cross into shiitake caps",
+   "description": "Wipe or rinse a mix of mushrooms, trim the stems, cut a decorative cross or star into the caps of the shiitake, and cut the other mushrooms into even slices. Where: a kitchen worktop. You need: fresh shiitake mushrooms, button or king oyster mushrooms, a small sharp knife, a cutting board, a damp cloth under the board, kitchen paper, two bowls.",
+   "steps": [
+    "Show the mushrooms and name each kind.",
+    "Wipe them with damp kitchen paper or rinse them quickly.",
+    "Trim the hard ends of the stems.",
+    "Hold a shiitake cap and cut a shallow V-shaped groove across it with the knife tip.",
+    "Turn the cap and cut a second groove across the first to make a cross or star.",
+    "Score all the shiitake the same way and put them in a bowl.",
+    "Slice the other mushrooms into even slices and put them in the second bowl.",
+    "Show both bowls, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Cut the grooves with the cap resting on the board, not held in the air.",
+    "Score at least six caps, so the motion repeats."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "香菇切十字花刀和蘑菇切片",
+     "headline": "修整蘑菇，部分切片，在香菇帽上切出十字花刀",
+     "description": "把几种蘑菇擦净或快速冲洗，切掉菌柄的硬头，在香菇帽上切出装饰性的十字或星形花刀，再把其他蘑菇切成均匀的片。场所：厨房台面。所需物品：鲜香菇、白蘑菇或杏鲍菇、锋利的小刀、砧板、垫在砧板下的湿布、厨房纸、两个碗。",
+     "steps": [
+      "展示蘑菇，说出每种的名称。",
+      "用湿厨房纸擦净蘑菇，或快速冲洗一下。",
+      "切掉菌柄的硬头。",
+      "拿起一朵香菇，用刀尖在菌帽上斜切出一道浅浅的V形槽。",
+      "转动香菇，再切一道与第一道交叉的槽，切成十字或星形。",
+      "所有香菇都切好花刀，放进一个碗里。",
+      "把其他蘑菇切成均匀的片，放进另一个碗里。",
+      "展示两个碗，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "切花刀时把香菇放在砧板上，不要悬空拿着切。",
+      "至少切六朵香菇，让动作多次重复。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "trim-and-cut-green-beans",
+   "name": "Trimming and cutting green beans",
+   "headline": "Snap the ends and strings off green beans by hand, then cut them into lengths",
+   "description": "Snap off both ends of each green bean by hand, pulling away the string along the side, wash them, line up a handful on the board and cut them into even lengths. Where: a kitchen worktop or a table with a basin. You need: a handful of green beans (about 300 g), a basin or bowl, a colander, a knife, a cutting board, a damp cloth under the board, a bowl for the scraps.",
+   "steps": [
+    "Show the green beans.",
+    "Snap off one end of a bean and pull it down the side to remove the string.",
+    "Snap off the other end the same way and drop the scraps in the scrap bowl.",
+    "Trim all the beans this way, putting them in the basin.",
+    "Wash the beans and drain them in the colander.",
+    "Line up a handful of beans on the board with their ends even.",
+    "Cut them into even lengths, a handful at a time.",
+    "Show the cut beans, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Hold the beans in front of you while snapping, so both hands stay in frame.",
+    "Line the beans up with your claw hand before each cut."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 720
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "掐豆角并切段",
+     "headline": "用手掐掉豆角两头和筋，再切成段",
+     "description": "用手掐掉每根豆角的两头，顺势撕掉侧面的筋，洗净后在砧板上把一把豆角排齐，切成长短均匀的段。场所：厨房台面或放着盆的桌子。所需物品：一把豆角（约300克）、盆或碗、沥水篮、刀、砧板、垫在砧板下的湿布、装菜头的碗。",
+     "steps": [
+      "展示豆角。",
+      "掐掉豆角的一头，顺着侧面往下撕，把筋去掉。",
+      "另一头同样掐掉，菜头放进装菜头的碗里。",
+      "所有豆角都这样处理，放进盆里。",
+      "把豆角洗净，放进沥水篮里沥干。",
+      "在砧板上把一把豆角的头对齐排好。",
+      "一把一把切成长短均匀的段。",
+      "展示切好的豆角，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "掐豆角时拿在面前，让两只手都在画面里。",
+      "每切一刀前用猫爪手把豆角理齐。"
+     ]
+    }
+   }
+  }
+ ]
+}
