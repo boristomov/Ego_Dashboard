@@ -62,7 +62,7 @@
   },
   {
    "slug": "unpack-an-order",
-   "name": "Unpacking an order and returning the items to the shelves",
+   "name": "Unpacking an order",
    "headline": "Open a packed order box, check the items and put them back on the shelves",
    "description": "Open a sealed order box, take out the filler and unwrap the bubble wrap, check and count each item, return every item to its shelf location with the picking cart, then flatten the box and keep the packing materials for reuse. Where: the packing table and shelving area of a warehouse. You need: a sealed order box, box cutter, picking cart, a bin for filler, work gloves.",
    "steps": [
@@ -88,7 +88,7 @@
    ],
    "i18n": {
     "zh": {
-     "name": "拆开订单包裹并把商品放回货架",
+     "name": "拆开订单包裹",
      "headline": "打开打包好的订单纸箱，核对商品后放回货架",
      "description": "打开封好的订单纸箱，取出填充物，拆开气泡膜，逐件检查有无破损并清点数量，用拣货车把商品放回各自的货位，最后把纸箱压平，包装材料留着再用。场所：仓库的打包台和货架区。所需物品：封好的订单纸箱、美工刀、拣货车、装填充物的箱子、工作手套。",
      "steps": [
