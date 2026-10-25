@@ -1,5 +1,5 @@
 {
- "about": "8 new car care tasks in English and Chinese, plus washing a car by hand (already in the registry; this only adds it to the Car care tag). Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-25-nine-car-tasks.json --user <you> --apply",
+ "about": "9 new car care tasks in English and Chinese, plus washing a car by hand (already in the registry; this only adds it to the Car care tag). Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-25-ten-car-tasks.json --user <you> --apply",
  "defaults": {
   "sites": [
    "Beijing"
@@ -355,6 +355,58 @@
       "车牌不要出现在画面里。",
       "不要把水或清洁剂直接喷进发动机舱：只用湿抹布擦，别让水碰到电路。",
       "抹布和手远离皮带和风扇。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "replace-engine-air-filter",
+   "name": "Replacing the engine air filter",
+   "headline": "Open the air filter box, swap the old filter for a new one and close it",
+   "description": "With the engine off and cool, open the bonnet, undo the clips or screws on the air filter box, lift out the old filter, compare it with the new one, wipe out the box, seat the new filter the same way round and fasten the lid again. Where: a car parked on level ground, engine off and cool. You need: a car, a new air filter for this car model, a screwdriver (if the lid is screwed down), a cloth, disposable gloves.",
+   "steps": [
+    "Show the new filter, then open the bonnet and prop it up.",
+    "Find the air filter box: the large plastic box with a wide hose running to the engine.",
+    "Undo the clips or screws on the lid and lift the lid.",
+    "Lift out the old filter and hold it next to the new one to show the dirt.",
+    "Wipe the leaves and dust out of the bottom of the box with the cloth.",
+    "Fit the new filter the same way round, with its rubber edge sitting evenly all round.",
+    "Close the lid and fasten every clip or screw.",
+    "Close the bonnet, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep the licence plate out of the frame.",
+    "Don't let dirt fall into the opening that leads to the engine: wipe toward the outside of the box.",
+    "Check the lid is fastened all the way round: a gap lets unfiltered air into the engine.",
+    "For the next take, use another car or put the old filter back first."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Car care"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "更换发动机空气滤芯",
+     "headline": "打开空滤盒，把旧滤芯换成新滤芯再装好",
+     "description": "发动机熄火并冷却后，打开引擎盖，松开空滤盒上的卡扣或螺丝，取出旧滤芯，和新滤芯对比，把空滤盒擦干净，按原来的方向装好新滤芯，再把盖子扣紧。场所：停在平地上的车，发动机熄火并已冷却。所需物品：一辆车、适配该车型的新空气滤芯、螺丝刀（盖子用螺丝固定时）、抹布、一次性手套。",
+     "steps": [
+      "展示新滤芯，然后打开引擎盖并撑好。",
+      "找到空滤盒：一个连着粗管通向发动机的大塑料盒。",
+      "松开盖子上的卡扣或螺丝，掀开盖子。",
+      "取出旧滤芯，和新滤芯放在一起展示脏的程度。",
+      "用抹布把盒底的树叶和灰尘擦干净。",
+      "按原来的方向装好新滤芯，橡胶边四周都要压平整。",
+      "盖好盖子，扣紧每个卡扣或拧紧每颗螺丝。",
+      "合上引擎盖，然后停止录制。"
+     ],
+     "pitfalls": [
+      "车牌不要出现在画面里。",
+      "不要让脏东西掉进通向发动机的进气口：朝盒子外侧擦。",
+      "确认盖子四周都已扣紧：有缝隙会让未过滤的空气进入发动机。",
+      "下一次录制换一辆车，或先把旧滤芯装回去。"
      ]
     }
    }
