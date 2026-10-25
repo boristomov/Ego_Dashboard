@@ -1,5 +1,5 @@
 {
- "about": "3 new tasks in English and Chinese, the reverse of three packing tasks: unboxing and taking apart a desk fan, unpacking an order back onto the shelves, and unwrapping and unloading a pallet. Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-25-unpacking-tasks.json --user <you> --apply",
+ "about": "3 new tasks in English and Chinese, the reverse of three packing tasks: unboxing and taking apart a desk fan, unpacking an order back onto the shelves, and unwrapping and unloading a pallet. Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-25-unpacking-tasks.json --user <you> --apply. Each new task and the one it undoes name each other in reverseTask.",
  "defaults": {
   "sites": [
    "Beijing"
@@ -57,7 +57,8 @@
       "可以和“组装桌面风扇并装盒”交替录制，每一条都为下一条准备好材料。"
      ]
     }
-   }
+   },
+   "reverseTask": "assemble-a-desk-fan"
   },
   {
    "slug": "unpack-an-order",
@@ -105,7 +106,8 @@
       "可以和“仓库拣货并打包订单”交替录制，每一条都为下一条准备好材料。"
      ]
     }
-   }
+   },
+   "reverseTask": "pick-and-pack-order"
   },
   {
    "slug": "unwrap-a-pallet",
@@ -155,7 +157,23 @@
       "可以和“托盘货物缠绕膜打包”交替录制，每一条都为下一条准备好材料。"
      ]
     }
-   }
+   },
+   "reverseTask": "stretch-wrap-a-pallet"
+  },
+  {
+   "slug": "assemble-a-desk-fan",
+   "name": "Assembling a desk fan and boxing it",
+   "reverseTask": "unbox-and-disassemble-a-desk-fan"
+  },
+  {
+   "slug": "pick-and-pack-order",
+   "name": "Picking and packing an order",
+   "reverseTask": "unpack-an-order"
+  },
+  {
+   "slug": "stretch-wrap-a-pallet",
+   "name": "Stretch-wrapping a pallet",
+   "reverseTask": "unwrap-a-pallet"
   }
  ]
 }
