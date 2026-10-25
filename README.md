@@ -12,6 +12,7 @@ The current build ships:
 - A **Dashboard** with per-stage live counts
 - A **Catalogue** page with thumbnails, artifact-availability badges, filters and search
 - A **Live postprocessing** page showing what the packaging boxes report to S3 (today the Wirestock packager on EC2)
+- A **Collection Platform Twin** page (admins) showing the station UI from ThothAI_FRONTEND main, running against a pretend recorder in the browser
 
 The frontend is React + Vite + TypeScript + Tailwind. A tiny Express proxy (`server/`) signs S3 requests during development; production reads a pre-generated static snapshot, so no creds ever ship to the browser.
 
@@ -65,6 +66,7 @@ Strategy: **bake a static snapshot at build time**, so the browser never needs A
    - `AWS_ACCESS_KEY_ID` — required for the catalogue snapshot
    - `AWS_SECRET_ACCESS_KEY` — required for the catalogue snapshot
    - `AWS_FLEET_ACCESS_KEY_ID` / `AWS_FLEET_SECRET_ACCESS_KEY` — production-account key for the station heartbeats and the packager status on the live postprocessing page. The box list lives in `src/lib/instances.ts`.
+   - `TWIN_FRONTEND_DEPLOY_KEY` — private half of a read-only deploy key on `boristomov/ThothAI_FRONTEND`, for the Collection Platform Twin. Without it the twin page says it isn't in the build.
 
 2. (Optional) Override defaults via **repository variables**:
    - `AWS_REGION` (default `ap-southeast-1`)
@@ -87,6 +89,12 @@ The first push to `main` (or a manual run of the workflow) will publish the site
 Each box writes its own report to the production processed bucket as it works: the Wirestock packager (`scripts/wirestock_packager.py` in the recorder repo) rewrites `_packager/wirestock/status.json` at every step and at least once a minute, and marks it stopped before it shuts down. `scripts/poll-instances.mjs` runs in the GitHub Actions runner, reads each report and writes `public/instances.json`; a report more than 10 min old from a box that never said it stopped shows as offline.
 
 The dashboard reads that file like it reads `catalogue.json`, so the page is at most one cron run (~5 min) behind the box.
+
+### How the Collection Platform Twin is built
+
+The workflow checks out ThothAI_FRONTEND `main` and runs `npm run build:twin` in `frontend/`: the real operator UI, with `src/twin/` standing in for the recorder, receiver, mic service and voice search inside the browser. The build is cached per commit, so it only reruns when main moves. Each run also writes the twin's task list from the live registry (`_registry/registry.json`, tasks only, via `scripts/twin-tasks.mjs`), then copies everything to `/twin/`. `twin-data/build.json` there says which commit it is, and the page shows that and the last 8 commits.
+
+The twin uses this computer's camera and mic where the rig uses its own; nothing is recorded or uploaded. "Hand check off" (`?hands=off`) skips the both-hands-in-shot start gate. Voice search in the twin uses the browser's speech recognition, which in Chrome goes through Google and so needs a VPN from China.
 
 ### Manual local build (for testing the static path)
 

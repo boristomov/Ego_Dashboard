@@ -1,0 +1,488 @@
+{
+  "_comment": "Categories for the station task picker's filter chips. Tags only; every other field is left as it is.",
+  "tasks": [
+    {
+      "slug": "washing-dishes",
+      "name": "Washing Dishes",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "make-bed",
+      "name": "Make bed",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "sweep-a-floor",
+      "name": "Sweep a floor",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "mop-a-floor",
+      "name": "Mop a floor",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "clean-a-countertop-with-spray",
+      "name": "Clean a countertop with spray",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "clean-a-window",
+      "name": "Clean a window or glass surface",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "dust-shelves",
+      "name": "Dust shelves and objects",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "scrub-a-sink",
+      "name": "Scrub a sink",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "load-a-dish-rack",
+      "name": "Load a dish drying rack",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "put-away-groceries",
+      "name": "Put away groceries",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "sort-cutlery",
+      "name": "Sort cutlery into a drawer organizer",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "change-a-trash-bag",
+      "name": "Change a trash bag",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "organize-a-desk",
+      "name": "Organize a desk",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "sort-waste-at-a-waste-station",
+      "name": "Sorting household waste at a waste station",
+      "tags": [
+        "Housework"
+      ]
+    },
+    {
+      "slug": "folding-a-towel",
+      "name": "Folding a towel",
+      "tags": [
+        "Laundry and clothing"
+      ]
+    },
+    {
+      "slug": "folding-laundry",
+      "name": "Folding Laundry",
+      "tags": [
+        "Laundry and clothing"
+      ]
+    },
+    {
+      "slug": "hang-clothes-on-a-rack",
+      "name": "Hang clothes on a rack",
+      "tags": [
+        "Laundry and clothing"
+      ]
+    },
+    {
+      "slug": "tie-shoelaces",
+      "name": "Tie shoelaces",
+      "tags": [
+        "Laundry and clothing"
+      ]
+    },
+    {
+      "slug": "button-a-shirt",
+      "name": "Button and unbutton a shirt",
+      "tags": [
+        "Laundry and clothing"
+      ]
+    },
+    {
+      "slug": "pack-a-bag",
+      "name": "Pack a bag",
+      "tags": [
+        "Laundry and clothing"
+      ]
+    },
+    {
+      "slug": "shine-shoes-outdoors",
+      "name": "Shining shoes outdoors",
+      "tags": [
+        "Laundry and clothing"
+      ]
+    },
+    {
+      "slug": "prepare-a-salad",
+      "name": "Prepare a salad",
+      "tags": [
+        "Culinary work"
+      ]
+    },
+    {
+      "slug": "peel-a-shell-food",
+      "name": "Peel a shell (Food)",
+      "tags": [
+        "Culinary work"
+      ]
+    },
+    {
+      "slug": "pour-and-serve-drinks",
+      "name": "Pour and serve drinks",
+      "tags": [
+        "Culinary work"
+      ]
+    },
+    {
+      "slug": "make-a-sandwich",
+      "name": "Make a sandwich",
+      "tags": [
+        "Culinary work"
+      ]
+    },
+    {
+      "slug": "crack-and-whisk-eggs",
+      "name": "Crack and whisk eggs",
+      "tags": [
+        "Culinary work"
+      ]
+    },
+    {
+      "slug": "wrap-dumplings",
+      "name": "Wrap dumplings",
+      "tags": [
+        "Culinary work"
+      ]
+    },
+    {
+      "slug": "grill-at-an-outdoor-barbecue",
+      "name": "Grilling at an outdoor barbecue",
+      "tags": [
+        "Culinary work"
+      ]
+    },
+    {
+      "slug": "cook-a-home-style-dish",
+      "name": "Cooking a home-style dish",
+      "tags": [
+        "Culinary work"
+      ]
+    },
+    {
+      "slug": "cleaning-weeds-with-a-shovel",
+      "name": "Cleaning weeds with a shovel",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "water-plants",
+      "name": "Water Plants",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "repot-a-plant",
+      "name": "Repot a plant",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "loosen-and-fertilize-soil",
+      "name": "Loosening and fertilizing a small patch of soil",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "plant-seedlings-in-a-pot",
+      "name": "Planting seedlings in a pot or planter box",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "prune-a-shrub",
+      "name": "Pruning a shrub with hand shears",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "mulch-a-tree-pit-or-pot",
+      "name": "Mulching a tree pit or large pot",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "sow-seeds-in-a-planter",
+      "name": "Sowing seeds in a planter box",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "care-for-outdoor-potted-plants",
+      "name": "Routine care for outdoor potted plants",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "collect-leaves-for-compost",
+      "name": "Collecting fallen leaves for compost",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "mix-potting-soil",
+      "name": "Mixing potting soil and filling a planter box",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "greenhouse-cuttings",
+      "name": "Taking cuttings in a greenhouse",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "greenhouse-repotting",
+      "name": "Repotting potted plants in a greenhouse",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "greenhouse-drip-lines",
+      "name": "Checking and clearing greenhouse drip lines",
+      "tags": [
+        "Gardening"
+      ]
+    },
+    {
+      "slug": "make-origami",
+      "name": "Make Origami",
+      "tags": [
+        "Hand skills"
+      ]
+    },
+    {
+      "slug": "chopsticks-transfer",
+      "name": "Transfer objects with chopsticks",
+      "tags": [
+        "Hand skills"
+      ]
+    },
+    {
+      "slug": "wrap-a-gift",
+      "name": "Wrap a gift",
+      "tags": [
+        "Hand skills"
+      ]
+    },
+    {
+      "slug": "build-with-blocks",
+      "name": "Build with interlocking blocks",
+      "tags": [
+        "Hand skills"
+      ]
+    },
+    {
+      "slug": "open-and-close-containers",
+      "name": "Open and close containers",
+      "tags": [
+        "Hand skills"
+      ]
+    },
+    {
+      "slug": "coil-cables",
+      "name": "Coil and tie cables",
+      "tags": [
+        "Hand skills"
+      ]
+    },
+    {
+      "slug": "use-a-screwdriver",
+      "name": "Drive screws with a screwdriver",
+      "tags": [
+        "Repairs and tools"
+      ]
+    },
+    {
+      "slug": "replace-a-lamp-switch",
+      "name": "Replacing a desk lamp switch",
+      "tags": [
+        "Repairs and tools"
+      ]
+    },
+    {
+      "slug": "service-a-vacuum-cleaner",
+      "name": "Servicing a vacuum cleaner",
+      "tags": [
+        "Repairs and tools"
+      ]
+    },
+    {
+      "slug": "fix-an-ebike-puncture",
+      "name": "Fixing an e-bike inner tube puncture",
+      "tags": [
+        "Repairs and tools"
+      ]
+    },
+    {
+      "slug": "ebike-brakes-and-chain",
+      "name": "Adjusting e-bike brakes and oiling the chain",
+      "tags": [
+        "Repairs and tools"
+      ]
+    },
+    {
+      "slug": "check-oil-and-fluids",
+      "name": "Checking engine oil and topping up fluids",
+      "tags": [
+        "Car care"
+      ]
+    },
+    {
+      "slug": "change-a-tire",
+      "name": "Changing a tire with the spare",
+      "tags": [
+        "Car care"
+      ]
+    },
+    {
+      "slug": "assemble-a-desk-fan",
+      "name": "Assembling a desk fan and boxing it",
+      "tags": [
+        "Furniture and artifact assembly"
+      ]
+    },
+    {
+      "slug": "assemble-an-office-chair",
+      "name": "Assembling an office chair",
+      "tags": [
+        "Furniture and artifact assembly"
+      ]
+    },
+    {
+      "slug": "courier-parcel-sorting",
+      "name": "Sorting and shelving parcels at a courier station",
+      "tags": [
+        "Retail and logistics"
+      ]
+    },
+    {
+      "slug": "pick-and-pack-order",
+      "name": "Picking and packing an order",
+      "tags": [
+        "Retail and logistics"
+      ]
+    },
+    {
+      "slug": "stretch-wrap-a-pallet",
+      "name": "Stretch-wrapping a pallet",
+      "tags": [
+        "Retail and logistics"
+      ]
+    },
+    {
+      "slug": "restock-supermarket-shelves",
+      "name": "Restocking and facing supermarket shelves",
+      "tags": [
+        "Retail and logistics"
+      ]
+    },
+    {
+      "slug": "restock-produce-section",
+      "name": "Restocking the produce section",
+      "tags": [
+        "Retail and logistics"
+      ]
+    },
+    {
+      "slug": "sew-a-pillowcase",
+      "name": "Sewing a pillowcase on a sewing machine",
+      "tags": [
+        "Sewing and textiles"
+      ]
+    },
+    {
+      "slug": "cut-fabric-to-a-pattern",
+      "name": "Cutting fabric to a pattern",
+      "tags": [
+        "Sewing and textiles"
+      ]
+    },
+    {
+      "slug": "hand-stitch-buttons-and-seams",
+      "name": "Hand-sewing buttons and mending a seam",
+      "tags": [
+        "Sewing and textiles"
+      ]
+    },
+    {
+      "slug": "sew-a-button",
+      "name": "Thread a needle and sew a button",
+      "tags": [
+        "Sewing and textiles"
+      ]
+    },
+    {
+      "slug": "prepare-a-saline-solution",
+      "name": "Preparing a sodium chloride solution",
+      "tags": [
+        "Lab work"
+      ]
+    },
+    {
+      "slug": "pipette-into-tubes",
+      "name": "Pipetting liquid into tubes",
+      "tags": [
+        "Lab work"
+      ]
+    }
+  ]
+}

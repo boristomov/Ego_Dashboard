@@ -52,6 +52,8 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      TWIN_KEY_SET: ${{ secrets.TWIN_FRONTEND_DEPLOY_KEY != '' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -181,6 +183,69 @@ jobs:
           # Browser shows only the pilot dataset.
           VITE_PROJECTS_ENDPOINT: ${{ vars.VITE_PROJECTS_ENDPOINT }}
         run: npm run build
+
+      # Collection Platform Twin (the /twin page): the station UI from
+      # ThothAI_FRONTEND main, built to run against a pretend recorder in the
+      # browser, served from /twin/. That repo is private, so this needs a
+      # read-only deploy key in TWIN_FRONTEND_DEPLOY_KEY; without one the page
+      # says so. The twin is rebuilt only when main moves, but its task list is
+      # refreshed from the live registry on every run. Failures here never
+      # hold up the deploy: the catalogue's presigned URLs matter more.
+      - name: Checkout station UI for the twin
+        if: ${{ env.TWIN_KEY_SET == 'true' }}
+        continue-on-error: true
+        uses: actions/checkout@v4
+        with:
+          repository: boristomov/ThothAI_FRONTEND
+          ref: main
+          ssh-key: ${{ secrets.TWIN_FRONTEND_DEPLOY_KEY }}
+          path: twin-src
+          fetch-depth: 10
+
+      - name: Twin commit
+        id: twin
+        if: ${{ env.TWIN_KEY_SET == 'true' }}
+        continue-on-error: true
+        run: echo "sha=$(git -C twin-src rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore twin build
+        id: twin-cache
+        if: ${{ steps.twin.outputs.sha != '' }}
+        continue-on-error: true
+        uses: actions/cache@v4
+        with:
+          path: twin-src/frontend/dist-twin
+          key: ego-twin-v1-${{ steps.twin.outputs.sha }}
+
+      - name: Build the twin
+        if: ${{ steps.twin.outputs.sha != '' && steps.twin-cache.outputs.cache-hit != 'true' }}
+        continue-on-error: true
+        working-directory: twin-src/frontend
+        run: npm ci --no-audit --no-fund && npm run build:twin
+
+      # Tasks only (names, descriptions, tags), never the staff or assignment
+      # parts of the registry. Without them the twin shows its sample tasks.
+      - name: Twin task list and publish
+        if: ${{ steps.twin.outputs.sha != '' }}
+        continue-on-error: true
+        working-directory: twin-src/frontend
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_FLEET_ACCESS_KEY_ID || secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_FLEET_SECRET_ACCESS_KEY || secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_REGION: ${{ vars.AWS_FLEET_REGION || 'us-west-2' }}
+          S3_FLEET_BUCKET: ${{ vars.S3_FLEET_BUCKET || 'egodata-raw-prod-854929212137-us-west-2-an' }}
+        run: |
+          test -f dist-twin/twin-data/build.json
+          reg="$RUNNER_TEMP/registry.json"
+          if aws s3 cp "s3://$S3_FLEET_BUCKET/_registry/registry.json" "$reg" --only-show-errors \
+             && node scripts/twin-tasks.mjs "$reg" > "$RUNNER_TEMP/tasks.json"; then
+            mv "$RUNNER_TEMP/tasks.json" dist-twin/twin-data/tasks.json
+          else
+            echo "::warning::Could not read the task registry; the twin shows its sample tasks."
+          fi
+          rm -f "$reg"
+          rm -rf "$GITHUB_WORKSPACE/dist/twin"
+          cp -r dist-twin "$GITHUB_WORKSPACE/dist/twin"
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
