@@ -1,0 +1,1477 @@
+{
+ "about": "30 new tasks in English and Chinese: 8 culinary work, 8 knife work, 7 gardening, 7 furniture and artifact assembly. Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-24-thirty-tasks.json --user <you> --apply",
+ "defaults": {
+  "sites": [
+   "Beijing"
+  ],
+  "state": "active",
+  "environmentIds": [],
+  "targetTakes": 40
+ },
+ "tasks": [
+  {
+   "slug": "knead-dough-and-shape-buns",
+   "name": "Kneading dough and shaping steamed buns",
+   "headline": "Mix, knead and shape dough into steamed buns",
+   "description": "Mix flour, yeast and water into a dough, knead it until smooth, roll it into a log, cut it into pieces and shape each piece into a round bun ready for steaming. Where: a home or canteen kitchen with a clear worktop. You need: flour, dry yeast, warm water, a large mixing bowl, a measuring cup, a dough scraper, a tray lined with baking paper.",
+   "steps": [
+    "Show the flour, yeast and water and say how much of each you will use.",
+    "Dissolve the yeast in the warm water.",
+    "Pour the water into the flour bit by bit, stirring with chopsticks until it forms flakes.",
+    "Press the flakes into one dough and knead it on the worktop until it is smooth.",
+    "Roll the dough into an even log.",
+    "Cut the log into equal pieces with the dough scraper.",
+    "Shape each piece into a round bun, tucking the edges underneath.",
+    "Set the buns on the tray, show them, then stop recording."
+   ],
+   "pitfalls": [
+    "Knead on the worktop in front of you, not on your lap, so both hands stay in view.",
+    "Dust the worktop lightly: a cloud of flour blurs the camera."
+   ],
+   "targetDurationSec": {
+    "min": 600,
+    "max": 1200
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "揉面做馒头",
+     "headline": "和面、揉面并做成馒头生坯",
+     "description": "把面粉、酵母和水和成面团，揉到光滑，搓成长条，切成小剂子，再把每个剂子揉成圆馒头，准备上锅蒸。场所：家庭或食堂厨房，台面要空出来。所需物品：面粉、干酵母、温水、大号和面盆、量杯、刮面板、铺好油纸的托盘。",
+     "steps": [
+      "展示面粉、酵母和水，说出各用多少。",
+      "把酵母放进温水里化开。",
+      "边往面粉里慢慢倒水，边用筷子搅成絮状。",
+      "把面絮压成一个面团，在台面上揉到光滑。",
+      "把面团搓成粗细均匀的长条。",
+      "用刮面板把长条切成大小相同的剂子。",
+      "把每个剂子揉成圆馒头，边缘收到底下。",
+      "把馒头生坯摆到托盘上展示，然后停止录制。"
+     ],
+     "pitfalls": [
+      "在面前的台面上揉面，不要放在腿上，让两只手都在画面里。",
+      "台面上的干粉撒薄一点：面粉扬起来会让画面模糊。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "roll-dumpling-wrappers",
+   "name": "Rolling dumpling wrappers by hand",
+   "headline": "Cut dough into pieces and roll round dumpling wrappers",
+   "description": "Roll a rested dough into a long rope, pinch or cut it into small pieces, flatten each piece with the palm, and roll it into a thin round wrapper with a small rolling pin, turning it as you go. Where: a home or canteen kitchen with a clear worktop. You need: a rested flour-and-water dough, a small rolling pin, flour for dusting, a dough scraper or knife, a plate or tray for the wrappers.",
+   "steps": [
+    "Show the dough and the rolling pin.",
+    "Roll the dough into a long, even rope.",
+    "Pinch or cut the rope into small, equal pieces and dust them with flour.",
+    "Press each piece flat with your palm.",
+    "Roll each piece into a round wrapper, turning it a little after every stroke so the edge is thinner than the middle.",
+    "Stack the finished wrappers on the plate with a little flour between them.",
+    "Show the stack of wrappers, then stop recording."
+   ],
+   "pitfalls": [
+    "Roll at least 15 wrappers per take, so the motion repeats many times.",
+    "Keep the rolling pin and both hands over the worktop in front of you."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "手擀饺子皮",
+     "headline": "切剂子并擀成圆形饺子皮",
+     "description": "把醒好的面团搓成长条，揪成或切成小剂子，用手掌压扁，再用小擀面杖边擀边转，擀成一张张薄而圆的饺子皮。场所：家庭或食堂厨房，台面要空出来。所需物品：醒好的面团、小擀面杖、撒手的干面粉、刮面板或刀、放饺子皮的盘子或托盘。",
+     "steps": [
+      "展示面团和擀面杖。",
+      "把面团搓成粗细均匀的长条。",
+      "把长条揪成或切成大小相同的剂子，撒上干粉。",
+      "用手掌把每个剂子压扁。",
+      "把每个剂子擀成圆皮，每擀一下转一点，让边缘比中间薄。",
+      "把擀好的饺子皮摞在盘子里，中间撒点干粉。",
+      "展示一摞饺子皮，然后停止录制。"
+     ],
+     "pitfalls": [
+      "每次录制至少擀15张皮，让动作多次重复。",
+      "擀面杖和两只手都保持在面前的台面上方。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "make-scallion-pancakes",
+   "name": "Making scallion pancakes",
+   "headline": "Roll, fill, coil and pan-fry scallion pancakes",
+   "description": "Roll a piece of dough thin, brush it with oil, sprinkle chopped scallion and salt, roll it up into a rope, coil the rope and flatten it again, then pan-fry the pancake until golden on both sides. Where: a home kitchen with a stove. You need: a rested dough, chopped scallion, salt, cooking oil and a small brush or spoon, a rolling pin, a frying pan, a spatula, a plate.",
+   "steps": [
+    "Show the dough, the scallion and the oil.",
+    "Roll a piece of dough into a thin sheet.",
+    "Brush the sheet with oil and sprinkle the scallion and salt over it.",
+    "Roll the sheet up into a rope and coil the rope into a spiral.",
+    "Flatten the spiral into a round pancake with the rolling pin.",
+    "Heat the pan with a little oil and fry the pancake, flipping it when the underside is golden.",
+    "Move the cooked pancake onto the plate.",
+    "Show the pancake, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep your head back from hot oil: splashes can hit the camera.",
+    "Make at least two pancakes per take."
+   ],
+   "targetDurationSec": {
+    "min": 720,
+    "max": 1500
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "做葱油饼",
+     "headline": "擀皮、撒葱、卷起盘好，再下锅煎葱油饼",
+     "description": "把一块面团擀薄，刷油，撒上葱花和盐，卷成长条后盘成圆饼再擀扁，下锅煎到两面金黄。场所：有灶台的家庭厨房。所需物品：醒好的面团、葱花、盐、食用油和小刷子或勺子、擀面杖、平底锅、锅铲、盘子。",
+     "steps": [
+      "展示面团、葱花和油。",
+      "把一块面团擀成薄片。",
+      "在面片上刷油，撒上葱花和盐。",
+      "把面片卷成长条，再盘成螺旋状。",
+      "用擀面杖把螺旋面饼擀成圆饼。",
+      "锅里放少许油烧热，下饼煎，底面金黄后翻面。",
+      "把煎好的饼盛到盘子里。",
+      "展示葱油饼，然后停止录制。"
+     ],
+     "pitfalls": [
+      "头部离热油远一点：油溅起来会打到镜头。",
+      "每次录制至少做两张饼。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "cook-noodles-and-serve",
+   "name": "Cooking noodles and serving them",
+   "headline": "Boil noodles, prepare the bowls and serve",
+   "description": "Bring water to a boil, cook the noodles while stirring them apart, blanch a handful of greens, season the bowls, lift the noodles out with chopsticks or a strainer and serve them with the greens on top. Where: a home or canteen kitchen with a stove. You need: dry or fresh noodles, a pot of water, a handful of leafy greens, long chopsticks or a strainer, two bowls, soy sauce, vinegar or other seasoning.",
+   "steps": [
+    "Show the noodles, the greens and the seasoning.",
+    "Put the pot of water on the stove and bring it to a boil.",
+    "Add the noodles and stir them apart with the chopsticks.",
+    "While they cook, put the seasoning into the bowls.",
+    "Add the greens to the pot for the last minute.",
+    "Lift the noodles and greens into the bowls, dividing them evenly.",
+    "Add a ladle of the cooking water to each bowl and turn off the stove.",
+    "Show the bowls, then stop recording."
+   ],
+   "pitfalls": [
+    "Steam fogs the camera: lean back when you lift the lid or the noodles.",
+    "Use a different kind of noodle or greens on different days."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "煮面条并盛碗",
+     "headline": "煮面条、调好碗底并盛出",
+     "description": "把水烧开，下面条并用筷子搅散，烫一把青菜，在碗里调好味，用筷子或漏勺把面条捞进碗里，盖上青菜。场所：有灶台的家庭或食堂厨房。所需物品：干面条或鲜面条、一锅水、一把青菜、长筷子或漏勺、两个碗、酱油、醋或其他调料。",
+     "steps": [
+      "展示面条、青菜和调料。",
+      "把一锅水放到灶上烧开。",
+      "下面条，用筷子搅散。",
+      "煮面的同时，把调料放进碗里。",
+      "出锅前一分钟把青菜放进锅里。",
+      "把面条和青菜平均捞进两个碗里。",
+      "每碗加一勺面汤，关火。",
+      "展示两碗面，然后停止录制。"
+     ],
+     "pitfalls": [
+      "蒸汽会让镜头起雾：掀锅盖或捞面时身体往后靠。",
+      "不同的日子换不同的面条或青菜。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "wash-rice-and-cook-it",
+   "name": "Washing rice and cooking it in a rice cooker",
+   "headline": "Measure, wash and cook rice in a rice cooker",
+   "description": "Measure the rice, wash it in the inner pot by swirling and draining it until the water runs almost clear, add the right amount of water, and start the rice cooker. Where: a home or canteen kitchen with a sink. You need: rice, a measuring cup, a rice cooker and its inner pot, running water.",
+   "steps": [
+    "Show the rice and the rice cooker.",
+    "Measure the rice into the inner pot, counting the cups out loud.",
+    "Add water and swirl the rice with your hand.",
+    "Tilt the pot and pour off the cloudy water while holding the rice back with your hand.",
+    "Repeat until the water is almost clear.",
+    "Add fresh water up to the line for the number of cups.",
+    "Wipe the outside of the pot, set it in the cooker, close the lid and start it.",
+    "Show the cooker running, then stop recording."
+   ],
+   "pitfalls": [
+    "Look down into the pot while you wash, so the rice and your hand stay in frame.",
+    "Splash as little as possible near the camera."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "淘米煮饭",
+     "headline": "量米、淘米并用电饭煲煮饭",
+     "description": "量好米，在内胆里用手搅动、倒掉浑水，反复淘洗到水基本变清，加入适量的水，启动电饭煲。场所：有水槽的家庭或食堂厨房。所需物品：大米、量杯、电饭煲及内胆、自来水。",
+     "steps": [
+      "展示大米和电饭煲。",
+      "把米量进内胆，大声数出几杯。",
+      "加水，用手搅动米粒。",
+      "倾斜内胆，用手挡住米，把浑水倒掉。",
+      "反复淘洗，直到水基本变清。",
+      "加清水到对应杯数的刻度线。",
+      "擦干内胆外壁，放进电饭煲，盖上盖子并启动。",
+      "展示电饭煲开始工作，然后停止录制。"
+     ],
+     "pitfalls": [
+      "淘米时低头看着内胆，让米和手都在画面里。",
+      "尽量不要让水溅到镜头附近。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "brew-gongfu-tea",
+   "name": "Brewing tea gongfu style",
+   "headline": "Warm the teaware, brew tea in a gaiwan and pour it into cups",
+   "description": "Warm the gaiwan or small teapot and the cups with hot water, add the tea leaves, rinse them once, then brew several short infusions, pouring each into a fair pitcher and then into the cups. Where: a table or tea tray at home, in an office or a tea room. You need: a gaiwan or small teapot, a fair pitcher, two to four small cups, loose tea leaves, a kettle of hot water, a tea tray or towel.",
+   "steps": [
+    "Show the teaware and the tea leaves and name the tea.",
+    "Pour hot water into the gaiwan, the pitcher and the cups to warm them, then empty them.",
+    "Put the tea leaves into the gaiwan.",
+    "Add hot water, then pour it straight off to rinse the leaves.",
+    "Add hot water again and wait a few seconds.",
+    "Pour the tea through the lid gap into the fair pitcher.",
+    "Pour from the pitcher into each cup.",
+    "Brew at least two more infusions the same way, show the full cups, then stop recording."
+   ],
+   "pitfalls": [
+    "Hold the gaiwan by its rim and lid: it gets hot.",
+    "Keep the tea tray directly in front of you so the pours stay in view."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "功夫茶泡茶",
+     "headline": "温杯烫壶，用盖碗冲泡并分茶",
+     "description": "用热水温热盖碗或小茶壶和茶杯，投茶后先洗一次茶，再连续冲泡几泡，每泡先倒进公道杯，再分到各个茶杯里。场所：家里、办公室或茶室的桌子或茶盘。所需物品：盖碗或小茶壶、公道杯、两到四个小茶杯、散装茶叶、一壶热水、茶盘或茶巾。",
+     "steps": [
+      "展示茶具和茶叶，说出是什么茶。",
+      "往盖碗、公道杯和茶杯里倒热水温热，再倒掉。",
+      "把茶叶放进盖碗。",
+      "注入热水后马上倒掉，洗一次茶。",
+      "再次注水，等几秒。",
+      "从盖碗的缝隙把茶汤倒进公道杯。",
+      "从公道杯把茶分到每个茶杯里。",
+      "按同样方法至少再泡两泡，展示倒满的茶杯，然后停止录制。"
+     ],
+     "pitfalls": [
+      "拿盖碗时捏住碗沿和盖子：盖碗会很烫。",
+      "茶盘放在正前方，让每次倒茶都在画面里。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "make-pour-over-coffee",
+   "name": "Making pour-over coffee",
+   "headline": "Weigh, grind and brew one pour-over coffee",
+   "description": "Weigh the coffee beans, grind them, rinse the paper filter, add the grounds, let them bloom with a little water and then pour the rest slowly in circles, and serve the coffee in a cup. Where: a kitchen, office pantry or café counter. You need: coffee beans, a grinder, a kitchen scale, a dripper and paper filter, a gooseneck kettle with hot water, a server or mug.",
+   "steps": [
+    "Show the beans and the equipment.",
+    "Weigh the beans on the scale.",
+    "Grind the beans.",
+    "Put the filter in the dripper and rinse it with hot water, then pour that water away.",
+    "Add the grounds, level them and zero the scale.",
+    "Pour a little water to let the coffee bloom, and wait.",
+    "Pour the rest of the water slowly in circles, watching the weight.",
+    "Remove the dripper, show the coffee, then stop recording."
+   ],
+   "pitfalls": [
+    "Read the scale out loud rather than bringing your face close to it.",
+    "Keep the kettle spout pointed away from the camera."
+   ],
+   "targetDurationSec": {
+    "min": 360,
+    "max": 720
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "手冲咖啡",
+     "headline": "称豆、磨粉，冲一杯手冲咖啡",
+     "description": "称好咖啡豆并磨成粉，用热水润湿滤纸，倒入咖啡粉，先注少量水闷蒸，再慢慢画圈注入剩下的水，最后把咖啡倒进杯子里。场所：厨房、办公室茶水间或咖啡馆吧台。所需物品：咖啡豆、磨豆机、厨房秤、滤杯和滤纸、装热水的细口壶、分享壶或马克杯。",
+     "steps": [
+      "展示咖啡豆和器具。",
+      "用秤称好咖啡豆。",
+      "把咖啡豆磨成粉。",
+      "把滤纸放进滤杯，用热水润湿，再把这些水倒掉。",
+      "倒入咖啡粉，抹平，秤归零。",
+      "注入少量热水闷蒸，等一会儿。",
+      "慢慢画圈注入剩下的水，同时看着重量。",
+      "取下滤杯，展示咖啡，然后停止录制。"
+     ],
+     "pitfalls": [
+      "把秤上的读数念出来，不要把脸凑近去看。",
+      "壶嘴不要对着镜头。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "mix-sauce-and-marinate-meat",
+   "name": "Mixing a sauce and marinating meat",
+   "headline": "Measure and mix a marinade, then work it into sliced meat",
+   "description": "Measure soy sauce, cooking wine, starch and other seasonings into a bowl, stir them into a smooth sauce, pour it over sliced meat, massage it in by hand or with chopsticks, cover the bowl and set it aside. Where: a home or canteen kitchen. You need: sliced meat (chicken, pork or beef), soy sauce, cooking wine, starch, salt, sugar or pepper, measuring spoons, two bowls, chopsticks, cling film or a lid.",
+   "steps": [
+    "Show the meat and the seasonings and name each one.",
+    "Measure each seasoning into the small bowl, saying the amount.",
+    "Stir until the starch has dissolved and the sauce is smooth.",
+    "Put the meat in the large bowl and pour the sauce over it.",
+    "Work the sauce into the meat with chopsticks or a gloved hand until it is evenly coated.",
+    "Add a little oil and mix once more.",
+    "Cover the bowl and wipe the worktop.",
+    "Show the covered bowl, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep bottle labels turned away from the camera.",
+    "Use a different meat or sauce from one take to the next."
+   ],
+   "targetDurationSec": {
+    "min": 360,
+    "max": 720
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "调酱汁腌肉",
+     "headline": "量取调料调成腌料，再抓匀到肉片里",
+     "description": "把酱油、料酒、淀粉等调料量进碗里搅成顺滑的酱汁，倒在肉片上，用手或筷子抓匀，盖好碗放在一边腌制。场所：家庭或食堂厨房。所需物品：切好的肉片（鸡肉、猪肉或牛肉）、酱油、料酒、淀粉、盐、糖或胡椒粉、量勺、两个碗、筷子、保鲜膜或盖子。",
+     "steps": [
+      "展示肉片和调料，逐一说出名称。",
+      "把每种调料量进小碗里，说出用量。",
+      "搅拌到淀粉化开、酱汁顺滑。",
+      "把肉片放进大碗，倒入酱汁。",
+      "用筷子或戴手套的手把酱汁抓匀，让每片肉都裹上。",
+      "加少许油再拌一次。",
+      "盖好碗，擦干净台面。",
+      "展示盖好的碗，然后停止录制。"
+     ],
+     "pitfalls": [
+      "调料瓶上的标签不要对着镜头。",
+      "每次录制换不同的肉或不同的酱汁。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "dice-an-onion",
+   "name": "Dicing an onion",
+   "headline": "Peel an onion and dice it evenly",
+   "description": "Cut the ends off an onion, halve it, peel it, make horizontal and vertical cuts toward the root, then slice across to get even dice, and scrape them into a bowl. Where: a kitchen worktop. You need: one or two onions, a chef's knife, a cutting board, a damp cloth under the board, a bowl.",
+   "steps": [
+    "Show the onion, the knife and the board.",
+    "Cut off the top, leaving the root on.",
+    "Halve the onion through the root and peel off the papery skin.",
+    "Lay one half flat and make vertical cuts toward the root without cutting through it.",
+    "Make one or two horizontal cuts toward the root.",
+    "Slice across the cuts to make even dice.",
+    "Repeat with the other half, then scrape the dice into the bowl with the back of the knife.",
+    "Show the diced onion, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Put the damp cloth under the board so it cannot slide.",
+    "If your eyes water, pause the cutting rather than wiping your face near the camera."
+   ],
+   "targetDurationSec": {
+    "min": 240,
+    "max": 600
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "洋葱切丁",
+     "headline": "洋葱去皮并切成均匀的丁",
+     "description": "切掉洋葱顶端，对半切开、去皮，先竖切和横切到靠近根部，再横向切成均匀的丁，用刀背刮进碗里。场所：厨房台面。所需物品：一到两个洋葱、厨师刀、砧板、垫在砧板下的湿布、碗。",
+     "steps": [
+      "展示洋葱、刀和砧板。",
+      "切掉顶端，保留根部。",
+      "从根部对半切开，剥掉外面的干皮。",
+      "把半个洋葱平放，朝根部竖切几刀，不要切断根部。",
+      "朝根部横切一到两刀。",
+      "横向切下去，切成均匀的丁。",
+      "另一半同样处理，再用刀背把洋葱丁刮进碗里。",
+      "展示切好的洋葱丁，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "砧板下垫湿布，防止砧板滑动。",
+      "如果被辣得流眼泪，先停刀，不要在镜头旁边擦脸。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "julienne-a-potato",
+   "name": "Cutting potatoes into fine shreds",
+   "headline": "Peel potatoes, slice them thin and cut them into fine shreds",
+   "description": "Peel the potatoes, cut a flat side so each one sits still, slice it into thin even slices, fan the slices out and cut them into fine shreds, and put the shreds into a bowl of water. Where: a kitchen worktop. You need: two potatoes, a peeler, a chef's knife or Chinese cleaver, a cutting board, a damp cloth under the board, a bowl of cold water.",
+   "steps": [
+    "Show the potatoes, the knife and the board.",
+    "Peel the potatoes with the peeler.",
+    "Cut a thin slice off one side so the potato sits flat.",
+    "Slice the potato into thin, even slices.",
+    "Fan the slices out in a row, overlapping.",
+    "Cut the slices into fine shreds.",
+    "Put the shreds into the bowl of water and repeat with the second potato.",
+    "Lift a handful of shreds to show them, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Go slowly: even shreds matter more than speed.",
+    "Keep the board low and in front of you so both hands and the board stay in frame."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 720
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "土豆切丝",
+     "headline": "土豆去皮、切薄片再切成细丝",
+     "description": "把土豆去皮，先切掉一面让它放稳，切成均匀的薄片，再把薄片错开排好切成细丝，放进清水碗里。场所：厨房台面。所需物品：两个土豆、削皮刀、厨师刀或中式菜刀、砧板、垫在砧板下的湿布、一碗凉水。",
+     "steps": [
+      "展示土豆、刀和砧板。",
+      "用削皮刀削掉土豆皮。",
+      "在一侧切下一薄片，让土豆放平。",
+      "把土豆切成均匀的薄片。",
+      "把薄片错开叠成一排。",
+      "把薄片切成细丝。",
+      "把土豆丝放进清水碗里，第二个土豆同样处理。",
+      "捞起一把土豆丝展示，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "慢慢切：丝切得均匀比速度更重要。",
+      "砧板放低、放在正前方，让两只手和砧板都在画面里。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "slice-meat-thinly",
+   "name": "Slicing meat thinly against the grain",
+   "headline": "Trim a piece of meat and slice it thinly against the grain",
+   "description": "Trim the fat and sinew off a piece of pork, beef or chicken breast, find the direction of the grain, and cut it into thin, even slices across the grain, laying them out on a plate. Where: a kitchen worktop. You need: a piece of pork, beef or chicken breast (partly frozen is easier), a sharp chef's knife or cleaver, a cutting board for raw meat, a damp cloth under the board, a plate, kitchen paper.",
+   "steps": [
+    "Show the meat and point out the direction of the grain.",
+    "Pat the meat dry with kitchen paper.",
+    "Trim off the fat and any sinew.",
+    "Turn the meat so the grain runs across the blade.",
+    "Cut thin, even slices, pressing down gently on the meat with your claw hand.",
+    "Lay the slices out on the plate in a row.",
+    "Wipe the board and the knife.",
+    "Show the sliced meat, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Use a board kept for raw meat and wash your hands afterwards.",
+    "Choose a different cut of meat on different days."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 720
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "逆纹切肉片",
+     "headline": "修整一块肉，逆着纹理切成薄片",
+     "description": "把一块猪肉、牛肉或鸡胸肉的肥油和筋膜修掉，找到肉的纹理方向，垂直于纹理切成均匀的薄片，摆在盘子里。场所：厨房台面。所需物品：一块猪肉、牛肉或鸡胸肉（稍微冻硬更好切）、锋利的厨师刀或菜刀、生肉专用砧板、垫在砧板下的湿布、盘子、厨房纸。",
+     "steps": [
+      "展示这块肉，指出纹理的方向。",
+      "用厨房纸吸干肉表面的水分。",
+      "修掉肥油和筋膜。",
+      "转动肉块，让纹理和刀刃垂直。",
+      "用猫爪手轻轻按住肉，切成均匀的薄片。",
+      "把肉片在盘子里排成一排。",
+      "擦干净砧板和刀。",
+      "展示切好的肉片，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "用生肉专用砧板，切完后洗手。",
+      "不同的日子换不同部位的肉。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "mince-garlic-ginger-scallion",
+   "name": "Mincing garlic, ginger and scallion",
+   "headline": "Prepare and mince garlic, ginger and scallion into separate piles",
+   "description": "Smash and peel the garlic, peel the ginger with a spoon or knife, then mince the garlic and ginger finely and chop the scallion into rings, keeping each in its own pile or small dish. Where: a kitchen worktop. You need: a head of garlic, a piece of ginger, two or three scallions, a chef's knife or cleaver, a cutting board, a damp cloth under the board, a spoon, three small dishes.",
+   "steps": [
+    "Show the garlic, ginger and scallion.",
+    "Crush the garlic cloves with the flat of the blade and peel them.",
+    "Scrape the skin off the ginger with the spoon.",
+    "Slice the ginger thin, then cut the slices into strips and mince them.",
+    "Mince the garlic, rocking the knife over it and gathering it back into a pile.",
+    "Wash and trim the scallions and chop them into rings.",
+    "Scrape each into its own dish.",
+    "Show the three dishes, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Press on the flat of the blade with your palm, never on the edge.",
+    "Keep the board in front of you so every pile stays in frame."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "切葱姜蒜末",
+     "headline": "处理并切好葱花、姜末和蒜末，分开放",
+     "description": "把蒜拍扁去皮，用勺子或刀刮掉姜皮，把蒜和姜剁成细末，把葱切成葱花，三样分别堆放或装进小碟。场所：厨房台面。所需物品：一头蒜、一块姜、两三根葱、厨师刀或菜刀、砧板、垫在砧板下的湿布、勺子、三个小碟。",
+     "steps": [
+      "展示蒜、姜和葱。",
+      "用刀面拍扁蒜瓣，剥掉蒜皮。",
+      "用勺子刮掉姜皮。",
+      "把姜切成薄片，再切丝，最后剁成末。",
+      "把蒜剁成末，刀前后摇动，不时把蒜末拢成一堆。",
+      "把葱洗净、去根，切成葱花。",
+      "把三样分别刮进各自的小碟。",
+      "展示三个小碟，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "用手掌按刀面，绝不要按刀刃。",
+      "砧板放在正前方，让每一堆都在画面里。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "roll-cut-vegetables",
+   "name": "Roll-cutting carrots and other vegetables",
+   "headline": "Cut carrots or similar vegetables into roll-cut chunks",
+   "description": "Peel carrots, a cucumber or an eggplant, and cut them into angled chunks by making a diagonal cut, rolling the vegetable a quarter turn and cutting again, so every chunk has two angled faces. Where: a kitchen worktop. You need: two carrots, or a cucumber or eggplant, a peeler, a chef's knife or cleaver, a cutting board, a damp cloth under the board, a bowl.",
+   "steps": [
+    "Show the vegetables and the knife.",
+    "Wash and peel the vegetables.",
+    "Cut off the ends.",
+    "Make a diagonal cut at one end.",
+    "Roll the vegetable a quarter turn toward you and cut again at the same angle.",
+    "Keep rolling and cutting until the whole vegetable is in chunks.",
+    "Put the chunks in the bowl and repeat with the next vegetable.",
+    "Show the chunks, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Roll the vegetable with your fingertips curled under, away from the blade.",
+    "Use a different vegetable from one take to the next."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "滚刀切块",
+     "headline": "把胡萝卜等蔬菜切成滚刀块",
+     "description": "把胡萝卜、黄瓜或茄子去皮，斜切一刀后把蔬菜滚动四分之一圈再斜切，如此反复，让每一块都有两个斜面。场所：厨房台面。所需物品：两根胡萝卜，或一根黄瓜、一个茄子、削皮刀、厨师刀或菜刀、砧板、垫在砧板下的湿布、碗。",
+     "steps": [
+      "展示蔬菜和刀。",
+      "把蔬菜洗净去皮。",
+      "切掉两头。",
+      "在一端斜切一刀。",
+      "把蔬菜朝自己滚动四分之一圈，用同样的角度再切一刀。",
+      "一直边滚边切，直到整根切完。",
+      "把切好的块放进碗里，再切下一根。",
+      "展示切好的滚刀块，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "滚动蔬菜时指尖向内弯曲，远离刀刃。",
+      "每次录制换一种蔬菜。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "peel-fruit-with-a-paring-knife",
+   "name": "Peeling apples and pears with a paring knife",
+   "headline": "Peel fruit in the hand with a paring knife, then core and slice it",
+   "description": "Hold an apple or pear in one hand and peel it with a paring knife in a continuous strip, turning the fruit toward the blade, then quarter it on a board, cut out the core and slice it. Where: a kitchen worktop or a table. You need: two apples or pears, a small paring knife, a cutting board, a plate, a bowl for the peel.",
+   "steps": [
+    "Show the fruit and the knife.",
+    "Hold the fruit in your hand and start peeling at the top.",
+    "Turn the fruit toward the blade, keeping the peel in one strip if you can.",
+    "Drop the peel into the bowl.",
+    "Quarter the fruit on the board.",
+    "Cut the core out of each quarter.",
+    "Slice the quarters and arrange them on the plate, then do the second fruit.",
+    "Show the plate of fruit, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Keep the thumb of the knife hand behind the blade while peeling, and peel toward the thumb slowly.",
+    "Hold the fruit in front of your chest, not close to the camera."
+   ],
+   "targetDurationSec": {
+    "min": 240,
+    "max": 600
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "用水果刀削苹果和梨",
+     "headline": "手持水果用水果刀削皮，再去核切块",
+     "description": "一只手拿着苹果或梨，另一只手用水果刀削皮，转动水果迎向刀刃，尽量削成一整条皮；再在砧板上切成四瓣，去核、切片。场所：厨房台面或桌子。所需物品：两个苹果或梨、小水果刀、砧板、盘子、装果皮的碗。",
+     "steps": [
+      "展示水果和刀。",
+      "手拿水果，从顶部开始削皮。",
+      "转动水果迎向刀刃，尽量让果皮连成一整条。",
+      "把果皮放进碗里。",
+      "在砧板上把水果切成四瓣。",
+      "把每一瓣的果核切掉。",
+      "把果肉切片摆到盘子里，再削第二个。",
+      "展示一盘水果，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "削皮时拿刀手的拇指放在刀刃后面，慢慢朝拇指方向削。",
+      "水果拿在胸前，不要凑近镜头。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "cut-a-melon",
+   "name": "Cutting a melon into slices and cubes",
+   "headline": "Cut a melon or watermelon into wedges, then remove the rind and cube it",
+   "description": "Halve a melon or a small watermelon, scoop out the seeds if it has them, cut it into wedges, cut the flesh away from the rind and cut the flesh into cubes. Where: a kitchen worktop or a sturdy table. You need: a melon or small watermelon, a large chef's knife, a large cutting board, a damp cloth under the board, a spoon, a bowl or plate.",
+   "steps": [
+    "Show the melon and the knife.",
+    "Cut a thin slice off the bottom so the melon sits still.",
+    "Halve the melon, then scoop out the seeds if it has them.",
+    "Cut each half into wedges.",
+    "Lay each wedge flat and run the knife between the flesh and the rind.",
+    "Cut the flesh into cubes.",
+    "Put the cubes into the bowl and throw away the rind.",
+    "Show the bowl of melon, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Always cut a flat base first: a rolling melon is where knives slip.",
+    "Juice on the board makes it slippery; wipe it as you go."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 720
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "切瓜：切片和切块",
+     "headline": "把哈密瓜或西瓜切成瓣，再去皮切成块",
+     "description": "把一个哈密瓜或小西瓜对半切开，有籽的话挖掉，切成一瓣瓣，再把果肉从瓜皮上片下来，切成小块。场所：厨房台面或结实的桌子。所需物品：一个哈密瓜或小西瓜、大号厨师刀、大砧板、垫在砧板下的湿布、勺子、碗或盘子。",
+     "steps": [
+      "展示瓜和刀。",
+      "先在底部切掉一薄片，让瓜放稳。",
+      "把瓜对半切开，有籽的话用勺子挖掉。",
+      "把每一半切成几瓣。",
+      "把每一瓣平放，用刀沿着果肉和瓜皮之间片开。",
+      "把果肉切成小块。",
+      "把瓜块放进碗里，瓜皮扔掉。",
+      "展示一碗瓜块，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "一定先切出平底：瓜一滚动，刀最容易打滑。",
+      "砧板上的汁水会让砧板变滑，边切边擦。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "sharpen-a-knife-on-a-whetstone",
+   "name": "Sharpening a kitchen knife on a whetstone",
+   "headline": "Sharpen a dull kitchen knife on a whetstone and test it",
+   "description": "Soak or wet the whetstone, set it on a damp cloth, sharpen both sides of the blade at a steady angle with even strokes, wipe the knife clean and test it by slicing paper or a tomato. Where: a kitchen worktop or workbench. You need: a dull kitchen knife, a whetstone, water, a damp cloth, a dry towel, a sheet of paper or a tomato for testing.",
+   "steps": [
+    "Show the knife and the stone and say how dull the knife is.",
+    "Wet the stone and set it on the damp cloth so it cannot move.",
+    "Hold the blade at a low, steady angle to the stone.",
+    "Push the blade across the stone from heel to tip with even pressure, about ten strokes.",
+    "Turn the knife over and do the same number of strokes on the other side.",
+    "Repeat with lighter strokes on both sides.",
+    "Rinse and dry the knife and the stone.",
+    "Test the edge on the paper or tomato, show the cut, then stop recording."
+   ],
+   "pitfalls": [
+    "Curl the fingertips of the hand holding the food under (claw grip), and keep the blade in the camera's view the whole time.",
+    "Keep your fingers on the flat of the blade, never in front of the edge.",
+    "Keep the stone low in front of you so the angle is visible to the camera."
+   ],
+   "targetDurationSec": {
+    "min": 360,
+    "max": 720
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "用磨刀石磨菜刀",
+     "headline": "用磨刀石把一把钝刀磨快并测试",
+     "description": "把磨刀石泡水或打湿，放在湿布上，用固定的角度、均匀的力度磨刀刃两面，擦干净刀后用纸或西红柿测试锋利程度。场所：厨房台面或工作台。所需物品：一把钝的菜刀、磨刀石、水、湿布、干毛巾、测试用的纸或西红柿。",
+     "steps": [
+      "展示刀和磨刀石，说说这把刀有多钝。",
+      "把磨刀石打湿，放在湿布上，防止它移动。",
+      "让刀刃和磨刀石保持一个较小且固定的角度。",
+      "从刀根到刀尖推过磨刀石，用力均匀，大约磨十下。",
+      "把刀翻过来，另一面磨同样的次数。",
+      "两面再轻轻各磨几下。",
+      "把刀和磨刀石冲洗干净并擦干。",
+      "用纸或西红柿测试刀刃，展示切口，然后停止录制。"
+     ],
+     "pitfalls": [
+      "扶食材的手指尖向内弯曲（猫爪手），刀刃全程保持在镜头画面里。",
+      "手指放在刀面上，绝不要放在刀刃前方。",
+      "磨刀石放低、放在正前方，让镜头能看清磨刀的角度。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "divide-a-potted-plant",
+   "name": "Dividing a potted plant into two",
+   "headline": "Take an overgrown plant out of its pot, split the root ball and replant both parts",
+   "description": "Ease an overgrown clump-forming plant (spider plant, aloe, chives, a fern or similar) out of its pot, loosen the soil, pull or cut the root ball into two or more parts, and plant each part in its own pot with fresh soil. Where: a balcony, yard, greenhouse or a table covered with newspaper. You need: an overgrown potted plant, two or three pots, fresh potting soil, a trowel, a small knife or garden shears, a watering can, gardening gloves, newspaper or a tray.",
+   "steps": [
+    "Show the plant and say why it needs dividing.",
+    "Tip the pot on its side and ease the plant out, tapping the pot if it sticks.",
+    "Loosen the old soil from the roots with your fingers.",
+    "Find the natural divisions and pull the clump apart, or cut it with the knife.",
+    "Put some fresh soil into each new pot.",
+    "Set one part in each pot and fill around it with soil, pressing it down.",
+    "Water each pot until water runs out of the bottom.",
+    "Show the new pots, then stop recording."
+   ],
+   "pitfalls": [
+    "Work over newspaper or a tray so the soil does not scatter.",
+    "Use a different plant each take."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Gardening"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "盆栽分株",
+     "headline": "把长得太满的植物脱盆，分开根团，分别种好",
+     "description": "把一盆长得太满的丛生植物（吊兰、芦荟、韭菜、蕨类等）从盆里取出，抖松泥土，把根团掰开或切成两份以上，分别种进加了新土的花盆里。场所：阳台、院子、温室，或铺了报纸的桌子。所需物品：一盆长得太满的植物、两三个花盆、新的营养土、小铲子、小刀或园艺剪、洒水壶、园艺手套、报纸或托盘。",
+     "steps": [
+      "展示这盆植物，说说为什么需要分株。",
+      "把花盆侧放，慢慢把植物取出来，卡住的话轻敲花盆。",
+      "用手指把根上的旧土弄松。",
+      "找到自然的分界，把植株掰开，或用小刀切开。",
+      "在每个新花盆里先放一些新土。",
+      "每个花盆放进一份植株，四周填土并压实。",
+      "给每盆浇水，浇到盆底流出水为止。",
+      "展示新种好的几盆，然后停止录制。"
+     ],
+     "pitfalls": [
+      "在报纸或托盘上操作，以免泥土撒得到处都是。",
+      "每次录制换一盆不同的植物。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "harvest-vegetables",
+   "name": "Harvesting vegetables from a bed or planter",
+   "headline": "Pick ripe vegetables, trim them and lay them out",
+   "description": "Walk along a vegetable bed, planter box or greenhouse row, pick the ripe vegetables or leaves (tomatoes, peppers, beans, cucumbers, leafy greens) by hand or with scissors, trim off soil and old leaves, and lay the harvest in a basket. Where: a vegetable bed, planter box, rooftop garden or greenhouse with ripe produce (ask first). You need: a basket or crate, garden scissors or shears, gardening gloves.",
+   "steps": [
+    "Walk along the plants and say what is ready to pick.",
+    "Check each fruit or leaf for ripeness before picking, turning it to look underneath.",
+    "Pick by twisting or cutting the stem, without pulling the plant.",
+    "Trim off soil, roots and damaged leaves.",
+    "Lay the harvest in the basket, heavy items at the bottom.",
+    "Clear any fallen leaves or rotten fruit from the bed.",
+    "Show the full basket, then stop recording."
+   ],
+   "pitfalls": [
+    "Move slowly between plants so the picture does not shake.",
+    "Only pick what is ripe, and only in a garden where you have permission."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Gardening"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "采收蔬菜",
+     "headline": "采摘成熟的蔬菜，修整后摆好",
+     "description": "沿着菜畦、种植箱或温室的一行植物走，用手或剪刀采摘成熟的果实或叶子（西红柿、辣椒、豆角、黄瓜、绿叶菜），去掉泥土和老叶，把收获放进篮子里。场所：有成熟蔬菜的菜畦、种植箱、屋顶花园或温室（先征得同意）。所需物品：篮子或筐、园艺剪刀、园艺手套。",
+     "steps": [
+      "沿着植物走，说出哪些可以采了。",
+      "采之前检查每个果实或叶子是否成熟，翻过来看看背面。",
+      "拧下或剪断果柄，不要连根拔植物。",
+      "去掉泥土、根和坏叶。",
+      "把收获放进篮子，重的放在下面。",
+      "清理菜畦里掉落的叶子和烂果。",
+      "展示装满的篮子，然后停止录制。"
+     ],
+     "pitfalls": [
+      "在植物之间慢慢移动，避免画面晃动。",
+      "只采成熟的，并且只在征得同意的菜园里采。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "stake-and-tie-plants",
+   "name": "Staking and tying up plants",
+   "headline": "Push in stakes beside tall plants and tie the stems to them",
+   "description": "Push bamboo stakes into the soil beside tall or leaning plants (tomatoes, peppers, beans, flowers), and tie each main stem loosely to its stake at a few points with garden twine or soft ties. Where: a vegetable bed, flower bed, large pots or a greenhouse. You need: bamboo stakes, garden twine or soft plant ties, scissors, gardening gloves.",
+   "steps": [
+    "Show the plants and say which ones are leaning or need support.",
+    "Push a stake into the soil a hand's width from the stem, without hitting the main root.",
+    "Gently straighten the stem toward the stake.",
+    "Tie the twine around the stake, then loosely around the stem in a figure of eight.",
+    "Add ties further up, every 20 to 30 cm.",
+    "Trim the loose ends of the twine.",
+    "Repeat for the other plants.",
+    "Show the staked plants, then stop recording."
+   ],
+   "pitfalls": [
+    "Look down at the base of the plant while pushing the stake, so the stake stays in frame.",
+    "Keep the ties loose enough for a finger to fit, or they will cut the stem as it grows."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Gardening"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "给植物立支架并绑扎",
+     "headline": "在高大植物旁插上支架，把茎绑上去",
+     "description": "在高大或歪倒的植物（西红柿、辣椒、豆角、花卉）旁边把竹竿插进土里，用园艺绳或软扎带把主茎松松地绑在竹竿上，绑几道。场所：菜畦、花坛、大花盆或温室。所需物品：竹竿、园艺绳或软扎带、剪刀、园艺手套。",
+     "steps": [
+      "展示这些植物，说出哪些歪了或需要支撑。",
+      "在离茎一掌宽的地方把竹竿插进土里，避开主根。",
+      "把茎轻轻扶正，靠向竹竿。",
+      "先把绳子绕在竹竿上，再以8字形松松地绕过茎。",
+      "往上每隔20到30厘米再绑一道。",
+      "剪掉多余的绳头。",
+      "其他植物同样处理。",
+      "展示绑好支架的植物，然后停止录制。"
+     ],
+     "pitfalls": [
+      "插竹竿时低头看着植物根部，让竹竿在画面里。",
+      "绑带要松到能塞进一根手指，否则植物长粗时会被勒伤。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "deadhead-and-tidy-plants",
+   "name": "Deadheading flowers and removing yellow leaves",
+   "headline": "Snip off spent flowers and yellow leaves to tidy a group of plants",
+   "description": "Go through a flower bed, a row of planters or a group of potted plants, snip off faded flowers just above a leaf or bud, remove yellow and dead leaves, and collect the clippings. Where: a flower bed, balcony, courtyard planters or a greenhouse. You need: small garden scissors or snips, a bucket or bag for clippings, gardening gloves.",
+   "steps": [
+    "Show the plants and point out the faded flowers and yellow leaves.",
+    "Follow each faded flower stem down to the first healthy leaf or bud.",
+    "Snip just above that leaf or bud.",
+    "Pull or snip off yellow and dead leaves at their base.",
+    "Drop all the clippings into the bucket as you go.",
+    "Pick up anything that fell onto the soil.",
+    "Show the tidied plants, then stop recording."
+   ],
+   "pitfalls": [
+    "Bring the plant toward you or crouch down rather than bending your head close.",
+    "Do at least 20 cuts per take."
+   ],
+   "targetDurationSec": {
+    "min": 360,
+    "max": 720
+   },
+   "tags": [
+    "Gardening"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "摘除残花和黄叶",
+     "headline": "剪掉凋谢的花和黄叶，把一组植物整理干净",
+     "description": "在花坛、一排种植箱或一组盆栽里，把凋谢的花在叶片或花苞上方剪掉，去掉发黄和枯死的叶子，把剪下的枝叶收集起来。场所：花坛、阳台、庭院种植箱或温室。所需物品：小园艺剪、装枝叶的桶或袋子、园艺手套。",
+     "steps": [
+      "展示这些植物，指出凋谢的花和黄叶。",
+      "顺着每枝残花的花茎往下找到第一片健康的叶子或花苞。",
+      "在那片叶子或花苞上方剪断。",
+      "把发黄和枯死的叶子从根部摘掉或剪掉。",
+      "边剪边把枝叶放进桶里。",
+      "捡起掉在土上的东西。",
+      "展示整理好的植物，然后停止录制。"
+     ],
+     "pitfalls": [
+      "把花盆拿近一点或蹲下来，不要把头凑得太近。",
+      "每次录制至少剪20下。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "treat-plant-pests",
+   "name": "Checking plants for pests and treating them",
+   "headline": "Inspect leaves for pests, wipe or pick them off and spray the plant",
+   "description": "Inspect the leaves of a group of plants on top and underneath for aphids, mites, caterpillars or snails, pick or wipe them off, cut off badly affected leaves, and spray the plant with a mild soap-and-water solution. Where: a balcony, garden bed, planters or a greenhouse. You need: a spray bottle with mild soapy water, a damp cloth or cotton pads, small scissors, a bag for removed leaves, gardening gloves.",
+   "steps": [
+    "Show the plants and say what pests you are looking for.",
+    "Turn the leaves over one by one and look underneath.",
+    "Point out any pests you find and say what they are.",
+    "Pick off larger pests and wipe smaller ones off with the damp cloth.",
+    "Cut off leaves that are badly affected and bag them.",
+    "Spray the plant evenly, including under the leaves.",
+    "Move on to the next plant and repeat.",
+    "Show the treated plants, then stop recording."
+   ],
+   "pitfalls": [
+    "Use only mild soapy water, not pesticide, so the take is safe to repeat anywhere.",
+    "Spray away from yourself: mist on the lens ruins the take."
+   ],
+   "targetDurationSec": {
+    "min": 360,
+    "max": 720
+   },
+   "tags": [
+    "Gardening"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "检查并处理植物虫害",
+     "headline": "检查叶片上的害虫，摘除或擦掉，再给植物喷洒",
+     "description": "逐片检查一组植物叶片的正面和背面，看有没有蚜虫、螨虫、毛毛虫或蜗牛，把它们摘掉或擦掉，剪掉受害严重的叶子，再用温和的肥皂水喷洒植物。场所：阳台、花坛、种植箱或温室。所需物品：装温和肥皂水的喷壶、湿布或化妆棉、小剪刀、装叶子的袋子、园艺手套。",
+     "steps": [
+      "展示这些植物，说出要找哪些害虫。",
+      "一片一片把叶子翻过来看背面。",
+      "指出发现的害虫，说出是什么虫。",
+      "大的害虫用手摘掉，小的用湿布擦掉。",
+      "剪掉受害严重的叶子，装进袋子。",
+      "均匀地喷洒植物，叶子背面也要喷到。",
+      "换下一株植物，重复以上步骤。",
+      "展示处理好的植物，然后停止录制。"
+     ],
+     "pitfalls": [
+      "只用温和的肥皂水，不用农药，这样在哪里都可以安全地重复录制。",
+      "喷壶不要对着自己：镜头上沾了水雾，这条录制就作废了。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "plant-garlic-or-bulbs",
+   "name": "Planting garlic cloves or flower bulbs",
+   "headline": "Prepare the soil and plant garlic cloves or bulbs at the right depth",
+   "description": "Loosen the soil in a bed or planter, separate a head of garlic into cloves or sort the flower bulbs, plant each one pointed end up at about twice its own depth and evenly spaced, cover them and water. Where: a garden bed, planter box or large pots outdoors. You need: heads of garlic or flower bulbs (tulip, daffodil, hyacinth), a trowel or dibber, a ruler or stick for spacing, a watering can, gardening gloves.",
+   "steps": [
+    "Show the garlic or bulbs and the bed.",
+    "Loosen the top layer of soil with the trowel and remove stones and weeds.",
+    "Split the garlic into single cloves, or sort the bulbs by size.",
+    "Mark the spacing with the stick.",
+    "Make a hole for each one, about twice as deep as the clove or bulb is tall.",
+    "Set each one in pointed end up and cover it with soil.",
+    "Firm the soil gently and water the whole bed.",
+    "Show the planted bed, then stop recording."
+   ],
+   "pitfalls": [
+    "Crouch and look down at your hands so every hole stays in frame.",
+    "No vegetable plot is needed: a planter box or large pots work just as well."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Gardening"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "种大蒜或种球",
+     "headline": "整好土，把蒜瓣或花卉种球按合适的深度种下",
+     "description": "把菜畦或种植箱里的土翻松，把整头蒜掰成蒜瓣或把花卉种球按大小分好，尖头朝上，以大约自身高度两倍的深度均匀种下，覆土后浇水。场所：户外的菜畦、种植箱或大花盆。所需物品：整头大蒜或花卉种球（郁金香、水仙、风信子）、小铲子或打孔器、量间距用的尺子或小棍、洒水壶、园艺手套。",
+     "steps": [
+      "展示大蒜或种球，以及要种的地方。",
+      "用小铲子翻松表层土，捡掉石头和杂草。",
+      "把大蒜掰成一瓣一瓣，或把种球按大小分好。",
+      "用小棍标出间距。",
+      "每个位置挖一个坑，深度约为蒜瓣或种球高度的两倍。",
+      "尖头朝上放进坑里，盖上土。",
+      "轻轻压实土面，把整片浇透水。",
+      "展示种好的地方，然后停止录制。"
+     ],
+     "pitfalls": [
+      "蹲下来、低头看着手，让每一个坑都在画面里。",
+      "不需要专门的菜地：种植箱或大花盆一样可以。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "clean-and-oil-garden-tools",
+   "name": "Cleaning and oiling garden tools",
+   "headline": "Clean, dry, sharpen and oil a set of garden tools",
+   "description": "Knock and brush the soil off a set of garden tools, scrub off sap and rust, dry them, sharpen the blade of the shears or trowel with a file or stone, oil the metal parts and the pivot, and hang or store them. Where: a yard, shed, garage or greenhouse workbench. You need: dirty garden tools (shears, trowel, hoe, rake), a stiff brush, a bucket of water, a rag or towel, steel wool or sandpaper, a file or sharpening stone, machine or cooking oil, gloves.",
+   "steps": [
+    "Show the dirty tools and name each one.",
+    "Knock off the loose soil and brush the tools clean.",
+    "Wash them in the bucket and scrub off sap and rust with the steel wool.",
+    "Dry every tool with the rag.",
+    "Sharpen the edge of the shears or trowel with the file, following the original angle.",
+    "Put a few drops of oil on the pivot and work the shears open and closed.",
+    "Wipe a thin film of oil over the metal parts.",
+    "Lay out or hang the clean tools, show them, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep your fingers behind the edge when sharpening.",
+    "Lay the tools on the bench in front of you so each one stays in frame."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 900
+   },
+   "tags": [
+    "Gardening"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "清洁保养园艺工具",
+     "headline": "把一套园艺工具清洗、擦干、磨利并上油",
+     "description": "把一套园艺工具上的泥土敲掉并刷干净，擦掉树液和锈迹，擦干，用锉刀或磨石把剪刀或铲子的刃口磨利，在金属部分和转轴上抹油，然后挂好或收好。场所：院子、工具房、车库或温室的工作台。所需物品：脏的园艺工具（剪刀、小铲子、锄头、耙子）、硬毛刷、一桶水、抹布或毛巾、钢丝球或砂纸、锉刀或磨石、机油或食用油、手套。",
+     "steps": [
+      "展示这些脏工具，逐一说出名称。",
+      "敲掉松散的泥土，把工具刷干净。",
+      "放进水桶里清洗，用钢丝球擦掉树液和锈迹。",
+      "用抹布把每件工具擦干。",
+      "顺着原来的角度，用锉刀把剪刀或铲子的刃口磨利。",
+      "在剪刀转轴上滴几滴油，反复开合几次。",
+      "在金属部分薄薄地抹一层油。",
+      "把干净的工具摆好或挂好展示，然后停止录制。"
+     ],
+     "pitfalls": [
+      "磨刃口时手指放在刃口后面。",
+      "工具摆在面前的工作台上，让每一件都在画面里。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "assemble-a-bookshelf",
+   "name": "Assembling a flat-pack bookshelf",
+   "headline": "Assemble a flat-pack bookshelf from its panels and fittings",
+   "description": "Lay out the panels and fittings of a flat-pack bookshelf, sort the hardware, insert the dowels and cam bolts, join the sides to the top, bottom and fixed shelves, lock the cams, nail on the back panel, stand the shelf up and fit the shelf pins and loose shelves. Where: an assembly workshop, a warehouse floor or a room with open floor space. You need: a flat-pack bookshelf kit, the hex key and cam tool from the kit, a Phillips screwdriver, a small hammer, a mat or the cardboard box to work on.",
+   "steps": [
+    "Lay out the panels and describe each part.",
+    "Sort the screws, dowels, cams and pins into groups.",
+    "Push the dowels and screw the cam bolts into the side panels.",
+    "Fit the top, bottom and fixed shelves onto one side panel and turn the cams to lock them.",
+    "Fit the second side panel the same way.",
+    "Check the frame is square and nail or screw on the back panel.",
+    "Stand the bookshelf up, push in the shelf pins and lay the loose shelves on them.",
+    "Show the finished bookshelf, give it a gentle shake to test it, then stop recording."
+   ],
+   "pitfalls": [
+    "Take it apart again after the take, so the next take starts from loose parts.",
+    "Work on the mat on the floor in front of you, kneeling, so the parts stay in frame.",
+    "Keep the writing in the instructions away from the camera."
+   ],
+   "targetDurationSec": {
+    "min": 900,
+    "max": 1800
+   },
+   "tags": [
+    "Furniture and artifact assembly"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "组装板式书架",
+     "headline": "用板材和五金件组装一个板式书架",
+     "description": "把板式书架的板材和五金件摊开，分好配件，插入木销、拧上偏心件螺杆，把侧板和顶板、底板、固定层板连起来，锁紧偏心件，钉上背板，把书架立起来，装上层板托和活动层板。场所：组装车间、仓库空地或有空地的房间。所需物品：板式书架套件、套件附带的内六角扳手和偏心件工具、十字螺丝刀、小锤子、垫子或包装纸箱。",
+     "steps": [
+      "摊开板材，描述每个部件。",
+      "把螺丝、木销、偏心件和层板托分类放好。",
+      "在侧板上插好木销，拧上偏心件螺杆。",
+      "把顶板、底板和固定层板装到一块侧板上，转动偏心件锁紧。",
+      "用同样方法装上另一块侧板。",
+      "检查框架是否方正，钉上或拧上背板。",
+      "把书架立起来，插好层板托，放上活动层板。",
+      "展示组装好的书架，轻轻晃一晃测试是否稳固，然后停止录制。"
+     ],
+     "pitfalls": [
+      "录制结束后重新拆开，让下一次录制从散件开始。",
+      "跪在面前的垫子上操作，让零件都在画面里。",
+      "说明书上的文字不要对着镜头。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "assemble-a-drawer-unit",
+   "name": "Assembling a drawer unit",
+   "headline": "Build the carcass and drawers of a small drawer unit and fit the runners",
+   "description": "Assemble a small flat-pack drawer unit or bedside table: build the carcass, screw the drawer runners inside it, assemble each drawer box, fit its runners and handle, slide the drawers in and adjust them until they run smoothly. Where: an assembly workshop, a warehouse floor or a room with open floor space. You need: a flat-pack drawer unit kit, the hex key from the kit, a Phillips screwdriver, a mat or the cardboard box to work on.",
+   "steps": [
+    "Lay out the panels and runners and describe each part.",
+    "Assemble the carcass: sides, top, bottom and back.",
+    "Screw the drawer runners to the inside of the carcass, level on both sides.",
+    "Assemble each drawer box from its front, sides, back and bottom.",
+    "Screw the matching runners and the handle onto each drawer.",
+    "Slide the drawers in.",
+    "Open and close each drawer, adjusting the runners if one sticks.",
+    "Show the finished unit with the drawers opening, then stop recording."
+   ],
+   "pitfalls": [
+    "Take it apart again after the take, so the next take starts from loose parts.",
+    "Keep the screws in a small tray so none roll out of sight.",
+    "Keep the writing in the instructions away from the camera."
+   ],
+   "targetDurationSec": {
+    "min": 900,
+    "max": 1800
+   },
+   "tags": [
+    "Furniture and artifact assembly"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "组装抽屉柜",
+     "headline": "组装小抽屉柜的柜体和抽屉，并装上滑轨",
+     "description": "组装一个小型板式抽屉柜或床头柜：先装柜体，在柜体内侧拧上抽屉滑轨，再逐个组装抽屉，装上滑轨和拉手，把抽屉推进去，调到推拉顺滑。场所：组装车间、仓库空地或有空地的房间。所需物品：板式抽屉柜套件、套件附带的内六角扳手、十字螺丝刀、垫子或包装纸箱。",
+     "steps": [
+      "摊开板材和滑轨，描述每个部件。",
+      "组装柜体：侧板、顶板、底板和背板。",
+      "在柜体内侧拧上抽屉滑轨，两边保持水平。",
+      "用面板、侧板、后板和底板组装每个抽屉。",
+      "在每个抽屉上拧好对应的滑轨和拉手。",
+      "把抽屉推进柜体。",
+      "逐个拉开、关上抽屉，卡住的话调整滑轨。",
+      "展示组装好的抽屉柜并拉开抽屉，然后停止录制。"
+     ],
+     "pitfalls": [
+      "录制结束后重新拆开，让下一次录制从散件开始。",
+      "螺丝放在小盘子里，免得滚到看不见的地方。",
+      "说明书上的文字不要对着镜头。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "assemble-a-stool",
+   "name": "Assembling a wooden stool",
+   "headline": "Assemble a small wooden stool and check it stands level",
+   "description": "Assemble a small flat-pack wooden stool or step stool on a table: attach the legs to the seat, fit the cross rails, tighten every bolt in turn, and check that it stands level and does not wobble. Where: a workbench, table or assembly workshop. You need: a wooden stool kit, the hex key from the kit, a screwdriver if needed, a soft cloth to protect the seat.",
+   "steps": [
+    "Lay out the parts and describe each one.",
+    "Lay the seat upside down on the cloth.",
+    "Attach the legs to the seat, tightening the bolts only loosely at first.",
+    "Fit the cross rails between the legs.",
+    "Tighten every bolt in turn, going round twice.",
+    "Turn the stool upright and check it on a flat surface.",
+    "Press down on each corner to check for wobble and tighten again if needed.",
+    "Show the finished stool, then stop recording."
+   ],
+   "pitfalls": [
+    "Take it apart again after the take, so the next take starts from loose parts.",
+    "Work on the table in front of you rather than on the floor, so the hands stay in frame.",
+    "Keep the writing in the instructions away from the camera."
+   ],
+   "targetDurationSec": {
+    "min": 360,
+    "max": 900
+   },
+   "tags": [
+    "Furniture and artifact assembly"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "组装木凳",
+     "headline": "组装一个小木凳并检查是否放平",
+     "description": "在桌子上组装一个小型板式木凳或踏脚凳：把凳腿装到凳面上，装上横撑，依次拧紧每颗螺栓，检查凳子放平、不晃。场所：工作台、桌子或组装车间。所需物品：木凳套件、套件附带的内六角扳手、需要时准备螺丝刀、保护凳面的软布。",
+     "steps": [
+      "摊开零件，描述每个部件。",
+      "把凳面朝下放在软布上。",
+      "把凳腿装到凳面上，螺栓先拧松一点。",
+      "在凳腿之间装上横撑。",
+      "依次拧紧每颗螺栓，绕两圈。",
+      "把凳子翻正，放在平整的地方检查。",
+      "逐个按压凳面四角，检查是否晃动，需要时再拧紧。",
+      "展示组装好的凳子，然后停止录制。"
+     ],
+     "pitfalls": [
+      "录制结束后重新拆开，让下一次录制从散件开始。",
+      "在面前的桌子上组装，不要在地上，让手一直在画面里。",
+      "说明书上的文字不要对着镜头。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "assemble-a-clothes-rack",
+   "name": "Assembling a clothes rack",
+   "headline": "Assemble a freestanding clothes rack from tubes and connectors",
+   "description": "Assemble a freestanding metal clothes rack: fit the casters or feet to the base, join the tubes with the connectors, attach the top rail and any shelves, tighten every joint, and hang a few clothes to test it. Where: an assembly workshop, a warehouse floor or a room with open floor space. You need: a clothes rack kit, the tool from the kit, a few hangers and clothes for testing.",
+   "steps": [
+    "Lay out the tubes and connectors and describe each part.",
+    "Fit the casters or feet to the base pieces.",
+    "Join the base pieces with their connectors.",
+    "Push the upright tubes into the base, joining sections where needed.",
+    "Attach the top rail and any shelves.",
+    "Tighten every joint and lock the casters.",
+    "Hang a few clothes on it and push gently to check it is steady.",
+    "Show the finished rack, then stop recording."
+   ],
+   "pitfalls": [
+    "Take it apart again after the take, so the next take starts from loose parts.",
+    "Lower long tubes slowly when you turn your head: they can swing into the camera.",
+    "Keep the writing in the instructions away from the camera."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 1200
+   },
+   "tags": [
+    "Furniture and artifact assembly"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "组装落地衣架",
+     "headline": "用管材和接头组装一个落地衣架",
+     "description": "组装一个金属落地衣架：在底座上装好轮子或脚垫，用接头把管子连起来，装上顶部横杆和层架，拧紧每个接头，挂几件衣服测试。场所：组装车间、仓库空地或有空地的房间。所需物品：落地衣架套件、套件附带的工具、测试用的几个衣架和几件衣服。",
+     "steps": [
+      "摊开管子和接头，描述每个部件。",
+      "在底座部件上装好轮子或脚垫。",
+      "用接头把底座部件连起来。",
+      "把立管插进底座，需要时把几段接起来。",
+      "装上顶部横杆和层架。",
+      "拧紧每个接头，锁住轮子。",
+      "挂上几件衣服，轻轻推一推，检查是否稳固。",
+      "展示组装好的衣架，然后停止录制。"
+     ],
+     "pitfalls": [
+      "录制结束后重新拆开，让下一次录制从散件开始。",
+      "转头时慢慢放低长管子：管子甩起来可能会打到镜头。",
+      "说明书上的文字不要对着镜头。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "assemble-a-shoe-rack",
+   "name": "Assembling a shoe rack",
+   "headline": "Assemble a multi-tier shoe rack and load it with shoes",
+   "description": "Assemble a multi-tier shoe rack from rods, connectors and shelf panels or fabric tiers, check every tier is level and firm, and arrange a few pairs of shoes on it. Where: an assembly workshop, a doorway or entrance area, or a room with open floor space. You need: a shoe rack kit, a rubber mallet or the tool from the kit, a few pairs of shoes.",
+   "steps": [
+    "Lay out the parts and describe each one.",
+    "Join the rods for the bottom tier with the corner connectors.",
+    "Slide or clip the bottom shelf onto its rods.",
+    "Build each higher tier on top in the same way.",
+    "Tap the joints firmly home with the mallet.",
+    "Press on each tier to check it is level and firm.",
+    "Arrange the shoes on the tiers in pairs.",
+    "Show the loaded rack, then stop recording."
+   ],
+   "pitfalls": [
+    "Take it apart again after the take, so the next take starts from loose parts.",
+    "Tap with the mallet on the rods, never toward your other hand.",
+    "Keep the writing in the instructions away from the camera."
+   ],
+   "targetDurationSec": {
+    "min": 480,
+    "max": 1200
+   },
+   "tags": [
+    "Furniture and artifact assembly"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "组装鞋架",
+     "headline": "组装一个多层鞋架并摆上鞋子",
+     "description": "用杆子、接头和层板或布层组装一个多层鞋架，检查每一层是否水平、牢固，再摆上几双鞋。场所：组装车间、门口或玄关，或有空地的房间。所需物品：鞋架套件、橡胶锤或套件附带的工具、几双鞋。",
+     "steps": [
+      "摊开零件，描述每个部件。",
+      "用转角接头把最下层的杆子连起来。",
+      "把最下层的层板套上或卡在杆子上。",
+      "用同样方法往上一层一层搭建。",
+      "用橡胶锤把接头敲紧。",
+      "按压每一层，检查是否水平、牢固。",
+      "把鞋一双双摆到各层上。",
+      "展示摆好鞋的鞋架，然后停止录制。"
+     ],
+     "pitfalls": [
+      "录制结束后重新拆开，让下一次录制从散件开始。",
+      "用橡胶锤敲杆子时，不要朝另一只手的方向敲。",
+      "说明书上的文字不要对着镜头。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "assemble-a-side-table",
+   "name": "Assembling a small side table",
+   "headline": "Assemble a small side table or coffee table and level it",
+   "description": "Assemble a flat-pack side table or small coffee table: attach the legs or frame to the tabletop, fit the lower shelf if there is one, tighten the fixings, stand it up, adjust the feet and check it does not rock. Where: an assembly workshop, a warehouse floor or a room with open floor space. You need: a side table or coffee table kit, the hex key from the kit, a Phillips screwdriver, a soft cloth or the box to protect the top.",
+   "steps": [
+    "Lay out the parts and describe each one.",
+    "Lay the tabletop upside down on the cloth.",
+    "Screw the legs or frame onto the underside of the top.",
+    "Fit the lower shelf between the legs if the table has one.",
+    "Tighten all the fixings in turn.",
+    "Stand the table up on a flat floor.",
+    "Press on each corner and adjust the feet until it does not rock.",
+    "Put a cup or a book on it, show the finished table, then stop recording."
+   ],
+   "pitfalls": [
+    "Take it apart again after the take, so the next take starts from loose parts.",
+    "Keep the tabletop on the cloth so it does not scratch, and kneel close to it.",
+    "Keep the writing in the instructions away from the camera."
+   ],
+   "targetDurationSec": {
+    "min": 600,
+    "max": 1200
+   },
+   "tags": [
+    "Furniture and artifact assembly"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "组装小边桌",
+     "headline": "组装一张小边桌或小茶几并调平",
+     "description": "组装一张板式边桌或小茶几：把桌腿或框架装到桌面上，有下层板的话装上，拧紧所有连接件，把桌子立起来，调整脚垫，检查不晃。场所：组装车间、仓库空地或有空地的房间。所需物品：边桌或茶几套件、套件附带的内六角扳手、十字螺丝刀、保护桌面的软布或纸箱。",
+     "steps": [
+      "摊开零件，描述每个部件。",
+      "把桌面朝下放在软布上。",
+      "把桌腿或框架拧到桌面底部。",
+      "桌子有下层板的话，装到桌腿之间。",
+      "依次拧紧所有连接件。",
+      "把桌子立在平整的地面上。",
+      "按压每个角，调整脚垫直到不晃。",
+      "放上一个杯子或一本书，展示组装好的桌子，然后停止录制。"
+     ],
+     "pitfalls": [
+      "录制结束后重新拆开，让下一次录制从散件开始。",
+      "桌面放在软布上以免划伤，跪在旁边近一点操作。",
+      "说明书上的文字不要对着镜头。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "build-a-wooden-model-kit",
+   "name": "Building a wooden model kit",
+   "headline": "Press out the parts of a wooden model kit and assemble it",
+   "description": "Build a laser-cut wooden model (a vehicle, building, animal or mechanism) on a table: press the parts out of the sheets, sand any rough tabs, and fit the parts together in order, gluing where the kit says to, until the model is complete. Where: a table or workbench with good light. You need: a laser-cut wooden model kit, fine sandpaper or a nail file, wood glue if the kit needs it, a small craft knife (optional), a tray for loose parts.",
+   "steps": [
+    "Show the sheets of parts and the picture of the finished model.",
+    "Press the first group of parts out of the sheet.",
+    "Sand off any rough tabs.",
+    "Fit the parts together in the order of the kit, saying what each sub-assembly is.",
+    "Glue the joints the kit marks, holding them until they set.",
+    "Join the sub-assemblies into the finished model.",
+    "Check any moving parts turn freely.",
+    "Turn the finished model slowly in front of you, then stop recording."
+   ],
+   "pitfalls": [
+    "Take it apart again after the take, so the next take starts from loose parts.",
+    "Use a new model, or a different part of a large one, every take.",
+    "If you use the craft knife, cut away from your fingers on the tray."
+   ],
+   "targetDurationSec": {
+    "min": 900,
+    "max": 1800
+   },
+   "tags": [
+    "Furniture and artifact assembly"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "拼装木质模型",
+     "headline": "把木质模型零件从板上压出来并拼装完成",
+     "description": "在桌子上拼装一个激光切割的木质模型（车辆、建筑、动物或机械结构）：把零件从板上压出来，打磨毛刺，按顺序把零件拼起来，说明书要求的地方涂胶，直到模型完成。场所：光线好的桌子或工作台。所需物品：激光切割木质模型套件、细砂纸或指甲锉、套件需要时准备木工胶、小美工刀（可选）、放散件的托盘。",
+     "steps": [
+      "展示零件板和成品图。",
+      "把第一组零件从板上压出来。",
+      "打磨掉零件上的毛刺。",
+      "按说明书的顺序拼装零件，说出每个组件是什么。",
+      "在说明书标注的接口涂胶，按住直到粘牢。",
+      "把各个组件拼成完整的模型。",
+      "检查活动部件能否灵活转动。",
+      "在面前慢慢转动展示完成的模型，然后停止录制。"
+     ],
+     "pitfalls": [
+      "录制结束后重新拆开，让下一次录制从散件开始。",
+      "每次录制拼一个新的模型，或大型模型的不同部分。",
+      "使用美工刀时，在托盘上朝远离手指的方向切。"
+     ]
+    }
+   }
+  }
+ ]
+}
