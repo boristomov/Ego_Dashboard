@@ -163,7 +163,7 @@
    "slug": "check-and-inflate-tyres",
    "name": "Checking tyre pressure and inflating with a compressor",
    "headline": "Measure each tyre's pressure and pump it back up with a compressor",
-   "description": "Read the recommended tyre pressure off the car's sticker, measure each tyre with a gauge, let a little air out if a tyre is already full so there is something to pump, then inflate it back to the recommended pressure with a compressor and refit the valve cap. Where: a car parked on level ground, with tyres cold (not just driven). You need: a car, a portable 12 V or mains tyre compressor, a tyre pressure gauge, if the compressor has none.",
+   "description": "Read the recommended tyre pressure off the car's sticker, measure each tyre with a gauge, let a little air out if a tyre is already full so there is something to pump, then inflate it back to the recommended pressure with a compressor and refit the valve cap. Where: a car parked on level ground, with tyres cold (not just driven). You need: a car, a portable 12 V or mains tyre compressor, a tyre pressure gauge (if the compressor has none).",
    "steps": [
     "Find the pressure sticker in the driver's door frame or the fuel flap and read the pressure out.",
     "Kneel at the first tyre, unscrew the valve cap and put it in your pocket.",
@@ -363,7 +363,7 @@
    "slug": "mime-fuelling-a-car",
    "name": "Fuelling a car (mimed)",
    "headline": "Open the fuel flap and cap and go through refuelling with an empty can",
-   "description": "With the engine off, open the fuel flap, unscrew the fuel cap, read the fuel type, put the spout of an empty fuel can (or a petrol pump nozzle) into the filler neck and hold it as if filling, then screw the cap back on until it clicks and close the flap. Where: a parked car; a petrol station only with the staff's permission. You need: a car, a clean, empty fuel can with a spout, or a petrol pump.",
+   "description": "With the engine off, open the fuel flap, unscrew the fuel cap, read the fuel type, put the spout of an empty fuel can (or a petrol pump nozzle) into the filler neck and hold it as if filling, then screw the cap back on until it clicks and close the flap. Where: a parked car; a petrol station only with the staff's permission. You need: a car, a clean empty fuel can with a spout (or a petrol pump).",
    "steps": [
     "Show the car and the fuel can or pump.",
     "Switch off the engine and open the fuel flap with its release or by pressing it.",
@@ -413,7 +413,7 @@
    "slug": "remove-and-refit-a-wheel-bolt",
    "name": "Removing and refitting a wheel bolt",
    "headline": "Loosen and take out one wheel bolt with a wrench, then refit and tighten it",
-   "description": "With the car on the ground and the handbrake on, take off the hubcap or bolt cover, loosen one wheel bolt with the wheel wrench, unscrew it and show it, then screw it back in by hand and tighten it fully, one bolt at a time. Only for operators who know how to do this. Where: a car parked on level, firm ground, handbrake on, in gear or Park. You need: a car, the car's wheel wrench or a socket wrench of the right size, a torque wrench, if you have one, the locking-bolt key, if the wheel has one.",
+   "description": "With the car on the ground and the handbrake on, take off the hubcap or bolt cover, loosen one wheel bolt with the wheel wrench, unscrew it and show it, then screw it back in by hand and tighten it fully, one bolt at a time. Only for operators who know how to do this. Where: a car parked on level, firm ground, handbrake on, in gear or Park. You need: a car, the car's wheel wrench or a socket wrench of the right size, a torque wrench (if you have one), the locking-bolt key (if the wheel has one).",
    "steps": [
     "Show the wheel and the wrench, and check the handbrake is on.",
     "Pull off the hubcap or bolt cover if the wheel has one.",
