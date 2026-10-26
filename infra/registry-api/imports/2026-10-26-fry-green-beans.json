@@ -1,0 +1,56 @@
+{
+  "about": "1 new task in English and Chinese: frying green beans, blanched first. Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-10-26-fry-green-beans.json --user <you> --apply",
+  "defaults": {
+    "sites": ["Beijing"],
+    "state": "active",
+    "environmentIds": [],
+    "targetTakes": 40
+  },
+  "tasks": [
+    {
+      "slug": "fry-green-beans",
+      "name": "Frying green beans",
+      "headline": "Blanch green beans in boiling water, then stir-fry them with garlic and plate them",
+      "description": "Blanch trimmed green beans in a pot of boiling salted water for 3 to 5 minutes, until they turn bright green and soften, then drain them. Raw or undercooked green beans can cause food poisoning, so blanching first makes sure they cook all the way through. Then stir-fry them in a hot pan with oil and garlic, season them and plate them. Where: a home or canteen kitchen with a stove. You need: a bowl of trimmed green beans, a pot of water, salt, a slotted spoon or a colander, a wok or frying pan, a spatula, cooking oil, garlic, soy sauce, a plate.",
+      "steps": [
+        "Show the green beans, the pot and the pan.",
+        "Bring the pot of water to the boil and add a pinch of salt and a few drops of oil.",
+        "Put the green beans in and blanch them for 3 to 5 minutes, until bright green and soft.",
+        "Lift them out with the slotted spoon or pour them into the colander, and let them drain.",
+        "Heat the wok, add oil and fry the garlic until it smells fragrant.",
+        "Add the green beans and stir-fry them for a few minutes until every bean is cooked through.",
+        "Season with salt and soy sauce, toss again and turn off the stove.",
+        "Plate the green beans, show the plate, then stop recording."
+      ],
+      "pitfalls": [
+        "Never skip the blanching or serve the beans half-cooked: undercooked green beans can make people sick. Bite one to check it is soft all the way through.",
+        "Lean back when you lift the pot lid or pour off the water: steam fogs the camera.",
+        "Drain the beans well before they go in the wok, and keep your head back: wet beans make hot oil spit."
+      ],
+      "targetDurationSec": { "min": 480, "max": 900 },
+      "tags": ["Culinary work"],
+      "i18n": {
+        "zh": {
+          "name": "炒豆角",
+          "headline": "豆角先焯水，再加蒜炒熟并装盘",
+          "description": "把择好的豆角放进加了盐的开水里焯 3 到 5 分钟，焯到颜色变得翠绿、口感变软后捞出沥干。生的或没熟透的豆角会引起食物中毒，所以要先焯水，确保豆角里外都熟透。然后热锅放油，加蒜爆香，下豆角翻炒，调味后装盘。场所：有灶台的家庭或食堂厨房。所需物品：一盆择好的豆角、一锅水、盐、漏勺或沥水篮、炒锅或平底锅、锅铲、食用油、蒜、酱油、盘子。",
+          "steps": [
+            "展示豆角、汤锅和炒锅。",
+            "锅里的水烧开，加少许盐和几滴油。",
+            "下豆角焯 3 到 5 分钟，焯到颜色翠绿、变软。",
+            "用漏勺捞出豆角，或倒进沥水篮里，沥干水。",
+            "炒锅烧热，倒油，下蒜炒出香味。",
+            "下豆角翻炒几分钟，炒到每根豆角都熟透。",
+            "加盐和酱油调味，再翻炒几下，关火。",
+            "把豆角装盘，展示一下，然后停止录制。"
+          ],
+          "pitfalls": [
+            "千万不要省掉焯水，也不要吃半生的豆角：没熟透的豆角会让人中毒。尝一根，确认里外都软了。",
+            "掀锅盖或倒水时身体往后靠：蒸汽会让镜头起雾。",
+            "豆角下锅前要沥干，头部离远一点：带水的豆角会让热油溅起来。"
+          ]
+        }
+      }
+    }
+  ]
+}
