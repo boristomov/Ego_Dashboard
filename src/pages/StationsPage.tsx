@@ -52,6 +52,7 @@ import {
   formatMbps,
   heartbeatAgeMs,
   isRecording,
+  notInBucket,
   LATE_AFTER_MS,
   LOW_RECORDING_HOURS,
   platformLabel,
@@ -544,7 +545,7 @@ function BatteryVital({
     <Vital
       icon={<CloudUpload size={13} />}
       label="Upload"
-      value={!upload || upload.configured === false ? "Off" : upload.active ? "Sending" : "Idle"}
+      value={!upload || upload.configured === false ? "Off" : upload.active ? "Sending" : backlog ? "Queued" : "Idle"}
       sub={backlog ? `${backlog} queued` : upload?.failed ? `${upload.failed} failed` : undefined}
       tone={upload?.failed ? "warn" : "plain"}
     />
@@ -610,7 +611,7 @@ function StationDetail({
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <UploadChip upload={station.upload} />
+            <UploadChip station={station} />
             <StorageChip storage={station.storage} />
             <Battery battery={station.battery} />
           </div>
@@ -729,10 +730,13 @@ function Collected({ station }: { station: StationHeartbeat }) {
   if (!c.takes) return null;
   const first = lib?.all?.firstAt ? Date.parse(lib.all.firstAt) : NaN;
   const last = lib?.all?.lastAt ? Date.parse(lib.all.lastAt) : NaN;
+  const nb = notInBucket(station);
   const where = [
     { label: "On this device", t: lib?.onDevice },
     { label: "Uploaded and cleared", t: lib?.clearedAfterUpload },
-    { label: "Waiting to upload", t: lib?.awaitingUpload },
+    nb.exact
+      ? { label: "Waiting to upload", t: lib?.queuedForUpload && { ...lib.queuedForUpload, bytes: nb.queuedBytes } }
+      : { label: "Waiting to upload", t: lib?.awaitingUpload },
   ].filter((r) => r.t && r.t.takes > 0);
   const operators = lib?.byOperator || [];
 
@@ -761,7 +765,42 @@ function Collected({ station }: { station: StationHeartbeat }) {
                 </span>
               </li>
             ))}
+            {nb.heldTakes > 0 && (
+              <li
+                className="flex items-baseline justify-between gap-2"
+                title={nb.held
+                  .map((h) => `${h.taskName || "Unlabelled"} ${h.episodeId || ""}: ${formatBytes(h.bytes)}, ${h.reason}`)
+                  .join("\n")}
+              >
+                <span className="text-amber-300">Not queued for upload</span>
+                <span className="font-mono text-xs text-amber-300">
+                  {nb.heldTakes} · {formatBytes(nb.heldBytes)}
+                </span>
+              </li>
+            )}
           </ul>
+        )}
+        {nb.exact && nb.totalBytes > 0 && (
+          <div className="rounded-md border border-border bg-input px-3 py-2 text-xs text-text-muted">
+            <div className="flex items-baseline justify-between gap-2">
+              <span>Not in the bucket yet</span>
+              <span className="font-mono text-text">{formatBytes(nb.totalBytes)}</span>
+            </div>
+            {nb.queuedBytes > 0 && (
+              <p className="mt-1">
+                {formatBytes(nb.queuedBytes)} queued
+                {nb.etaSec
+                  ? `: about ${formatDuration(nb.etaSec)} at ${nb.rateMBps!.toFixed(1)} MB/s, longer while takes record.`
+                  : ": upload time shows once the station has measured its rate."}
+              </p>
+            )}
+            {nb.heldTakes > 0 && (
+              <p className="mt-1 text-amber-300">
+                {formatBytes(nb.heldBytes)} in {nb.heldTakes} take{nb.heldTakes === 1 ? "" : "s"} not queued:{" "}
+                {[...new Set(nb.held.map((h) => h.reason))].join(", ")}.
+              </p>
+            )}
+          </div>
         )}
         {operators.length > 0 && (
           <div>
@@ -837,7 +876,8 @@ function TaskBreakdown({ station }: { station: StationHeartbeat }) {
  * Cloud upload state. The recorder reports a queue summary; an empty queue
  * reads "idle", which is accurate rather than a placeholder.
  */
-function UploadChip({ upload }: { upload?: StationUpload | null }) {
+function UploadChip({ station }: { station: StationHeartbeat }) {
+  const upload = station.upload;
   const base = "inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-sm";
   if (!upload || upload.configured === false) {
     return (
@@ -849,18 +889,28 @@ function UploadChip({ upload }: { upload?: StationUpload | null }) {
       </span>
     );
   }
-  if (upload.active) {
-    const left = upload.outstandingBytes ? ` · ${formatBytes(upload.outstandingBytes)} left` : "";
-    const eta = upload.etaSec ? `, about ${formatDuration(upload.etaSec)} to go` : "";
-    const rate = upload.throughputMbps ? ` at ${upload.throughputMbps.toFixed(1)} MB/s` : "";
+  if (upload.active || (upload.backlog || 0) > 0) {
+    const nb = notInBucket(station);
+    // An older recorder's byte count only covers files it had reached, so it is not shown.
+    const left = nb.exact && nb.queuedBytes ? ` · ${formatBytes(nb.queuedBytes)} left` : "";
+    const eta = nb.etaSec ? ` · ~${formatDuration(nb.etaSec)}` : "";
+    const rate = nb.rateMBps
+      ? `${nb.rateMBps.toFixed(1)} MB/s averaged over the last ${formatDuration(upload.averageWindowSec)}`
+      : "rate not measured yet";
+    const recording = (station.recorder?.state || "").toLowerCase() === "recording";
     return (
       <span
         className={`${base} border-cyan-500/40 bg-cyan-500/15 text-cyan-300`}
-        title={`${upload.running || 0} uploading, ${upload.pending || 0} queued${rate}${eta}${upload.paused && upload.reason ? ` (paused: ${upload.reason})` : ""}`}
+        title={
+          `${upload.running || 0} uploading, ${upload.pending || 0} queued. ${nb.exact ? rate : "Update the recorder for an accurate size and time"}.` +
+          (recording ? " Uploads are capped while a take records, so this stretches until the station is idle." : "") +
+          (upload.paused && upload.reason ? ` Paused: ${upload.reason}.` : "")
+        }
       >
         <CloudUpload size={14} className="animate-pulse" />
         Uploading {upload.backlog ? `(${upload.backlog})` : ""}
         {left}
+        {eta}
       </span>
     );
   }

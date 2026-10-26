@@ -103,10 +103,24 @@ export type StationLibrary = {
   all?: StationTally & { firstAt?: string | null; lastAt?: string | null };
   onDevice?: StationTally;
   clearedAfterUpload?: StationTally;
+  /** On the device and not uploaded: queued and held together. */
   awaitingUpload?: StationTally;
+  /** In an upload job; bytes are what the jobs still have to send. Recorders from 2026-10-26 on. */
+  queuedForUpload?: StationTally;
+  /** On the device, not uploaded, and in no upload job, with the reason for each take. */
+  heldOnDevice?: StationTally & { list?: StationHeldTake[] };
   unreadableTakes?: number;
   byTask?: (StationTally & { task: string; lastAt?: string | null })[];
   byOperator?: (StationTally & { operator: string })[];
+};
+
+export type StationHeldTake = {
+  taskName?: string | null;
+  episodeId?: string | null;
+  startedAt?: string | null;
+  bytes: number;
+  durationSec?: number;
+  reason: string;
 };
 
 export type StationPower = {
@@ -146,7 +160,11 @@ export type StationUpload = {
   failed?: number;
   backlog?: number;
   outstandingBytes?: number;
+  /** Last 2 s sample. */
   throughputMbps?: number;
+  /** Rate over the last ~10 min, which etaSec is based on. Recorders from 2026-10-26 on. */
+  averageMbps?: number | null;
+  averageWindowSec?: number | null;
   etaSec?: number | null;
   paused?: boolean;
   reason?: string;
@@ -538,6 +556,32 @@ export function attentionReasons(s: StationHeartbeat): string[] {
   const low = freeSpaceWarning(s);
   if (low) out.push(`Low disk: ${formatBytes(low.freeBytes)} free`);
   return out;
+}
+
+/**
+ * What a station has that the bucket does not: takes in its upload queue, and
+ * takes no job will send. `exact` is false for recorders older than
+ * 2026-10-26, whose queue figure counted only files the uploader had reached.
+ */
+export function notInBucket(s: StationHeartbeat) {
+  const lib = s.library;
+  const up = s.upload;
+  const exact = !!lib?.queuedForUpload && up?.averageMbps !== undefined;
+  const queued = exact ? lib!.queuedForUpload! : lib?.awaitingUpload;
+  const queuedBytes = exact ? (up?.outstandingBytes ?? queued?.bytes ?? 0) : (queued?.bytes ?? 0);
+  const held = exact ? lib?.heldOnDevice : undefined;
+  return {
+    exact,
+    queuedTakes: exact ? Math.max(queued?.takes ?? 0, up?.backlog ?? 0) : (queued?.takes ?? 0),
+    queuedSec: queued?.durationSec ?? 0,
+    queuedBytes,
+    heldTakes: held?.takes ?? 0,
+    heldBytes: held?.bytes ?? 0,
+    held: held?.list ?? [],
+    etaSec: exact && queuedBytes > 0 ? (up?.etaSec ?? null) : null,
+    rateMBps: exact ? (up?.averageMbps ?? null) : null,
+    totalBytes: queuedBytes + (held?.bytes ?? 0),
+  };
 }
 
 export function freeSpaceWarning(s: StationHeartbeat): StationDisk | null {
