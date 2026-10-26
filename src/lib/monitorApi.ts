@@ -28,6 +28,38 @@ export interface MonitorQuality {
   gapViolations: number;
   maxFrameGapMs: number | null;
   exposure: { label?: string; verdict: ExposureVerdict; note?: string }[];
+  /** Absent on takes recorded before the operator device judged its audio. */
+  audio?: AudioVerdict | null;
+}
+
+/**
+ * The operator device's judgement of a take's whole audio (ThothAI_FRONTEND
+ * station/audio_quality.py). Only faults that make the narration unusable
+ * are concerns; ok means voice was heard clearly and without cuts.
+ */
+export interface AudioVerdict {
+  ok: boolean;
+  summary: string;
+  concerns: { code: string; message: string }[];
+}
+
+// No usable narration at all, against a take whose narration is damaged.
+const AUDIO_LOST = new Set(["silent", "static", "no_voice", "not_recorded"]);
+
+export function audioTone(v: AudioVerdict | null | undefined): Tone {
+  if (!v) return "muted";
+  if (v.ok) return "ok";
+  return v.concerns.some((c) => AUDIO_LOST.has(c.code)) ? "bad" : "warn";
+}
+
+export function audioLabel(v: AudioVerdict | null | undefined): string {
+  if (!v) return "—";
+  if (v.ok) return "OK";
+  const c = v.concerns[0]?.code;
+  return (
+    { silent: "silent", static: "static", no_voice: "no voice", not_recorded: "none", dropout: "cut out",
+      unplugged: "unplugged", muffled: "muffled", clipping: "distorted" } as Record<string, string>
+  )[c] || "check";
 }
 
 /**
@@ -176,6 +208,7 @@ export function clipTone(q: MonitorQuality): Tone {
     gapTone(q),
     grabTone(q),
     ...q.exposure.map((e) => exposureTone(e.verdict)),
+    audioTone(q.audio),
   ];
   return tones.includes("bad") ? "bad" : tones.includes("warn") ? "warn" : "ok";
 }
@@ -190,5 +223,6 @@ export function clipIssues(q: MonitorQuality): string[] {
   for (const e of q.exposure) {
     if (exposureTone(e.verdict) === "bad") out.push(`${e.label || "Scene"} ${e.verdict.replace("_", " ")}`);
   }
+  if (q.audio && !q.audio.ok) out.push(`Audio: ${q.audio.summary}`);
   return out;
 }

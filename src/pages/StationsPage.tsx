@@ -1276,7 +1276,8 @@ function YieldBars({ days }: { days: StationDay[] }) {
 }
 
 function TakeRow({ take }: { take: StationTake }) {
-  const ok = take.qualityOk;
+  const audioConcern = take.audio ? !take.audio.ok : false;
+  const ok = take.qualityOk && !audioConcern;
   return (
     <li className="flex items-start gap-2 rounded-md border border-border/60 bg-input/40 px-2.5 py-2 text-sm">
       <span className="mt-0.5">
@@ -1295,8 +1296,10 @@ function TakeRow({ take }: { take: StationTake }) {
           <span>{formatDuration(take.durationSec)}</span>
           <span>{take.frameCount ?? "—"}f</span>
           <span>{formatBytes(take.bytes)}</span>
-          {!ok && take.grabFailures ? <span className="text-amber-300">{take.grabFailures} lost</span> : null}
+          {!take.qualityOk && take.grabFailures ? <span className="text-amber-300">{take.grabFailures} lost</span> : null}
+          {take.audio?.ok && <span className="text-emerald-300/80">audio OK</span>}
         </div>
+        {audioConcern && <div className="text-xs text-amber-300">Audio: {take.audio!.summary}</div>}
       </div>
       {take.startedAt && (
         <span className="flex-shrink-0 text-xs text-text-dim">{relativeAge(Date.parse(take.startedAt))}</span>

@@ -21,6 +21,8 @@ import { SignInDialog } from "../components/admin/RegistryAuthBar";
 import { REGISTRY_WRITE_CONFIGURED, isSignedIn } from "../lib/registryApi";
 import {
   MONITOR_CONFIGURED,
+  audioLabel,
+  audioTone,
   clipIssues,
   clipTone,
   exposureTone,
@@ -377,6 +379,7 @@ function ClipTile({ clip, size, onOpen }: { clip: MonitorClip; size: Size; onOpe
           <Metric tone={fpsTone(q)} label="FPS" value={takeFps(q) ? `${takeFps(q)!.toFixed(1)}${q.fpsNominal ? `/${q.fpsNominal}` : ""}` : "—"} />
           <Metric tone={yieldTone(q)} label="Frames" value={q.frameYield != null ? `${(q.frameYield * 100).toFixed(1)}%` : "—"} />
           <Metric tone={gapTone(q)} label="Gaps" value={`${q.gapViolations}${q.maxFrameGapMs != null ? ` · ${Math.round(q.maxFrameGapMs)}ms` : ""}`} />
+          {q.audio && <Metric tone={audioTone(q.audio)} label="Audio" value={audioLabel(q.audio)} />}
           {compact ? (
             hiddenIssues > 0 && (
               <span className={`inline-flex items-center rounded-md border px-2 py-0.5 text-[0.8rem] font-semibold ${TONE.warn.chip}`}>
@@ -628,6 +631,14 @@ function ClipDetail({ clip, onClose }: { clip: MonitorClip; onClose: () => void 
               <BigMetric tone={gapTone(q)} label="Frame gaps" value={String(q.gapViolations)} sub={q.maxFrameGapMs != null ? `longest ${Math.round(q.maxFrameGapMs)} ms` : undefined} />
               <BigMetric tone={grabTone(q)} label="Camera read failures" value={String(q.grabFailures)} />
             </div>
+            {q.audio && (
+              <div className="flex items-start gap-2 text-sm">
+                <span className={`mt-1.5 h-2 w-2 flex-shrink-0 rounded-full ${TONE[audioTone(q.audio)].dot}`} />
+                <span>
+                  <span className="font-semibold">Audio:</span> {q.audio.summary}
+                </span>
+              </div>
+            )}
             {q.exposure.length > 0 && (
               <div className="flex flex-col gap-1.5">
                 <div className="text-xs font-semibold uppercase tracking-wider text-text-muted">Lighting at calibration</div>

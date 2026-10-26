@@ -13,6 +13,8 @@
 // together. Older heartbeats are upgraded by normalizeStation() rather than
 // special-cased in the UI, so a rig on old firmware still renders fully.
 
+import type { AudioVerdict } from "./monitorApi";
+
 export const SUPPORTED_SCHEMA_VERSION = 3;
 
 /** A station is considered offline once its heartbeat is this old. */
@@ -65,6 +67,8 @@ export type StationTake = {
   quality?: string | null;
   qualityOk?: boolean;
   grabFailures?: number | null;
+  /** Absent on takes recorded before the operator device judged its audio. */
+  audio?: AudioVerdict | null;
 };
 
 export type StationDay = {
