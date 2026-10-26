@@ -103,8 +103,6 @@ export type StationLibrary = {
   unreadableTakes?: number;
   byTask?: (StationTally & { task: string; lastAt?: string | null })[];
   byOperator?: (StationTally & { operator: string })[];
-  /** Takes left out of every figure above because they are not usable data. */
-  excluded?: { reason: string; takes: number; durationSec: number };
 };
 
 export type StationPower = {
@@ -375,85 +373,6 @@ export function parseDeviceName(name: string | null | undefined): {
  * rig number was published, so one is recovered from the device names where
  * they follow the convention.
  */
-type Exclusion = {
-  reason: string;
-  /** Start of the first excluded take; a ledger that begins later never held them. */
-  firstAt: string;
-  total: StationTally;
-  days: Record<string, StationTally>;
-  byTask: Record<string, StationTally>;
-  byOperator: Record<string, StationTally>;
-};
-
-const tally = (takes: number, durationSec: number, bytes: number, frames: number): StationTally =>
-  ({ takes, okTakes: takes, durationSec, bytes, frames });
-
-/**
- * Recorded takes that are not usable data, by station ID, subtracted from what
- * the station reports. The recorder counts every take it made, so these stay
- * in its ledger. Figures are from the takes' metadata in the raw bucket, split
- * by start day, task and operator the way the ledger splits them.
- */
-const EXCLUDED: Record<string, Exclusion> = {
-  // Rig 2 recorded SVGA (960×600) from Oct 19 to Oct 22 2026; only 1080p is usable.
-  "50ec7d96-40b0-4e1f-b8b3-aeece45f7c8d": {
-    reason: "SVGA (960×600) takes from Oct 19–22",
-    firstAt: "2026-10-19T04:40:29+00:00",
-    total: tally(128, 15203.4, 35160970009, 911622),
-    days: {
-      "2026-10-19": tally(36, 2017.1, 0, 0),
-      "2026-10-20": tally(33, 2935.7, 0, 0),
-      "2026-10-21": tally(37, 5934.7, 0, 0),
-      "2026-10-22": tally(22, 4315.9, 0, 0),
-    },
-    byTask: {
-      "Folding a towel": tally(10, 536.9, 0, 0),
-      "Make bed": tally(12, 708.4, 0, 0),
-      "Prepare a salad": tally(29, 4668.3, 0, 0),
-      "Washing Dishes": tally(77, 9289.9, 0, 0),
-    },
-    byOperator: {
-      "Boris Tomov": tally(36, 2017.1, 0, 0),
-      "Sun Hua Yang": tally(92, 13186.3, 0, 0),
-    },
-  },
-};
-
-function minus<T extends StationTally>(t: T, x: StationTally): T {
-  const out = { ...t };
-  for (const k of ["takes", "okTakes", "durationSec", "bytes", "frames"] as const) {
-    const v = Math.max(0, (t[k] || 0) - (x[k] || 0));
-    out[k] = k === "durationSec" ? Math.round(v * 10) / 10 : Math.round(v);
-  }
-  return out;
-}
-
-function withoutExcluded(stationId: string, lib: StationLibrary | undefined): StationLibrary | undefined {
-  const ex = EXCLUDED[stationId];
-  const first = lib?.all?.firstAt ? Date.parse(lib.all.firstAt) : NaN;
-  if (!ex || !lib?.all || !(first <= Date.parse(ex.firstAt)) || lib.excluded) return lib;
-  // Only the total carries bytes and frames; each row takes its share of them by time.
-  const share = (x: StationTally) => (ex.total.durationSec ? x.durationSec / ex.total.durationSec : 0);
-  const fill = (x: StationTally) =>
-    ({ ...x, bytes: Math.round(ex.total.bytes * share(x)), frames: Math.round(ex.total.frames * share(x)) });
-  const rows = <R extends StationTally>(list: R[] | undefined, key: (r: R) => string, from: Record<string, StationTally>) =>
-    list?.map((r) => (from[key(r)] ? minus(r, fill(from[key(r)])) : r)).filter((r) => r.takes > 0);
-  const okTakes = Math.max(0, lib.okTakes - ex.total.okTakes);
-  const totalTakes = Math.max(0, lib.totalTakes - ex.total.takes);
-  return {
-    ...lib,
-    totalTakes,
-    okTakes,
-    degradedTakes: totalTakes - okTakes,
-    all: { ...minus(lib.all, ex.total), firstAt: lib.all.firstAt, lastAt: lib.all.lastAt },
-    clearedAfterUpload: lib.clearedAfterUpload && minus(lib.clearedAfterUpload, ex.total),
-    days: rows(lib.days, (d) => d.date, ex.days) || [],
-    byTask: rows(lib.byTask, (t) => t.task, ex.byTask),
-    byOperator: rows(lib.byOperator, (o) => o.operator, ex.byOperator),
-    excluded: { reason: ex.reason, takes: ex.total.takes, durationSec: ex.total.durationSec },
-  };
-}
-
 export function normalizeStation(s: StationHeartbeat): StationHeartbeat {
   const operator = s.operator || s.pi;
   let devices = s.devices;
@@ -493,7 +412,7 @@ export function normalizeStation(s: StationHeartbeat): StationHeartbeat {
   const power = s.power
     ? { ...s.power, operatorW: s.power.operatorW ?? s.power.piW ?? null }
     : s.power;
-  return { ...s, operator, devices, rig, power, library: withoutExcluded(s.stationId, s.library) };
+  return { ...s, operator, devices, rig, power };
 }
 
 /** Stations grouped by rig number, numerically, with unnamed rigs last. */

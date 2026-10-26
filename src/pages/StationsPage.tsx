@@ -784,12 +784,6 @@ function Collected({ station }: { station: StationHeartbeat }) {
             {lib!.unreadableTakes === 1 ? " its" : " their"} length is not in the total.
           </p>
         )}
-        {lib?.excluded && (
-          <p className="text-xs text-text-dim">
-            Not counted: {lib.excluded.takes} {lib.excluded.reason} ({formatDuration(lib.excluded.durationSec)}),
-            which are not usable data.
-          </p>
-        )}
         {!c.whole && <p className="text-xs text-text-dim">{PARTIAL_NOTE}</p>}
       </div>
     </Section>
