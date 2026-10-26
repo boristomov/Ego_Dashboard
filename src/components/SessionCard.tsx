@@ -17,7 +17,7 @@ import { useAccessGate, useDownloadLog } from "../context/AccessGate";
 import { useAuth } from "../context/Auth";
 import { canSeeArtifact } from "../lib/artifacts";
 import { sessionFlagKey } from "../context/Flags";
-import { FavouriteButton, FavouriteChip, FlagButton, FlagChip, FlagNote } from "./FlagControl";
+import { FlagNote, ReviewButtons, ReviewChips } from "./FlagControl";
 
 export const STAGE_STYLES: Record<
   PipelineStage,
@@ -170,8 +170,7 @@ export const SessionCard = memo(function SessionCard({
           >
             {STAGE_LABEL[s.pipelineStage]}
           </span>
-          <FavouriteChip flagKey={flagKey} />
-          <FlagChip flagKey={flagKey} />
+          <ReviewChips flagKey={flagKey} />
         </div>
 
         {/* Collection chip, top-right. Only the pilot chapter is labelled —
@@ -221,8 +220,7 @@ export const SessionCard = memo(function SessionCard({
             </div>
             <FlagNote flagKey={flagKey} />
           </div>
-          <FavouriteButton flagKey={flagKey} label={`${s.taskName} · ${s.sessionId}`} />
-          <FlagButton flagKey={flagKey} label={`${s.taskName} · ${s.sessionId}`} />
+          <ReviewButtons flagKey={flagKey} label={`${s.taskName} · ${s.sessionId}`} />
         </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.65rem] text-text-dim">

@@ -26,6 +26,8 @@ import {
   applyFlagClear,
   applyFavouriteSet,
   applyFavouriteClear,
+  applyMarkSet,
+  applyMarkClear,
 } from "./worker.js";
 
 let passed = 0;
@@ -552,6 +554,14 @@ check("favourites sit beside flags without touching them", () => {
   const b = applyFavouriteClear(a.doc, key, T1);
   eq([b.removed, Object.keys(b.doc.favourites), Object.keys(b.doc.flags)], [true, [], [key]], "unfavourited");
   rejects(() => applyFavouriteSet({}, "no-dataset", {}, "jay", T0), 400, "<dataset>/<recording>");
+});
+
+check("approvals are their own mark", () => {
+  const key = "prod/Water Plants/20261025_090000";
+  const a = applyMarkSet({ favourites: { [key]: { by: "jay", at: T0 } } }, "approvals", key, {}, "boris", T1);
+  eq([a.mark, Object.keys(a.doc.favourites)], [{ by: "boris", at: T1 }, [key]], "approved, favourite kept");
+  eq(applyMarkClear(a.doc, "approvals", key, T1).doc.approvals, {}, "unapproved");
+  rejects(() => applyMarkSet({}, "flags", key, {}, "boris", T0), 400, "unknown mark");
 });
 
 check("flag keys must name a dataset and a recording", () => {

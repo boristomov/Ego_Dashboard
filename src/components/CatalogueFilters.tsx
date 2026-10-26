@@ -4,7 +4,7 @@ import type { DerivedSession } from "../lib/session";
 import { useAuth } from "../context/Auth";
 import { canSeeArtifact } from "../lib/artifacts";
 import { sessionFlagKey, useFlags, type FlagFilter } from "../context/Flags";
-import { FlagsSignInHint, flagFilterOptions } from "./FlagControl";
+import { FlagsSignInHint, flagFilterOptions, useMarkCounts } from "./FlagControl";
 
 export type Completeness =
   | "all"
@@ -78,14 +78,8 @@ export function CatalogueFilters({
 }) {
   const { isTeam } = useAuth();
   const flags = useFlags();
-  const markCounts = useMemo(() => {
-    if (!flags.loaded) return null;
-    const keys = sessions.map(sessionFlagKey);
-    return {
-      flagged: keys.filter((k) => flags.flags[k]).length,
-      favourites: keys.filter((k) => flags.favourites[k]).length,
-    };
-  }, [sessions, flags.loaded, flags.flags, flags.favourites]);
+  const flagKeys = useMemo(() => sessions.map(sessionFlagKey), [sessions]);
+  const markCounts = useMarkCounts(flagKeys);
   // XML is internal-only — drop "Missing XML" for clients / public.
   const missingOptions = MISSING_OPTIONS.filter(
     (o) => o.value === "none" || canSeeArtifact(o.value, isTeam),
@@ -181,7 +175,7 @@ export function CatalogueFilters({
 
       {flags.enabled && (
         <FilterSelect
-          label="Marked"
+          label="Review"
           value={value.flag}
           onChange={(v) => onChange({ ...value, flag: v as FlagFilter })}
           options={flagFilterOptions(markCounts, sessions.length)}

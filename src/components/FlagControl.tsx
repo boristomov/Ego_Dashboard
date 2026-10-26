@@ -1,7 +1,7 @@
-import { useState } from "react";
-import { AlertCircle, Flag, Loader2, Star } from "lucide-react";
+import { useMemo, useState } from "react";
+import { AlertCircle, Flag, Loader2, Star, ThumbsUp } from "lucide-react";
 import { Modal } from "./admin/formKit";
-import { useFlags, type FlagFilter, type RecordingFlag } from "../context/Flags";
+import { useFlags, type FlagFilter, type MarkKind, type RecordingFlag } from "../context/Flags";
 import { formatDateTime } from "../lib/session";
 
 const QUICK_REASONS = [
@@ -69,65 +69,129 @@ export function FlagNote({ flagKey }: { flagKey: string }) {
   );
 }
 
-/** Admin-only star. One click, no note; reverts and says why if the save fails. */
-export function FavouriteButton({ flagKey, label }: { flagKey: string; label: string }) {
-  const { enabled, favourites, setFavourite, signIn } = useFlags();
+const MARK_STYLE: Record<
+  MarkKind,
+  { icon: typeof Star; on: string; off: string; chip: string; add: string; remove: string; title: (on: boolean) => string; who: string }
+> = {
+  favourites: {
+    icon: Star,
+    on: "!border-amber-400/60 !bg-amber-400/15 !text-amber-300",
+    off: "text-text-dim hover:border-amber-400/60 hover:text-amber-300",
+    chip: "border-amber-400/50 bg-amber-950/75 text-amber-200",
+    add: "Add to favourites",
+    remove: "Remove from favourites",
+    title: (on) => (on ? "Favourite: click to remove" : "Add to favourites"),
+    who: "Favourite of",
+  },
+  approvals: {
+    icon: ThumbsUp,
+    on: "!border-emerald-400/70 !bg-emerald-500/25 !text-emerald-300",
+    off: "text-text-dim hover:border-emerald-400/60 hover:text-emerald-300",
+    chip: "border-emerald-400/60 bg-emerald-950/80 text-emerald-200",
+    add: "Approve",
+    remove: "Remove the approval of",
+    title: (on) => (on ? "Approved: click to take the approval back" : "Approve after reviewing"),
+    who: "Approved by",
+  },
+};
+
+/** Admin-only one-click mark (favourite or approval), no note; says why if the save fails. */
+export function MarkButton({ kind, flagKey, label }: { kind: MarkKind; flagKey: string; label: string }) {
+  const { enabled, marks, setMark, signIn } = useFlags();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!enabled) return null;
-  const on = !!favourites[flagKey];
+  const style = MARK_STYLE[kind];
+  const Icon = style.icon;
+  const on = !!marks[kind][flagKey];
 
   return (
     <button
       type="button"
-      className={`btn shrink-0 !px-1.5 !py-1 disabled:opacity-60 ${
-        on ? "!border-amber-400/60 !bg-amber-400/15 !text-amber-300" : "text-text-dim hover:border-amber-400/60 hover:text-amber-300"
-      } ${error ? "!border-err/60" : ""}`}
+      className={`btn shrink-0 !px-1.5 !py-1 disabled:opacity-60 ${on ? style.on : style.off} ${error ? "!border-err/60" : ""}`}
       disabled={busy}
       onClick={async () => {
         if (!(await signIn())) return;
         setBusy(true);
         setError(null);
         try {
-          await setFavourite(flagKey, !on, label);
+          await setMark(kind, flagKey, !on, label);
         } catch (e) {
           setError(e instanceof Error ? e.message : String(e));
         } finally {
           setBusy(false);
         }
       }}
-      title={error ? `Couldn't save: ${error}` : on ? "Favourite: click to remove" : "Add to favourites"}
-      aria-label={on ? `Remove ${label} from favourites` : `Add ${label} to favourites`}
+      title={error ? `Couldn't save: ${error}` : style.title(on)}
+      aria-label={`${on ? style.remove : style.add} ${label}`}
       aria-pressed={on}
     >
-      {busy ? <Loader2 size={13} className="animate-spin" /> : <Star size={13} fill={on ? "currentColor" : "none"} />}
+      {busy ? <Loader2 size={13} className="animate-spin" /> : <Icon size={13} fill={on ? "currentColor" : "none"} />}
     </button>
   );
 }
 
-/** Thumbnail chip, shown to admins on favourite recordings. */
-export function FavouriteChip({ flagKey }: { flagKey: string }) {
-  const { enabled, favourites } = useFlags();
-  const f = enabled ? favourites[flagKey] : undefined;
-  if (!f) return null;
+/** Thumbnail chip, shown to admins on favourite or approved recordings. */
+export function MarkChip({ kind, flagKey }: { kind: MarkKind; flagKey: string }) {
+  const { enabled, marks } = useFlags();
+  const m = enabled ? marks[kind][flagKey] : undefined;
+  if (!m) return null;
+  const style = MARK_STYLE[kind];
+  const Icon = style.icon;
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-md border border-amber-400/50 bg-amber-950/75 px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-amber-200 backdrop-blur"
-      title={`Favourite of ${f.by}, ${formatDateTime(new Date(f.at))}`}
+      className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider backdrop-blur ${style.chip}`}
+      title={`${style.who} ${m.by}, ${formatDateTime(new Date(m.at))}`}
     >
-      <Star size={10} fill="currentColor" />
+      <Icon size={10} fill="currentColor" />
+      {kind === "approvals" ? "Approved" : null}
     </span>
   );
 }
 
+/** The three review controls, in the order they sit on every card. */
+export function ReviewButtons({ flagKey, label }: { flagKey: string; label: string }) {
+  return (
+    <>
+      <MarkButton kind="approvals" flagKey={flagKey} label={label} />
+      <MarkButton kind="favourites" flagKey={flagKey} label={label} />
+      <FlagButton flagKey={flagKey} label={label} />
+    </>
+  );
+}
+
+export function ReviewChips({ flagKey }: { flagKey: string }) {
+  return (
+    <>
+      <MarkChip kind="approvals" flagKey={flagKey} />
+      <MarkChip kind="favourites" flagKey={flagKey} />
+      <FlagChip flagKey={flagKey} />
+    </>
+  );
+}
+
+export type MarkCounts = { flagged: number; favourites: number; approved: number };
+
+/** Counts for the filter, or null until the flags have loaded. */
+export function useMarkCounts(keys: string[]): MarkCounts | null {
+  const { loaded, flags, marks } = useFlags();
+  return useMemo(() => {
+    if (!loaded) return null;
+    return {
+      flagged: keys.filter((k) => flags[k]).length,
+      favourites: keys.filter((k) => marks.favourites[k]).length,
+      approved: keys.filter((k) => marks.approvals[k]).length,
+    };
+  }, [keys, loaded, flags, marks]);
+}
+
 /** The "Marked" filter's options, with counts once the flags are in. */
-export function flagFilterOptions(
-  counts: { flagged: number; favourites: number } | null,
-  total: number,
-): { value: FlagFilter; label: string }[] {
+export function flagFilterOptions(counts: MarkCounts | null, total: number): { value: FlagFilter; label: string }[] {
   const n = (k: number) => (counts == null ? "" : ` (${k})`);
   return [
     { value: "all", label: "All recordings" },
+    { value: "approved", label: `Approved${n(counts?.approved ?? 0)}` },
+    { value: "unapproved", label: `Not approved yet${n(total - (counts?.approved ?? 0))}` },
     { value: "favourites", label: `Favourites${n(counts?.favourites ?? 0)}` },
     { value: "flagged", label: `Flagged${n(counts?.flagged ?? 0)}` },
     { value: "unflagged", label: `Not flagged${n(total - (counts?.flagged ?? 0))}` },
@@ -141,7 +205,7 @@ export function FlagsSignInHint() {
   if (!signedIn) {
     return (
       <button type="button" className="btn !py-1.5 text-[0.72rem]" onClick={() => signIn()}>
-        <Flag size={12} /> Sign in to see flags and favourites
+        <Flag size={12} /> Sign in to review recordings
       </button>
     );
   }

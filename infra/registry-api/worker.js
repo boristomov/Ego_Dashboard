@@ -758,35 +758,50 @@ export function applyFlagClear(doc, key, nowIso) {
   return { doc: { ...doc, schemaVersion: 1, generatedAt: nowIso, flags }, removed };
 }
 
-/** Favourites share the flags' keys and document: `favourites[key] = {label?, by, at}`. */
-export function applyFavouriteSet(doc, key, body, actor, nowIso) {
+/** Marks with no note, keyed like flags in the same document: `<field>[key] = {label?, by, at}`. */
+export const MARK_FIELDS = ["favourites", "approvals"];
+
+export function applyMarkSet(doc, field, key, body, actor, nowIso) {
+  if (!MARK_FIELDS.includes(field)) throw new HttpError(400, `unknown mark "${field}"`);
   validateFlagKey(key);
   const label = typeof body?.label === "string" ? body.label.trim() : "";
   if (label.length > MAX_FLAG_LABEL) throw new HttpError(400, `label is over ${MAX_FLAG_LABEL} characters`);
-  const favourite = { ...(label ? { label } : {}), by: actor, at: nowIso };
+  const mark = { ...(label ? { label } : {}), by: actor, at: nowIso };
   return {
-    doc: { ...doc, schemaVersion: 1, generatedAt: nowIso, favourites: { ...(doc.favourites || {}), [key]: favourite } },
-    favourite,
+    doc: { ...doc, schemaVersion: 1, generatedAt: nowIso, [field]: { ...(doc[field] || {}), [key]: mark } },
+    mark,
   };
 }
 
-export function applyFavouriteClear(doc, key, nowIso) {
+export function applyMarkClear(doc, field, key, nowIso) {
+  if (!MARK_FIELDS.includes(field)) throw new HttpError(400, `unknown mark "${field}"`);
   validateFlagKey(key);
-  const favourites = { ...(doc.favourites || {}) };
-  const removed = key in favourites;
-  delete favourites[key];
-  return { doc: { ...doc, schemaVersion: 1, generatedAt: nowIso, favourites }, removed };
+  const marks = { ...(doc[field] || {}) };
+  const removed = key in marks;
+  delete marks[key];
+  return { doc: { ...doc, schemaVersion: 1, generatedAt: nowIso, [field]: marks }, removed };
+}
+
+export function applyFavouriteSet(doc, key, body, actor, nowIso) {
+  const r = applyMarkSet(doc, "favourites", key, body, actor, nowIso);
+  return { doc: r.doc, favourite: r.mark };
+}
+
+export function applyFavouriteClear(doc, key, nowIso) {
+  return applyMarkClear(doc, "favourites", key, nowIso);
 }
 
 async function readFlags(env) {
   const cfg = s3Config(env, env.FLAGS_KEY || FLAGS_KEY_DEFAULT);
   const res = await s3Fetch({ method: "GET", ...cfg });
-  if (res.status === 404) return { doc: { schemaVersion: 1, generatedAt: null, flags: {}, favourites: {} }, etag: null };
+  if (res.status === 404) {
+    return { doc: { schemaVersion: 1, generatedAt: null, flags: {}, favourites: {}, approvals: {} }, etag: null };
+  }
   if (!res.ok) throw new HttpError(502, `flags read failed (S3 ${res.status})`);
   try {
     const doc = JSON.parse(await res.text());
     doc.flags = doc.flags || {};
-    doc.favourites = doc.favourites || {};
+    for (const field of MARK_FIELDS) doc[field] = doc[field] || {};
     return { doc, etag: res.headers.get("etag") };
   } catch {
     throw new HttpError(500, "stored flags are not valid JSON; restore a prior S3 version");
@@ -1043,14 +1058,14 @@ export default {
         return json({ ok: true, operatorId, pin }, 200, cors);
       }
 
-      // Recording flags and favourites: admins only, never in the registry document.
+      // Recording flags, favourites and approvals: admins only, never in the registry document.
       if (path === "/flags" && request.method === "GET") {
         const { doc } = await readFlags(env);
-        return json({ flags: doc.flags, favourites: doc.favourites }, 200, cors);
+        return json({ flags: doc.flags, favourites: doc.favourites, approvals: doc.approvals }, 200, cors);
       }
-      const fm = /^\/(flags|favourites)\/(.+)$/.exec(path);
+      const fm = /^\/(flags|favourites|approvals)\/(.+)$/.exec(path);
       if (fm && (request.method === "PUT" || request.method === "DELETE")) {
-        const favourite = fm[1] === "favourites";
+        const field = fm[1] === "flags" ? null : fm[1];
         let key;
         try {
           key = decodeURIComponent(fm[2]);
@@ -1060,7 +1075,7 @@ export default {
         if (request.method === "DELETE") {
           const removed = await casFlags(env, (doc) => {
             const now = new Date().toISOString();
-            const r = favourite ? applyFavouriteClear(doc, key, now) : applyFlagClear(doc, key, now);
+            const r = field ? applyMarkClear(doc, field, key, now) : applyFlagClear(doc, key, now);
             return { next: r.doc, result: r.removed };
           });
           return json({ ok: true, key, removed }, 200, cors);
@@ -1075,12 +1090,13 @@ export default {
             return json({ error: "body is not valid JSON" }, 400, cors);
           }
         }
-        if (favourite) {
-          const fav = await casFlags(env, (doc) => {
-            const r = applyFavouriteSet(doc, key, body, actor, new Date().toISOString());
-            return { next: r.doc, result: r.favourite };
+        if (field) {
+          const mark = await casFlags(env, (doc) => {
+            const r = applyMarkSet(doc, field, key, body, actor, new Date().toISOString());
+            return { next: r.doc, result: r.mark };
           });
-          return json({ ok: true, key, favourite: fav }, 200, cors);
+          // `favourite` for dashboards built before `mark`.
+          return json({ ok: true, key, mark, ...(field === "favourites" ? { favourite: mark } : {}) }, 200, cors);
         }
         const flag = await casFlags(env, (doc) => {
           const r = applyFlagSet(doc, key, body, actor, new Date().toISOString());

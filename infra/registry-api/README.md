@@ -81,8 +81,10 @@ for the same reason as the codes: project clients browse these recordings and
 must not see the flags. Client sign-ins use a different token secret, so the
 routes are closed to them. The key names the take,
 `<collection>/<task>/<session>`, so a flag on a Wirestock clip shows on the same
-take everywhere it appears. Favourites use the same keys and document
-(`PUT`/`DELETE /favourites/<key>`, no reason); `GET /flags` returns both.
+take everywhere it appears. Favourites and approvals (the green thumbs-up an
+admin gives after reviewing a take) use the same keys and document
+(`PUT`/`DELETE /favourites/<key>` and `/approvals/<key>`, no reason);
+`GET /flags` returns all three.
 
 ### Assignments
 

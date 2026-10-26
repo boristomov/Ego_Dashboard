@@ -1,7 +1,20 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { X, ExternalLink, Download } from "lucide-react";
 import { useAccessGate, useDownloadLog } from "../context/AccessGate";
+import { useAuth } from "../context/Auth";
+
+const SPEEDS = [1, 1.5, 2] as const;
+const SPEED_KEY = "ego_review_speed";
+
+function savedSpeed(): number {
+  try {
+    const v = Number(localStorage.getItem(SPEED_KEY));
+    return (SPEEDS as readonly number[]).includes(v) ? v : 1;
+  } catch {
+    return 1;
+  }
+}
 
 export function VideoPlayerModal({
   src,
@@ -23,6 +36,23 @@ export function VideoPlayerModal({
   const videoRef = useRef<HTMLVideoElement>(null);
   const { requestAccess, chargeDownload } = useAccessGate();
   const logDownload = useDownloadLog();
+  const { isAdmin } = useAuth();
+  // Review speed, admins only; kept across videos so a review session stays at its pace.
+  const [chosenSpeed, setSpeed] = useState(savedSpeed);
+  const speed = isAdmin ? chosenSpeed : 1;
+
+  useEffect(() => {
+    if (videoRef.current) videoRef.current.playbackRate = speed;
+  }, [speed]);
+
+  const chooseSpeed = (s: number) => {
+    setSpeed(s);
+    try {
+      localStorage.setItem(SPEED_KEY, String(s));
+    } catch {
+      /* private browsing */
+    }
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -66,6 +96,29 @@ export function VideoPlayerModal({
               </div>
             )}
           </div>
+          {isAdmin && (
+            <div
+              role="radiogroup"
+              aria-label="Playback speed"
+              className="flex shrink-0 overflow-hidden rounded-md border border-border"
+            >
+              {SPEEDS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  role="radio"
+                  aria-checked={speed === s}
+                  title={`Play at ${s}× speed`}
+                  onClick={() => chooseSpeed(s)}
+                  className={`px-2 py-1 font-mono text-[0.7rem] tabular-nums transition ${
+                    speed === s ? "bg-accent/25 text-accent-hover" : "text-text-muted hover:bg-panel hover:text-text"
+                  }`}
+                >
+                  {s}×
+                </button>
+              ))}
+            </div>
+          )}
           <button
             className="btn"
             title="Open in new tab"
@@ -109,6 +162,9 @@ export function VideoPlayerModal({
             controls
             autoPlay
             playsInline
+            onLoadedMetadata={(e) => {
+              e.currentTarget.playbackRate = speed;
+            }}
             className="h-full max-h-[80vh] w-full object-contain"
           />
         </div>

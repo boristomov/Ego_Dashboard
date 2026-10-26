@@ -251,29 +251,33 @@ export function regenerateStaffCode(operatorId: string): Promise<{ pin: string }
 
 export type RecordingFlag = { reason: string; label?: string; by: string; at: string };
 
+/** A one-click mark with no note: a favourite or an approval. */
+export type RecordingMark = { label?: string; by: string; at: string };
+export type MarkKind = "favourites" | "approvals";
+
 /**
- * Recordings an admin has flagged as possibly bad, keyed by `flagKey…` in
- * lib/flags.ts. Admins only: a separate object that clients cannot read.
+ * Recordings an admin has flagged as possibly bad, favourited or approved,
+ * keyed by `sessionFlagKey`/`itemFlagKey` in context/Flags.tsx. Admins only:
+ * a separate object that clients cannot read.
  */
 export function fetchFlags(): Promise<{
   flags: Record<string, RecordingFlag>;
-  favourites?: Record<string, RecordingFavourite>;
+  favourites?: Record<string, RecordingMark>;
+  approvals?: Record<string, RecordingMark>;
 }> {
   return req("/flags");
 }
 
-export type RecordingFavourite = { label?: string; by: string; at: string };
-
-export function setFavourite(key: string, label?: string): Promise<{ favourite: RecordingFavourite }> {
-  return req(`/favourites/${encodeURIComponent(key)}`, {
+export function setMark(kind: MarkKind, key: string, label?: string): Promise<{ mark: RecordingMark }> {
+  return req(`/${kind}/${encodeURIComponent(key)}`, {
     method: "PUT",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({ label }),
   });
 }
 
-export function clearFavourite(key: string): Promise<{ removed: boolean }> {
-  return req(`/favourites/${encodeURIComponent(key)}`, { method: "DELETE" });
+export function clearMark(kind: MarkKind, key: string): Promise<{ removed: boolean }> {
+  return req(`/${kind}/${encodeURIComponent(key)}`, { method: "DELETE" });
 }
 
 export function setFlag(key: string, reason: string, label?: string): Promise<{ flag: RecordingFlag }> {
