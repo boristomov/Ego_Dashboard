@@ -3,6 +3,8 @@ import { Search, X, Filter } from "lucide-react";
 import type { DerivedSession } from "../lib/session";
 import { useAuth } from "../context/Auth";
 import { canSeeArtifact } from "../lib/artifacts";
+import { sessionFlagKey, useFlags, type FlagFilter } from "../context/Flags";
+import { FlagsSignInHint, flagFilterOptions } from "./FlagControl";
 
 export type Completeness =
   | "all"
@@ -28,6 +30,8 @@ export type FilterState = {
   missing: MissingArtifact;
   /** Collection id, or "" for all. Sessions are listed together by default. */
   collection: string;
+  /** Admins only; everyone else stays on "all". */
+  flag: FlagFilter;
 };
 
 export const EMPTY_FILTERS: FilterState = {
@@ -37,6 +41,7 @@ export const EMPTY_FILTERS: FilterState = {
   completeness: "all",
   missing: "none",
   collection: "",
+  flag: "all",
 };
 
 const STAGE_OPTIONS: { value: Completeness; label: string }[] = [
@@ -72,6 +77,11 @@ export function CatalogueFilters({
   visible: number;
 }) {
   const { isTeam } = useAuth();
+  const flags = useFlags();
+  const flaggedCount = useMemo(
+    () => (flags.loaded ? sessions.filter((s) => flags.flags[sessionFlagKey(s)]).length : null),
+    [sessions, flags.loaded, flags.flags],
+  );
   // XML is internal-only — drop "Missing XML" for clients / public.
   const missingOptions = MISSING_OPTIONS.filter(
     (o) => o.value === "none" || canSeeArtifact(o.value, isTeam),
@@ -110,7 +120,8 @@ export function CatalogueFilters({
     value.day !== EMPTY_FILTERS.day ||
     value.completeness !== EMPTY_FILTERS.completeness ||
     value.missing !== EMPTY_FILTERS.missing ||
-    value.collection !== EMPTY_FILTERS.collection;
+    value.collection !== EMPTY_FILTERS.collection ||
+    value.flag !== EMPTY_FILTERS.flag;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -163,6 +174,16 @@ export function CatalogueFilters({
           options={[{ value: "", label: "All collections" }, ...collections]}
         />
       )}
+
+      {flags.enabled && (
+        <FilterSelect
+          label="Flags"
+          value={value.flag}
+          onChange={(v) => onChange({ ...value, flag: v as FlagFilter })}
+          options={flagFilterOptions(flaggedCount, sessions.length)}
+        />
+      )}
+      <FlagsSignInHint />
 
       {dirty && (
         <button

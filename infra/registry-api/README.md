@@ -72,6 +72,17 @@ guessable ones (`0000`, `1234`, `1111`, years). A hard delete removes the
 code; retiring a person keeps it on file, but the rigs refuse anyone whose
 state is not `active`.
 
+### Recording flags
+
+Admins flag recordings that may not be good from the Data Browser
+(`GET /flags`, `PUT /flags/<key>` with `{"reason","label"}`, `DELETE
+/flags/<key>`). They live in `_registry/flags.json`, apart from the registry
+for the same reason as the codes: project clients browse these recordings and
+must not see the flags. Client sign-ins use a different token secret, so the
+routes are closed to them. The key names the take,
+`<collection>/<task>/<session>`, so a flag on a Wirestock clip shows on the same
+take everywhere it appears.
+
 ### Assignments
 
 An assignment binds an existing task to a target, either a station
@@ -130,7 +141,7 @@ aws iam put-user-policy --user-name ego-registry-writer \
 aws iam create-access-key --user-name ego-registry-writer
 ```
 
-Then create both documents empty. Without `s3:ListBucket`, S3 answers a read
+Then create the documents empty. Without `s3:ListBucket`, S3 answers a read
 of a missing key with 403 rather than 404, so the Worker cannot tell "not
 created yet" from "not allowed" and refuses to start from nothing. Granting
 `ListBucket` would let this key enumerate every recording, so seed instead:
@@ -142,6 +153,9 @@ echo '{"schemaVersion":1,"generatedAt":"","pins":{},"issued":{}}' > /tmp/access.
 aws s3api put-object --bucket $B --key _registry/registry.json --body /tmp/registry.json \
   --content-type application/json --if-none-match '*'
 aws s3api put-object --bucket $B --key _registry/access.json --body /tmp/access.json \
+  --content-type application/json --if-none-match '*'
+echo '{"schemaVersion":1,"generatedAt":null,"flags":{}}' > /tmp/flags.json
+aws s3api put-object --bucket $B --key _registry/flags.json --body /tmp/flags.json \
   --content-type application/json --if-none-match '*'
 ```
 

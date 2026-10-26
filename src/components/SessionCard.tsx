@@ -16,6 +16,8 @@ import { VideoPlayerModal } from "./VideoPlayerModal";
 import { useAccessGate, useDownloadLog } from "../context/AccessGate";
 import { useAuth } from "../context/Auth";
 import { canSeeArtifact } from "../lib/artifacts";
+import { sessionFlagKey } from "../context/Flags";
+import { FlagButton, FlagChip, FlagNote } from "./FlagControl";
 
 export const STAGE_STYLES: Record<
   PipelineStage,
@@ -63,6 +65,7 @@ export const SessionCard = memo(function SessionCard({
   const { requestAccess, chargeDownload } = useAccessGate();
   const logDownload = useDownloadLog();
   const { isTeam } = useAuth();
+  const flagKey = sessionFlagKey(s);
 
   // Resolve a click on an artifact to a URL. Prefers the redirect Worker
   // (signed per click, never expires), then the URL baked into the snapshot,
@@ -161,12 +164,13 @@ export const SessionCard = memo(function SessionCard({
         )}
 
         {/* Stage chip overlaid on the thumbnail */}
-        <div className="absolute left-2 top-2">
+        <div className="absolute left-2 top-2 flex gap-1">
           <span
             className={`rounded-md border px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider backdrop-blur ${stage.chip}`}
           >
             {STAGE_LABEL[s.pipelineStage]}
           </span>
+          <FlagChip flagKey={flagKey} />
         </div>
 
         {/* Collection chip, top-right. Only the pilot chapter is labelled —
@@ -214,7 +218,9 @@ export const SessionCard = memo(function SessionCard({
             <div className="mt-0.5 truncate font-mono text-[0.68rem] text-text-muted">
               {s.sessionId}
             </div>
+            <FlagNote flagKey={flagKey} />
           </div>
+          <FlagButton flagKey={flagKey} label={`${s.taskName} · ${s.sessionId}`} />
         </div>
 
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[0.65rem] text-text-dim">

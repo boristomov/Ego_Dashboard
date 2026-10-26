@@ -249,11 +249,34 @@ export function regenerateStaffCode(operatorId: string): Promise<{ pin: string }
   return req(`/staff/${encodeURIComponent(operatorId)}/code`, { method: "POST" });
 }
 
+export type RecordingFlag = { reason: string; label?: string; by: string; at: string };
+
+/**
+ * Recordings an admin has flagged as possibly bad, keyed by `flagKey…` in
+ * lib/flags.ts. Admins only: a separate object that clients cannot read.
+ */
+export function fetchFlags(): Promise<{ flags: Record<string, RecordingFlag> }> {
+  return req("/flags");
+}
+
+export function setFlag(key: string, reason: string, label?: string): Promise<{ flag: RecordingFlag }> {
+  return req(`/flags/${encodeURIComponent(key)}`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ reason, label }),
+  });
+}
+
+export function clearFlag(key: string): Promise<{ removed: boolean }> {
+  return req(`/flags/${encodeURIComponent(key)}`, { method: "DELETE" });
+}
+
 export type RegistryHealth = {
   ok: boolean;
   schemaVersion: number;
   store: string | null;
   staffCodes?: string | null;
+  flags?: string | null;
   signable: boolean;
   auth: {
     cloudflareAccess: boolean;

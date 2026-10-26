@@ -52,6 +52,9 @@ const REGISTRY_KEY_DEFAULT = "_registry/registry.json";
 // registry is the kind of document that ends up baked into a public site, and
 // these must never ride along. Rigs read both; only admins see this one.
 const ACCESS_KEY_DEFAULT = "_registry/access.json";
+// Recordings an admin has flagged as possibly bad. Its own object for the same
+// reason: clients browse these recordings and must not see the flags.
+const FLAGS_KEY_DEFAULT = "_registry/flags.json";
 const TOKEN_TTL_SECONDS = 12 * 3600;
 const MAX_CAS_ATTEMPTS = 5;
 const MAX_BODY_BYTES = 512 * 1024;
@@ -712,6 +715,81 @@ function issuePin(env, operatorId, actor) {
 }
 
 // ---------------------------------------------------------------------------
+// Recording flags
+// ---------------------------------------------------------------------------
+//
+// `flags` maps a recording key to `{reason, label?, by, at}`. The key names the
+// take, `<collection>/<task>/<session>` (e.g. `prod/Fold towels/20261024_101500`),
+// so a flag follows the recording into every dataset that shows it. Keys from
+// sets without a raw take fall back to `<dataset>/<id>`.
+
+const MAX_FLAG_KEY = 300;
+const MAX_FLAG_REASON = 500;
+const MAX_FLAG_LABEL = 200;
+
+export function validateFlagKey(key) {
+  if (typeof key !== "string" || !key || key.length > MAX_FLAG_KEY) {
+    throw new HttpError(400, `flag key must be 1–${MAX_FLAG_KEY} characters`);
+  }
+  if (/[\u0000-\u001f\u007f]/.test(key) || !/^[a-z0-9_-]+\/\S/.test(key)) {
+    throw new HttpError(400, "flag key must look like <dataset>/<recording>");
+  }
+}
+
+/** Flag (or re-flag, replacing the reason) one recording. Pure, for the tests. */
+export function applyFlagSet(doc, key, body, actor, nowIso) {
+  validateFlagKey(key);
+  const reason = typeof body?.reason === "string" ? body.reason.trim() : "";
+  const label = typeof body?.label === "string" ? body.label.trim() : "";
+  if (reason.length > MAX_FLAG_REASON) throw new HttpError(400, `reason is over ${MAX_FLAG_REASON} characters`);
+  if (label.length > MAX_FLAG_LABEL) throw new HttpError(400, `label is over ${MAX_FLAG_LABEL} characters`);
+  const flag = { reason, ...(label ? { label } : {}), by: actor, at: nowIso };
+  return {
+    doc: { ...doc, schemaVersion: 1, generatedAt: nowIso, flags: { ...(doc.flags || {}), [key]: flag } },
+    flag,
+  };
+}
+
+export function applyFlagClear(doc, key, nowIso) {
+  validateFlagKey(key);
+  const flags = { ...(doc.flags || {}) };
+  const removed = key in flags;
+  delete flags[key];
+  return { doc: { ...doc, schemaVersion: 1, generatedAt: nowIso, flags }, removed };
+}
+
+async function readFlags(env) {
+  const cfg = s3Config(env, env.FLAGS_KEY || FLAGS_KEY_DEFAULT);
+  const res = await s3Fetch({ method: "GET", ...cfg });
+  if (res.status === 404) return { doc: { schemaVersion: 1, generatedAt: null, flags: {} }, etag: null };
+  if (!res.ok) throw new HttpError(502, `flags read failed (S3 ${res.status})`);
+  try {
+    const doc = JSON.parse(await res.text());
+    doc.flags = doc.flags || {};
+    return { doc, etag: res.headers.get("etag") };
+  } catch {
+    throw new HttpError(500, "stored flags are not valid JSON; restore a prior S3 version");
+  }
+}
+
+async function casFlags(env, mutate) {
+  const key = env.FLAGS_KEY || FLAGS_KEY_DEFAULT;
+  let lastStatus = 0;
+  for (let attempt = 0; attempt < MAX_CAS_ATTEMPTS; attempt++) {
+    const { doc, etag } = await readFlags(env);
+    const { next, result } = mutate(doc);
+    const put = await writeRegistry(env, next, etag, key);
+    if (put.ok) return result;
+    lastStatus = put.status;
+    if (put.status !== 412 && put.status !== 409) {
+      throw new HttpError(502, `store rejected flags write (S3 ${put.status})`);
+    }
+    await new Promise((r) => setTimeout(r, 40 * (attempt + 1) + Math.random() * 40));
+  }
+  throw new HttpError(503, `flags too contended (last S3 ${lastStatus})`);
+}
+
+// ---------------------------------------------------------------------------
 // Authentication
 // ---------------------------------------------------------------------------
 //
@@ -876,6 +954,7 @@ export default {
               schemaVersion: SCHEMA_VERSION,
               store: cfg.bucket ? `s3://${cfg.bucket}/${cfg.key}` : null,
               staffCodes: cfg.bucket ? `s3://${cfg.bucket}/${env.ACCESS_KEY || ACCESS_KEY_DEFAULT}` : null,
+              flags: cfg.bucket ? `s3://${cfg.bucket}/${env.FLAGS_KEY || FLAGS_KEY_DEFAULT}` : null,
             signable: !!(cfg.accessKeyId && cfg.secretAccessKey && cfg.region),
             auth: {
               cloudflareAccess: !!(env.CF_ACCESS_TEAM_DOMAIN && env.CF_ACCESS_AUD),
@@ -941,6 +1020,43 @@ export default {
         if (op.state === "retired") return json({ error: `${op.name} is retired` }, 409, cors);
         const pin = await issuePin(env, operatorId, actor);
         return json({ ok: true, operatorId, pin }, 200, cors);
+      }
+
+      // Recording flags: admins only, never in the registry document.
+      if (path === "/flags" && request.method === "GET") {
+        const { doc } = await readFlags(env);
+        return json({ flags: doc.flags }, 200, cors);
+      }
+      const fm = /^\/flags\/(.+)$/.exec(path);
+      if (fm && (request.method === "PUT" || request.method === "DELETE")) {
+        let key;
+        try {
+          key = decodeURIComponent(fm[1]);
+        } catch {
+          return json({ error: "flag key is not valid URL encoding" }, 400, cors);
+        }
+        if (request.method === "DELETE") {
+          const removed = await casFlags(env, (doc) => {
+            const r = applyFlagClear(doc, key, new Date().toISOString());
+            return { next: r.doc, result: r.removed };
+          });
+          return json({ ok: true, key, removed }, 200, cors);
+        }
+        const raw = await request.text();
+        if (raw.length > MAX_BODY_BYTES) return json({ error: "body too large" }, 413, cors);
+        let body = {};
+        if (raw.trim()) {
+          try {
+            body = JSON.parse(raw);
+          } catch {
+            return json({ error: "body is not valid JSON" }, 400, cors);
+          }
+        }
+        const flag = await casFlags(env, (doc) => {
+          const r = applyFlagSet(doc, key, body, actor, new Date().toISOString());
+          return { next: r.doc, result: r.flag };
+        });
+        return json({ ok: true, key, flag }, 200, cors);
       }
 
       const m = /^\/registry\/(task|operator|asset|environment|assignment|station)\/(.+)$/.exec(path);

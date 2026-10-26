@@ -13,6 +13,7 @@ import { useSearchParams } from "react-router-dom";
 import { useAuth, userProjects } from "../context/Auth";
 import { ProjectBrowser } from "../components/ProjectBrowser";
 import { PROJECTS_CONFIGURED } from "../lib/projectsApi";
+import { FlagsProvider, matchesFlagFilter, sessionFlagKey, useFlags } from "../context/Flags";
 
 // Cards are mounted in batches as the user scrolls instead of all at once —
 // mounting hundreds of image-bearing cards in one commit visibly locks up
@@ -23,6 +24,14 @@ const BATCH_SIZE = 24;
 const PROJECT_TITLES: Record<string, string> = { wirestock: "Wirestock", samples: "Sample data" };
 
 export function CataloguePage() {
+  return (
+    <FlagsProvider>
+      <DataBrowser />
+    </FlagsProvider>
+  );
+}
+
+function DataBrowser() {
   const { session, role } = useAuth();
   const [params, setParams] = useSearchParams();
   const allowed = userProjects(session?.email, role);
@@ -72,6 +81,7 @@ export function CataloguePage() {
 function PilotCatalogue() {
   const { loading, error, sessions, refetch } = useCatalogue();
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
+  const flags = useFlags();
   const [showDownload, setShowDownload] = useState(false);
   const [visibleCount, setVisibleCount] = useState(BATCH_SIZE);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
@@ -96,9 +106,10 @@ function PilotCatalogue() {
         const k = filters.missing;
         if (s.artifacts[k].present) return false;
       }
+      if (flags.enabled && !matchesFlagFilter(filters.flag, !!flags.flags[sessionFlagKey(s)])) return false;
       return true;
     });
-  }, [sessions, filters]);
+  }, [sessions, filters, flags.enabled, flags.flags]);
 
   // Reset the window whenever the result set changes (filters/search/refetch).
   useEffect(() => {

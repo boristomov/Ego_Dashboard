@@ -21,6 +21,9 @@ import {
   generatePin,
   applyPinIssue,
   applyPinRemove,
+  validateFlagKey,
+  applyFlagSet,
+  applyFlagClear,
 } from "./worker.js";
 
 let passed = 0;
@@ -520,6 +523,33 @@ check("random codes are well spread", () => {
   const seen = new Set();
   for (let n = 0; n < 300; n++) seen.add(generatePin(seen));
   eq(seen.size, 300, "300 distinct codes");
+});
+
+// ---------------------------------------------------------------------------
+// Recording flags
+// ---------------------------------------------------------------------------
+
+check("flags set, replace and clear", () => {
+  const key = "prod/Fold towels/20261024_101500";
+  const a = applyFlagSet({ flags: {} }, key, { reason: "  blurry  ", label: "Fold towels · 20261024_101500" }, "boris", T0);
+  eq(a.flag, { reason: "blurry", label: "Fold towels · 20261024_101500", by: "boris", at: T0 }, "flag");
+  const b = applyFlagSet(a.doc, key, {}, "jimmy", T1);
+  eq(b.doc.flags[key], { reason: "", by: "jimmy", at: T1 }, "re-flag replaces");
+  eq(a.doc.flags[key].by, "boris", "input not mutated");
+  const c = applyFlagClear(b.doc, key, T1);
+  eq([c.removed, Object.keys(c.doc.flags)], [true, []], "cleared");
+  eq(applyFlagClear(c.doc, key, T1).removed, false, "clearing twice is harmless");
+});
+
+check("flag keys must name a dataset and a recording", () => {
+  validateFlagKey("pilot/Change drill head attachment/20260423_170733");
+  validateFlagKey("wirestock/ws_000123");
+  rejects(() => validateFlagKey(""), 400, "1–300");
+  rejects(() => validateFlagKey("x".repeat(301)), 400, "1–300");
+  rejects(() => validateFlagKey("Fold towels/20261024"), 400, "<dataset>/<recording>");
+  rejects(() => validateFlagKey("prod/"), 400, "<dataset>/<recording>");
+  rejects(() => validateFlagKey("prod/a\nb"), 400, "<dataset>/<recording>");
+  rejects(() => applyFlagSet({}, "prod/a/b", { reason: "x".repeat(501) }, "boris", T0), 400, "reason");
 });
 
 // ---------------------------------------------------------------------------

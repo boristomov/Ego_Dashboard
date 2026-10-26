@@ -42,6 +42,8 @@ import {
 import { formatBytes, formatDateTime, formatDuration, formatHours } from "../lib/session";
 import { badgeRank, fileBadge } from "../lib/projectFiles";
 import { ProjectDownloadModal } from "./ProjectDownloadModal";
+import { itemFlagKey, matchesFlagFilter, useFlags, type FlagFilter } from "../context/Flags";
+import { FlagButton, FlagChip, FlagNote, FlagsSignInHint, flagFilterOptions } from "./FlagControl";
 
 /** Reload the index (and its file grant) this long before the grant runs out. */
 const GRANT_MARGIN_S = 15 * 60;
@@ -173,6 +175,8 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
   const [search, setSearch] = useState("");
   const [task, setTask] = useState("");
   const [checks, setChecks] = useState<"all" | "pass" | "fail" | "delivery">("all");
+  const [flagFilter, setFlagFilter] = useState<FlagFilter>("all");
+  const flags = useFlags();
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
   const [showDownload, setShowDownload] = useState(false);
   const toggleSelected = useCallback(
@@ -270,9 +274,15 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
       if (checks === "fail" && i.checksPassed !== false) return false;
       if (checks === "delivery" && !i.inDelivery) return false;
       if (q && !`${i.title} ${i.subtitle} ${i.description ?? ""}`.toLowerCase().includes(q)) return false;
+      if (flags.enabled && !matchesFlagFilter(flagFilter, !!flags.flags[itemFlagKey(project, i)])) return false;
       return true;
     });
-  }, [items, search, task, checks]);
+  }, [items, search, task, checks, flags.enabled, flags.flags, flagFilter, project]);
+
+  const flaggedCount = useMemo(
+    () => (flags.loaded ? items.filter((i) => flags.flags[itemFlagKey(project, i)]).length : null),
+    [items, flags.loaded, flags.flags, project],
+  );
 
   const stats = useMemo(() => {
     let sec = 0;
@@ -403,6 +413,21 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
             {items.some((i) => i.inDelivery) && <option value="delivery">In client delivery</option>}
           </select>
         )}
+        {flags.enabled && (
+          <select
+            className="input-base !w-auto !py-1.5"
+            value={flagFilter}
+            onChange={(e) => setFlagFilter(e.target.value as FlagFilter)}
+            aria-label="Filter by flag"
+          >
+            {flagFilterOptions(flaggedCount, items.length).map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.value === "all" ? "Flagged or not" : o.label}
+              </option>
+            ))}
+          </select>
+        )}
+        <FlagsSignInHint />
         <button
           type="button"
           className="btn !py-1.5"
@@ -618,6 +643,7 @@ const ItemCard = memo(function ItemCard({
   const failing = (item.checks ?? []).filter((c) => !c.ok);
   const main = item.files.find((f) => fileBadge(f.name, item.id) === "MP4 L");
   const canPlay = !!item.preview;
+  const flagKey = itemFlagKey(doc.project, item);
 
   return (
     <div
@@ -671,6 +697,7 @@ const ItemCard = memo(function ItemCard({
               Client delivery
             </span>
           )}
+          <FlagChip flagKey={flagKey} />
         </div>
         <div className="absolute right-2 top-2">
           <span className="rounded-md border border-white/15 bg-black/55 px-1.5 py-0.5 font-mono text-[0.6rem] text-white/90 backdrop-blur">
@@ -737,7 +764,9 @@ const ItemCard = memo(function ItemCard({
             {showRecordedAs && item.taskAsRecorded && (
               <div className="mt-0.5 text-[0.65rem] text-amber-300">Recorded as “{item.taskAsRecorded}”</div>
             )}
+            <FlagNote flagKey={flagKey} />
           </div>
+          <FlagButton flagKey={flagKey} label={`${item.title} · ${item.subtitle}`} />
           {doc.admin && (
             <button
               type="button"
