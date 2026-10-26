@@ -394,6 +394,8 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
         <Stat label="Size" value={formatBytes(stats.bytes)} />
         {hasChecks ? (
           <Stat label="All checks pass" value={`${stats.passing} / ${shown.length}`} />
+        ) : items.some((i) => i.sample) ? (
+          <Stat label="Frame rate" value={items[0]?.fps ? `${String(items[0].fps)} fps` : "—"} />
         ) : (
           <Stat label="Resolution" value={items[0]?.resolution ?? "—"} />
         )}
@@ -621,7 +623,7 @@ function SampleChip() {
   return (
     <span
       className="inline-flex items-center gap-1 rounded-md border border-amber-400/40 bg-amber-950/70 px-2 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-amber-200"
-      title="960x600 takes from the same rigs. Not part of the Wirestock delivery."
+      title="Takes from the same rigs. Not part of the Wirestock delivery."
     >
       <FlaskConical size={10} /> Sample data
     </span>
@@ -712,13 +714,15 @@ const ItemCard = memo(function ItemCard({
           <FavouriteChip flagKey={flagKey} />
           <FlagChip flagKey={flagKey} />
         </div>
-        <div className="absolute right-2 top-2">
-          <span className="rounded-md border border-white/15 bg-black/55 px-1.5 py-0.5 font-mono text-[0.6rem] text-white/90 backdrop-blur">
-            {item.resolution}
-            {item.fps ? ` · ${String(item.fps)} fps` : ""}
-            {item.sample ? "" : " · stereo"}
-          </span>
-        </div>
+        {(!item.sample || !!item.fps) && (
+          <div className="absolute right-2 top-2">
+            <span className="rounded-md border border-white/15 bg-black/55 px-1.5 py-0.5 font-mono text-[0.6rem] text-white/90 backdrop-blur">
+              {item.sample
+                ? `${String(item.fps)} fps`
+                : `${item.resolution}${item.fps ? ` · ${String(item.fps)} fps` : ""} · stereo`}
+            </span>
+          </div>
+        )}
         {item.durationSec != null && (
           <div className="absolute bottom-2 right-2">
             <span className="rounded-md border border-white/15 bg-black/55 px-1.5 py-0.5 font-mono text-[0.62rem] text-white/90 backdrop-blur">
