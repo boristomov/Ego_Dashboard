@@ -17,7 +17,7 @@ import { useAccessGate, useDownloadLog } from "../context/AccessGate";
 import { useAuth } from "../context/Auth";
 import { canSeeArtifact } from "../lib/artifacts";
 import { sessionFlagKey } from "../context/Flags";
-import { FlagButton, FlagChip, FlagNote } from "./FlagControl";
+import { FavouriteButton, FavouriteChip, FlagButton, FlagChip, FlagNote } from "./FlagControl";
 
 export const STAGE_STYLES: Record<
   PipelineStage,
@@ -170,6 +170,7 @@ export const SessionCard = memo(function SessionCard({
           >
             {STAGE_LABEL[s.pipelineStage]}
           </span>
+          <FavouriteChip flagKey={flagKey} />
           <FlagChip flagKey={flagKey} />
         </div>
 
@@ -220,6 +221,7 @@ export const SessionCard = memo(function SessionCard({
             </div>
             <FlagNote flagKey={flagKey} />
           </div>
+          <FavouriteButton flagKey={flagKey} label={`${s.taskName} · ${s.sessionId}`} />
           <FlagButton flagKey={flagKey} label={`${s.taskName} · ${s.sessionId}`} />
         </div>
 

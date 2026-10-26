@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertCircle, Flag, Loader2 } from "lucide-react";
+import { AlertCircle, Flag, Loader2, Star } from "lucide-react";
 import { Modal } from "./admin/formKit";
 import { useFlags, type FlagFilter, type RecordingFlag } from "../context/Flags";
 import { formatDateTime } from "../lib/session";
@@ -69,13 +69,68 @@ export function FlagNote({ flagKey }: { flagKey: string }) {
   );
 }
 
-/** The "Flags" filter's options, with counts once the flags are in. */
-export function flagFilterOptions(flagged: number | null, total: number): { value: FlagFilter; label: string }[] {
-  const n = (k: number) => (flagged == null ? "" : ` (${k})`);
+/** Admin-only star. One click, no note; reverts and says why if the save fails. */
+export function FavouriteButton({ flagKey, label }: { flagKey: string; label: string }) {
+  const { enabled, favourites, setFavourite, signIn } = useFlags();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  if (!enabled) return null;
+  const on = !!favourites[flagKey];
+
+  return (
+    <button
+      type="button"
+      className={`btn shrink-0 !px-1.5 !py-1 disabled:opacity-60 ${
+        on ? "!border-amber-400/60 !bg-amber-400/15 !text-amber-300" : "text-text-dim hover:border-amber-400/60 hover:text-amber-300"
+      } ${error ? "!border-err/60" : ""}`}
+      disabled={busy}
+      onClick={async () => {
+        if (!(await signIn())) return;
+        setBusy(true);
+        setError(null);
+        try {
+          await setFavourite(flagKey, !on, label);
+        } catch (e) {
+          setError(e instanceof Error ? e.message : String(e));
+        } finally {
+          setBusy(false);
+        }
+      }}
+      title={error ? `Couldn't save: ${error}` : on ? "Favourite: click to remove" : "Add to favourites"}
+      aria-label={on ? `Remove ${label} from favourites` : `Add ${label} to favourites`}
+      aria-pressed={on}
+    >
+      {busy ? <Loader2 size={13} className="animate-spin" /> : <Star size={13} fill={on ? "currentColor" : "none"} />}
+    </button>
+  );
+}
+
+/** Thumbnail chip, shown to admins on favourite recordings. */
+export function FavouriteChip({ flagKey }: { flagKey: string }) {
+  const { enabled, favourites } = useFlags();
+  const f = enabled ? favourites[flagKey] : undefined;
+  if (!f) return null;
+  return (
+    <span
+      className="inline-flex items-center gap-1 rounded-md border border-amber-400/50 bg-amber-950/75 px-1.5 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wider text-amber-200 backdrop-blur"
+      title={`Favourite of ${f.by}, ${formatDateTime(new Date(f.at))}`}
+    >
+      <Star size={10} fill="currentColor" />
+    </span>
+  );
+}
+
+/** The "Marked" filter's options, with counts once the flags are in. */
+export function flagFilterOptions(
+  counts: { flagged: number; favourites: number } | null,
+  total: number,
+): { value: FlagFilter; label: string }[] {
+  const n = (k: number) => (counts == null ? "" : ` (${k})`);
   return [
     { value: "all", label: "All recordings" },
-    { value: "flagged", label: `Flagged${n(flagged ?? 0)}` },
-    { value: "unflagged", label: `Not flagged${n(total - (flagged ?? 0))}` },
+    { value: "favourites", label: `Favourites${n(counts?.favourites ?? 0)}` },
+    { value: "flagged", label: `Flagged${n(counts?.flagged ?? 0)}` },
+    { value: "unflagged", label: `Not flagged${n(total - (counts?.flagged ?? 0))}` },
   ];
 }
 
@@ -86,7 +141,7 @@ export function FlagsSignInHint() {
   if (!signedIn) {
     return (
       <button type="button" className="btn !py-1.5 text-[0.72rem]" onClick={() => signIn()}>
-        <Flag size={12} /> Sign in to see flags
+        <Flag size={12} /> Sign in to see flags and favourites
       </button>
     );
   }

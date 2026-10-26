@@ -758,14 +758,35 @@ export function applyFlagClear(doc, key, nowIso) {
   return { doc: { ...doc, schemaVersion: 1, generatedAt: nowIso, flags }, removed };
 }
 
+/** Favourites share the flags' keys and document: `favourites[key] = {label?, by, at}`. */
+export function applyFavouriteSet(doc, key, body, actor, nowIso) {
+  validateFlagKey(key);
+  const label = typeof body?.label === "string" ? body.label.trim() : "";
+  if (label.length > MAX_FLAG_LABEL) throw new HttpError(400, `label is over ${MAX_FLAG_LABEL} characters`);
+  const favourite = { ...(label ? { label } : {}), by: actor, at: nowIso };
+  return {
+    doc: { ...doc, schemaVersion: 1, generatedAt: nowIso, favourites: { ...(doc.favourites || {}), [key]: favourite } },
+    favourite,
+  };
+}
+
+export function applyFavouriteClear(doc, key, nowIso) {
+  validateFlagKey(key);
+  const favourites = { ...(doc.favourites || {}) };
+  const removed = key in favourites;
+  delete favourites[key];
+  return { doc: { ...doc, schemaVersion: 1, generatedAt: nowIso, favourites }, removed };
+}
+
 async function readFlags(env) {
   const cfg = s3Config(env, env.FLAGS_KEY || FLAGS_KEY_DEFAULT);
   const res = await s3Fetch({ method: "GET", ...cfg });
-  if (res.status === 404) return { doc: { schemaVersion: 1, generatedAt: null, flags: {} }, etag: null };
+  if (res.status === 404) return { doc: { schemaVersion: 1, generatedAt: null, flags: {}, favourites: {} }, etag: null };
   if (!res.ok) throw new HttpError(502, `flags read failed (S3 ${res.status})`);
   try {
     const doc = JSON.parse(await res.text());
     doc.flags = doc.flags || {};
+    doc.favourites = doc.favourites || {};
     return { doc, etag: res.headers.get("etag") };
   } catch {
     throw new HttpError(500, "stored flags are not valid JSON; restore a prior S3 version");
@@ -1022,22 +1043,24 @@ export default {
         return json({ ok: true, operatorId, pin }, 200, cors);
       }
 
-      // Recording flags: admins only, never in the registry document.
+      // Recording flags and favourites: admins only, never in the registry document.
       if (path === "/flags" && request.method === "GET") {
         const { doc } = await readFlags(env);
-        return json({ flags: doc.flags }, 200, cors);
+        return json({ flags: doc.flags, favourites: doc.favourites }, 200, cors);
       }
-      const fm = /^\/flags\/(.+)$/.exec(path);
+      const fm = /^\/(flags|favourites)\/(.+)$/.exec(path);
       if (fm && (request.method === "PUT" || request.method === "DELETE")) {
+        const favourite = fm[1] === "favourites";
         let key;
         try {
-          key = decodeURIComponent(fm[1]);
+          key = decodeURIComponent(fm[2]);
         } catch {
           return json({ error: "flag key is not valid URL encoding" }, 400, cors);
         }
         if (request.method === "DELETE") {
           const removed = await casFlags(env, (doc) => {
-            const r = applyFlagClear(doc, key, new Date().toISOString());
+            const now = new Date().toISOString();
+            const r = favourite ? applyFavouriteClear(doc, key, now) : applyFlagClear(doc, key, now);
             return { next: r.doc, result: r.removed };
           });
           return json({ ok: true, key, removed }, 200, cors);
@@ -1051,6 +1074,13 @@ export default {
           } catch {
             return json({ error: "body is not valid JSON" }, 400, cors);
           }
+        }
+        if (favourite) {
+          const fav = await casFlags(env, (doc) => {
+            const r = applyFavouriteSet(doc, key, body, actor, new Date().toISOString());
+            return { next: r.doc, result: r.favourite };
+          });
+          return json({ ok: true, key, favourite: fav }, 200, cors);
         }
         const flag = await casFlags(env, (doc) => {
           const r = applyFlagSet(doc, key, body, actor, new Date().toISOString());

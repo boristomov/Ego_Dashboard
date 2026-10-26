@@ -255,8 +255,25 @@ export type RecordingFlag = { reason: string; label?: string; by: string; at: st
  * Recordings an admin has flagged as possibly bad, keyed by `flagKey…` in
  * lib/flags.ts. Admins only: a separate object that clients cannot read.
  */
-export function fetchFlags(): Promise<{ flags: Record<string, RecordingFlag> }> {
+export function fetchFlags(): Promise<{
+  flags: Record<string, RecordingFlag>;
+  favourites?: Record<string, RecordingFavourite>;
+}> {
   return req("/flags");
+}
+
+export type RecordingFavourite = { label?: string; by: string; at: string };
+
+export function setFavourite(key: string, label?: string): Promise<{ favourite: RecordingFavourite }> {
+  return req(`/favourites/${encodeURIComponent(key)}`, {
+    method: "PUT",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ label }),
+  });
+}
+
+export function clearFavourite(key: string): Promise<{ removed: boolean }> {
+  return req(`/favourites/${encodeURIComponent(key)}`, { method: "DELETE" });
 }
 
 export function setFlag(key: string, reason: string, label?: string): Promise<{ flag: RecordingFlag }> {

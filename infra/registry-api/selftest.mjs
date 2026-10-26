@@ -24,6 +24,8 @@ import {
   validateFlagKey,
   applyFlagSet,
   applyFlagClear,
+  applyFavouriteSet,
+  applyFavouriteClear,
 } from "./worker.js";
 
 let passed = 0;
@@ -539,6 +541,17 @@ check("flags set, replace and clear", () => {
   const c = applyFlagClear(b.doc, key, T1);
   eq([c.removed, Object.keys(c.doc.flags)], [true, []], "cleared");
   eq(applyFlagClear(c.doc, key, T1).removed, false, "clearing twice is harmless");
+});
+
+check("favourites sit beside flags without touching them", () => {
+  const key = "prod/Fold towels/20261024_101500";
+  const flagged = applyFlagSet({ flags: {} }, key, { reason: "blurry" }, "boris", T0).doc;
+  const a = applyFavouriteSet(flagged, key, { label: "Fold towels" }, "jay", T1);
+  eq(a.favourite, { label: "Fold towels", by: "jay", at: T1 }, "favourite");
+  eq(a.doc.flags[key].reason, "blurry", "flag kept");
+  const b = applyFavouriteClear(a.doc, key, T1);
+  eq([b.removed, Object.keys(b.doc.favourites), Object.keys(b.doc.flags)], [true, [], [key]], "unfavourited");
+  rejects(() => applyFavouriteSet({}, "no-dataset", {}, "jay", T0), 400, "<dataset>/<recording>");
 });
 
 check("flag keys must name a dataset and a recording", () => {

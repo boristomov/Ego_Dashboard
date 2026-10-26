@@ -106,10 +106,10 @@ function PilotCatalogue() {
         const k = filters.missing;
         if (s.artifacts[k].present) return false;
       }
-      if (flags.enabled && !matchesFlagFilter(filters.flag, !!flags.flags[sessionFlagKey(s)])) return false;
+      if (flags.enabled && !matchesFlagFilter(filters.flag, sessionFlagKey(s), flags)) return false;
       return true;
     });
-  }, [sessions, filters, flags.enabled, flags.flags]);
+  }, [sessions, filters, flags]);
 
   // Reset the window whenever the result set changes (filters/search/refetch).
   useEffect(() => {

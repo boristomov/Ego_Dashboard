@@ -78,10 +78,14 @@ export function CatalogueFilters({
 }) {
   const { isTeam } = useAuth();
   const flags = useFlags();
-  const flaggedCount = useMemo(
-    () => (flags.loaded ? sessions.filter((s) => flags.flags[sessionFlagKey(s)]).length : null),
-    [sessions, flags.loaded, flags.flags],
-  );
+  const markCounts = useMemo(() => {
+    if (!flags.loaded) return null;
+    const keys = sessions.map(sessionFlagKey);
+    return {
+      flagged: keys.filter((k) => flags.flags[k]).length,
+      favourites: keys.filter((k) => flags.favourites[k]).length,
+    };
+  }, [sessions, flags.loaded, flags.flags, flags.favourites]);
   // XML is internal-only — drop "Missing XML" for clients / public.
   const missingOptions = MISSING_OPTIONS.filter(
     (o) => o.value === "none" || canSeeArtifact(o.value, isTeam),
@@ -177,10 +181,10 @@ export function CatalogueFilters({
 
       {flags.enabled && (
         <FilterSelect
-          label="Flags"
+          label="Marked"
           value={value.flag}
           onChange={(v) => onChange({ ...value, flag: v as FlagFilter })}
-          options={flagFilterOptions(flaggedCount, sessions.length)}
+          options={flagFilterOptions(markCounts, sessions.length)}
         />
       )}
       <FlagsSignInHint />

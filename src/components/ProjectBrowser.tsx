@@ -43,7 +43,15 @@ import { formatBytes, formatDateTime, formatDuration, formatHours } from "../lib
 import { badgeRank, fileBadge } from "../lib/projectFiles";
 import { ProjectDownloadModal } from "./ProjectDownloadModal";
 import { itemFlagKey, matchesFlagFilter, useFlags, type FlagFilter } from "../context/Flags";
-import { FlagButton, FlagChip, FlagNote, FlagsSignInHint, flagFilterOptions } from "./FlagControl";
+import {
+  FavouriteButton,
+  FavouriteChip,
+  FlagButton,
+  FlagChip,
+  FlagNote,
+  FlagsSignInHint,
+  flagFilterOptions,
+} from "./FlagControl";
 
 /** Reload the index (and its file grant) this long before the grant runs out. */
 const GRANT_MARGIN_S = 15 * 60;
@@ -274,15 +282,19 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
       if (checks === "fail" && i.checksPassed !== false) return false;
       if (checks === "delivery" && !i.inDelivery) return false;
       if (q && !`${i.title} ${i.subtitle} ${i.description ?? ""}`.toLowerCase().includes(q)) return false;
-      if (flags.enabled && !matchesFlagFilter(flagFilter, !!flags.flags[itemFlagKey(project, i)])) return false;
+      if (flags.enabled && !matchesFlagFilter(flagFilter, itemFlagKey(project, i), flags)) return false;
       return true;
     });
-  }, [items, search, task, checks, flags.enabled, flags.flags, flagFilter, project]);
+  }, [items, search, task, checks, flags, flagFilter, project]);
 
-  const flaggedCount = useMemo(
-    () => (flags.loaded ? items.filter((i) => flags.flags[itemFlagKey(project, i)]).length : null),
-    [items, flags.loaded, flags.flags, project],
-  );
+  const markCounts = useMemo(() => {
+    if (!flags.loaded) return null;
+    const keys = items.map((i) => itemFlagKey(project, i));
+    return {
+      flagged: keys.filter((k) => flags.flags[k]).length,
+      favourites: keys.filter((k) => flags.favourites[k]).length,
+    };
+  }, [items, flags.loaded, flags.flags, flags.favourites, project]);
 
   const stats = useMemo(() => {
     let sec = 0;
@@ -418,11 +430,11 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
             className="input-base !w-auto !py-1.5"
             value={flagFilter}
             onChange={(e) => setFlagFilter(e.target.value as FlagFilter)}
-            aria-label="Filter by flag"
+            aria-label="Filter by favourite or flag"
           >
-            {flagFilterOptions(flaggedCount, items.length).map((o) => (
+            {flagFilterOptions(markCounts, items.length).map((o) => (
               <option key={o.value} value={o.value}>
-                {o.value === "all" ? "Flagged or not" : o.label}
+                {o.value === "all" ? "Any favourite or flag" : o.label}
               </option>
             ))}
           </select>
@@ -697,6 +709,7 @@ const ItemCard = memo(function ItemCard({
               Client delivery
             </span>
           )}
+          <FavouriteChip flagKey={flagKey} />
           <FlagChip flagKey={flagKey} />
         </div>
         <div className="absolute right-2 top-2">
@@ -766,6 +779,7 @@ const ItemCard = memo(function ItemCard({
             )}
             <FlagNote flagKey={flagKey} />
           </div>
+          <FavouriteButton flagKey={flagKey} label={`${item.title} · ${item.subtitle}`} />
           <FlagButton flagKey={flagKey} label={`${item.title} · ${item.subtitle}`} />
           {doc.admin && (
             <button

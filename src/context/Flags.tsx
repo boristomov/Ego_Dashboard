@@ -4,15 +4,18 @@ import { SignInDialog } from "../components/admin/RegistryAuthBar";
 import {
   REGISTRY_WRITE_CONFIGURED,
   RegistryApiError,
+  clearFavourite,
   clearFlag,
   fetchFlags,
   isSignedIn,
+  setFavourite,
   setFlag,
+  type RecordingFavourite,
   type RecordingFlag,
 } from "../lib/registryApi";
 
-export type { RecordingFlag };
-export type FlagFilter = "all" | "flagged" | "unflagged";
+export type { RecordingFavourite, RecordingFlag };
+export type FlagFilter = "all" | "favourites" | "flagged" | "unflagged";
 
 /** A pilot-catalogue take: `<collection>/<task>/<session>`. */
 export function sessionFlagKey(s: { collection: string; taskName: string; sessionId: string }): string {
@@ -29,8 +32,15 @@ export function itemFlagKey(project: string, item: { id: string; rawPrefix?: str
   return raw ? `prod/${raw}` : `${project}/${item.id}`;
 }
 
-export function matchesFlagFilter(filter: FlagFilter, flagged: boolean): boolean {
-  return filter === "all" || (filter === "flagged") === flagged;
+export function matchesFlagFilter(
+  filter: FlagFilter,
+  key: string,
+  v: { flags: Record<string, RecordingFlag>; favourites: Record<string, RecordingFavourite> },
+): boolean {
+  if (filter === "favourites") return !!v.favourites[key];
+  if (filter === "flagged") return !!v.flags[key];
+  if (filter === "unflagged") return !v.flags[key];
+  return true;
 }
 
 type FlagsValue = {
@@ -41,14 +51,18 @@ type FlagsValue = {
   loading: boolean;
   error: string | null;
   flags: Record<string, RecordingFlag>;
+  favourites: Record<string, RecordingFavourite>;
   flag: (key: string, reason: string, label?: string) => Promise<void>;
   unflag: (key: string) => Promise<void>;
+  /** Star or unstar; resolves once the Worker has it, rejects with the reason it didn't. */
+  setFavourite: (key: string, on: boolean, label?: string) => Promise<void>;
   reload: () => void;
   /** Opens the registry sign-in; resolves true once signed in. */
   signIn: () => Promise<boolean>;
 };
 
 const NONE: Record<string, RecordingFlag> = {};
+const NO_FAVOURITES: Record<string, RecordingFavourite> = {};
 const DISABLED: FlagsValue = {
   enabled: false,
   signedIn: false,
@@ -56,8 +70,10 @@ const DISABLED: FlagsValue = {
   loading: false,
   error: null,
   flags: NONE,
+  favourites: NO_FAVOURITES,
   flag: async () => {},
   unflag: async () => {},
+  setFavourite: async () => {},
   reload: () => {},
   signIn: async () => false,
 };
@@ -73,6 +89,7 @@ export function FlagsProvider({ children }: { children: React.ReactNode }) {
   const enabled = isAdmin && REGISTRY_WRITE_CONFIGURED;
   const [signedIn, setSignedIn] = useState(() => enabled && isSignedIn());
   const [flags, setFlags] = useState<Record<string, RecordingFlag>>(NONE);
+  const [favourites, setFavourites] = useState<Record<string, RecordingFavourite>>(NO_FAVOURITES);
   const [loaded, setLoaded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,6 +123,7 @@ export function FlagsProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await fetchFlags();
       setFlags(res.flags || NONE);
+      setFavourites(res.favourites || NO_FAVOURITES);
       setLoaded(true);
       setError(null);
     } catch (e) {
@@ -119,6 +137,7 @@ export function FlagsProvider({ children }: { children: React.ReactNode }) {
     if (signedIn) reload();
     else {
       setFlags(NONE);
+      setFavourites(NO_FAVOURITES);
       setLoaded(false);
     }
   }, [signedIn, reload]);
@@ -151,6 +170,27 @@ export function FlagsProvider({ children }: { children: React.ReactNode }) {
     [fail],
   );
 
+  const favourite = useCallback(
+    async (key: string, on: boolean, label?: string) => {
+      try {
+        if (on) {
+          const res = await setFavourite(key, label);
+          setFavourites((f) => ({ ...f, [key]: res.favourite }));
+        } else {
+          await clearFavourite(key);
+          setFavourites((f) => {
+            const next = { ...f };
+            delete next[key];
+            return next;
+          });
+        }
+      } catch (e) {
+        throw new Error(fail(e));
+      }
+    },
+    [fail],
+  );
+
   const signIn = useCallback(() => {
     if (isSignedIn()) {
       setSignedIn(true);
@@ -171,16 +211,29 @@ export function FlagsProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<FlagsValue>(
     () =>
       enabled
-        ? { enabled, signedIn, loaded, loading, error, flags, flag, unflag, reload, signIn }
+        ? {
+            enabled,
+            signedIn,
+            loaded,
+            loading,
+            error,
+            flags,
+            favourites,
+            flag,
+            unflag,
+            setFavourite: favourite,
+            reload,
+            signIn,
+          }
         : DISABLED,
-    [enabled, signedIn, loaded, loading, error, flags, flag, unflag, reload, signIn],
+    [enabled, signedIn, loaded, loading, error, flags, favourites, flag, unflag, favourite, reload, signIn],
   );
 
   return (
     <FlagsContext.Provider value={value}>
       {children}
       {prompt && (
-        <SignInDialog title="Sign in to flag recordings" onClose={() => settle(false)} onSuccess={() => settle(true)} />
+        <SignInDialog title="Sign in to flag or favourite recordings" onClose={() => settle(false)} onSuccess={() => settle(true)} />
       )}
     </FlagsContext.Provider>
   );
