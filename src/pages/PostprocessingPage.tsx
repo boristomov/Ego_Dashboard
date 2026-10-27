@@ -214,6 +214,7 @@ function InstanceCard({
       )}
 
       {live?.queue && <QueueBar live={live} />}
+      {live?.previews && <PreviewsBar live={live} />}
 
       {/* Error banner */}
       {live?.error && (
@@ -321,6 +322,39 @@ function QueueBar({ live }: { live: InstanceLiveStatus }) {
       {total > 0 && (
         <div className="h-1.5 overflow-hidden rounded-full bg-input">
           <div className="h-full rounded-full bg-ok/70" style={{ width: `${pct}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PreviewsBar({ live }: { live: InstanceLiveStatus }) {
+  const p = live.previews!;
+  const handled = p.done + p.already + p.failed;
+  const pct = p.toCheck ? Math.round((handled / p.toCheck) * 100) : 100;
+  return (
+    <div className="grid gap-1.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-[0.72rem]">
+        <span className="text-text">
+          1080p previews: <span className="font-semibold text-emerald-300">{p.done}</span> re-encoded
+          {p.failed > 0 && (
+            <>
+              , <span className="font-semibold text-red-300">{p.failed}</span> failed
+            </>
+          )}
+          {!p.finished && live.status !== "stopped" && (
+            <>
+              , <span className="font-semibold">{Math.max(0, p.toCheck - handled)}</span> to go
+            </>
+          )}
+        </span>
+        <span className="text-text-muted">
+          {p.finished ? "done" : `${p.already} already 1080p`}
+        </span>
+      </div>
+      {p.toCheck > 0 && (
+        <div className="h-1.5 overflow-hidden rounded-full bg-input">
+          <div className="h-full rounded-full bg-cyan-400/60" style={{ width: `${pct}%` }} />
         </div>
       )}
     </div>

@@ -51,6 +51,15 @@ export type InstanceQueue = {
   failed: number;
 };
 
+/** Re-encoding the browser previews of clips published before they were 1080p. */
+export type InstancePreviews = {
+  toCheck: number;
+  done: number;
+  already: number;
+  failed: number;
+  finished: boolean;
+};
+
 export type InstanceLiveStatus = {
   id: string;
   status: InstanceStatus;
@@ -67,6 +76,7 @@ export type InstanceLiveStatus = {
   idleSince?: string | null;
   idleStopMin?: number | null;
   queue?: InstanceQueue;
+  previews?: InstancePreviews | null;
   /** Takes in hand, one per worker. */
   current?: InstanceCurrent[];
   /** The first take in hand. */

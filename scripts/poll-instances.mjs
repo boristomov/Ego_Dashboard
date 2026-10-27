@@ -61,6 +61,7 @@ export function toLive(id, doc, now = Date.now()) {
   }));
   const q = doc.queue || {};
   const run = doc.run || {};
+  const pv = doc.previews;
   return {
     id,
     status,
@@ -81,6 +82,15 @@ export function toLive(id, doc, now = Date.now()) {
       published: run.published ?? 0,
       failed: run.failed ?? 0,
     },
+    previews: pv
+      ? {
+          toCheck: pv.to_check ?? 0,
+          done: pv.done ?? 0,
+          already: pv.already ?? 0,
+          failed: pv.failed ?? 0,
+          finished: !!pv.finished,
+        }
+      : null,
     current,
     currentSession: current[0] ? { sessionId: current[0].sessionId, taskName: current[0].taskName } : null,
     progressLine: current.length ? current.map((c) => `${c.sessionId} ${c.step}`).join("\n") : null,
