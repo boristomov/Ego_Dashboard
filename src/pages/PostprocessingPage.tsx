@@ -216,7 +216,7 @@ function InstanceCard({
       {live?.progress ? <ProgressBar live={live} /> : live?.queue && <QueueBar live={live} />}
       {live?.eta && live.status !== "stopped" && (live.eta.secondsLeft ?? 0) > 0 && <EtaLine live={live} />}
       {live?.retime && !live.retime.finished && <RetimeBar live={live} />}
-      {live?.previews && <PreviewsBar live={live} />}
+      {live?.previews && !(live.previews.finished && live.previews.done === 0) && <PreviewsBar live={live} />}
 
       {/* Error banner */}
       {live?.error && (
