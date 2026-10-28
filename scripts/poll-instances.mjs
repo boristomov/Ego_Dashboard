@@ -25,7 +25,10 @@ const REGION = process.env.AWS_REGION || "us-west-2";
 const BUCKET = process.env.S3_PROCESSED_BUCKET || "egodata-processed-prod-854929212137-us-west-2-an";
 const STALE_MIN = 10;
 
-const SOURCES = [{ id: "wirestock-packager", key: "_packager/wirestock/status.json" }];
+const SOURCES = [
+  { id: "wirestock-packager", key: "_packager/wirestock/status.json" },
+  { id: "wirestock-verifier", key: "_packager/wirestock/verify/status.json" },
+];
 
 function credentials() {
   if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
@@ -64,6 +67,12 @@ export function toLive(id, doc, now = Date.now()) {
   const pv = doc.previews;
   const eta = doc.eta;
   const rt = doc.retime;
+  // The verifier's report (wirestock_verify.py) has a list to work through instead of a packaging queue.
+  const verify = String(doc.schema || "").startsWith("wirestock-verify");
+  const progress = verify
+    ? { label: "clips checked", done: doc.ok ?? 0, failed: doc.failed ?? 0,
+        left: Math.max(0, (doc.to_check ?? 0) - (doc.checked ?? 0)), failures: doc.failures || [] }
+    : null;
   return {
     id,
     status,
@@ -84,6 +93,7 @@ export function toLive(id, doc, now = Date.now()) {
       published: run.published ?? 0,
       failed: run.failed ?? 0,
     },
+    progress,
     eta: eta
       ? {
           finishBy: eta.finish_by || null,

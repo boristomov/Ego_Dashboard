@@ -213,8 +213,8 @@ function InstanceCard({
         </div>
       )}
 
-      {live?.queue && <QueueBar live={live} />}
-      {live?.eta && live.status !== "stopped" && (live.queue?.toPublish ?? 0) > 0 && <EtaLine live={live} />}
+      {live?.progress ? <ProgressBar live={live} /> : live?.queue && <QueueBar live={live} />}
+      {live?.eta && live.status !== "stopped" && (live.eta.secondsLeft ?? 0) > 0 && <EtaLine live={live} />}
       {live?.retime && !live.retime.finished && <RetimeBar live={live} />}
       {live?.previews && <PreviewsBar live={live} />}
 
@@ -350,8 +350,45 @@ function EtaLine({ live }: { live: InstanceLiveStatus }) {
       </span>
       <span className="text-text-muted">
         {e.footageDoneS != null && e.footageTotalS ? `${hm(e.footageDoneS)} of ${hm(e.footageTotalS)} of footage` : null}
-        {e.speedX ? ` · ${e.speedX.toFixed(1)}x real time` : " · estimated (not measured yet)"}
+        {e.speedX ? ` · ${e.speedX.toFixed(1)}x real time` : e.footageTotalS ? " · estimated (not measured yet)" : null}
       </span>
+    </div>
+  );
+}
+
+function ProgressBar({ live }: { live: InstanceLiveStatus }) {
+  const p = live.progress!;
+  const total = p.done + p.failed + p.left;
+  const pct = total ? Math.round(((p.done + p.failed) / total) * 100) : 0;
+  return (
+    <div className="grid gap-1.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-[0.72rem]">
+        <span className="text-text">
+          <span className="font-semibold text-emerald-300">{p.done}</span> {p.label} OK
+          {p.failed > 0 && (
+            <>
+              , <span className="font-semibold text-red-300">{p.failed}</span> with problems
+            </>
+          )}
+          {live.status !== "stopped" && (
+            <>
+              , <span className="font-semibold">{p.left}</span> to go
+            </>
+          )}
+        </span>
+      </div>
+      {total > 0 && (
+        <div className="h-1.5 overflow-hidden rounded-full bg-input">
+          <div className="h-full rounded-full bg-ok/70" style={{ width: `${pct}%` }} />
+        </div>
+      )}
+      {p.failures.length > 0 && (
+        <ul className="text-[0.68rem] text-red-300">
+          {p.failures.slice(-5).map((f) => (
+            <li key={f}>{f}</li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

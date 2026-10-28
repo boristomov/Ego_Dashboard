@@ -20,6 +20,14 @@ export const INSTANCES: InstanceConfig[] = [
       "Packages described takes into Wirestock clips (MP4s, MCAP, sidecar) and publishes them to the project. " +
       "Started from CloudShell; terminates itself when there is nothing left to package.",
   },
+  {
+    id: "wirestock-verifier",
+    name: "Wirestock verifier",
+    kind: "EC2 us-west-2 · runs on a packager box",
+    role:
+      "Checks clips as delivered in the bucket: checksums, sidecar and index, frame counts, both eyes, " +
+      "narration track and timing, MCAP contents, no freeze over 1.3 s.",
+  },
 ];
 
 // ---------- Runtime data model (what the poller writes to instances.json) ----------
@@ -64,6 +72,9 @@ export type InstanceEta = {
   updatedAt: string | null;
 };
 
+/** A job that works through a list (e.g. the verifier): done, failed, left. */
+export type InstanceProgress = { label: string; done: number; failed: number; left: number; failures: string[] };
+
 /** Re-timing the narration of clips already published. */
 export type InstanceRetime = { toDo: number; done: number; failed: number; finished: boolean };
 
@@ -93,6 +104,7 @@ export type InstanceLiveStatus = {
   idleStopMin?: number | null;
   queue?: InstanceQueue;
   eta?: InstanceEta | null;
+  progress?: InstanceProgress | null;
   retime?: InstanceRetime | null;
   previews?: InstancePreviews | null;
   /** Takes in hand, one per worker. */
