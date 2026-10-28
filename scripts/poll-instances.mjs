@@ -62,6 +62,8 @@ export function toLive(id, doc, now = Date.now()) {
   const q = doc.queue || {};
   const run = doc.run || {};
   const pv = doc.previews;
+  const eta = doc.eta;
+  const rt = doc.retime;
   return {
     id,
     status,
@@ -82,6 +84,19 @@ export function toLive(id, doc, now = Date.now()) {
       published: run.published ?? 0,
       failed: run.failed ?? 0,
     },
+    eta: eta
+      ? {
+          finishBy: eta.finish_by || null,
+          secondsLeft: eta.seconds_left ?? null,
+          footageLeftS: eta.footage_left_s ?? null,
+          footageDoneS: eta.footage_done_s ?? null,
+          footageTotalS: eta.footage_total_s ?? null,
+          speedX: eta.speed_x_realtime ?? null,
+          measured: !!eta.measured,
+          updatedAt: eta.updated_at || null,
+        }
+      : null,
+    retime: rt ? { toDo: rt.to_do ?? 0, done: rt.done ?? 0, failed: rt.failed ?? 0, finished: !!rt.finished } : null,
     previews: pv
       ? {
           toCheck: pv.to_check ?? 0,

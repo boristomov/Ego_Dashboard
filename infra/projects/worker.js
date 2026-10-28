@@ -286,8 +286,12 @@ export function deleteTargets(project, entry) {
   if (parts.length !== 2 || parts[1] !== session || !parts[0] || parts[0].startsWith("_") || parts[0].startsWith(".")) return null;
   const key = fileKey(project, prefix);
   const depth = key ? key.split("/").length : 0;
-  if (!key || depth < 3 || depth > 4 || key.split("/").pop() !== (entry.clip_id || session)) return null;
-  return { raw, prefix: key, session };
+  // A packaged clip's folder is named after the clip; a preview-only card's (_pending/<session>) after the take.
+  const leaf = key ? key.split("/").pop() : "";
+  if (!key || depth < 3 || depth > 4 || (leaf !== (entry.clip_id || session) && !(entry.unpackaged && leaf === parts[1]))) return null;
+  // One piece of a take split into several clips: delete that clip only, never the raw take the others come from.
+  const piece = !!(entry.segment && Number(entry.segment.count) > 1);
+  return { raw, prefix: key, session, piece };
 }
 
 function xmlEscape(s) {
@@ -456,12 +460,12 @@ async function deleteRecording(env, project, item, who) {
 
   const raw = deleteCreds(env, env.RAW_BUCKET);
   const processed = deleteCreds(env, env.PROJECTS_BUCKET);
-  const tombstone = `_deleted/${t.raw}.json`;
+  const tombstone = t.piece ? `_deleted/${t.raw}/${entry.clip_id}.json` : `_deleted/${t.raw}.json`;
   const record = { schema: "egodash-deleted/1", session: t.session, raw_prefix: t.raw, project, item,
     project_prefix: t.prefix, task: entry.task_as_recorded || entry.task_name || null, by: who, at: new Date().toISOString() };
   await putJson(raw, tombstone, record);
 
-  const rawKeys = (await listKeys(raw, t.raw)).filter((k) => k.startsWith(`${t.raw}/`));
+  const rawKeys = t.piece ? [] : (await listKeys(raw, t.raw)).filter((k) => k.startsWith(`${t.raw}/`));
   const projectKeys = (await listKeys(processed, t.prefix)).filter((k) => k.startsWith(`${t.prefix}/`));
   await deleteKeys(raw, rawKeys);
   await deleteKeys(processed, projectKeys);

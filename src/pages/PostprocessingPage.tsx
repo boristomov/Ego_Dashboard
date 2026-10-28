@@ -214,6 +214,8 @@ function InstanceCard({
       )}
 
       {live?.queue && <QueueBar live={live} />}
+      {live?.eta && live.status !== "stopped" && (live.queue?.toPublish ?? 0) > 0 && <EtaLine live={live} />}
+      {live?.retime && !live.retime.finished && <RetimeBar live={live} />}
       {live?.previews && <PreviewsBar live={live} />}
 
       {/* Error banner */}
@@ -322,6 +324,58 @@ function QueueBar({ live }: { live: InstanceLiveStatus }) {
       {total > 0 && (
         <div className="h-1.5 overflow-hidden rounded-full bg-input">
           <div className="h-full rounded-full bg-ok/70" style={{ width: `${pct}%` }} />
+        </div>
+      )}
+    </div>
+  );
+}
+
+function hm(seconds: number): string {
+  const m = Math.max(0, Math.round(seconds / 60));
+  return m >= 60 ? `${Math.floor(m / 60)} h ${m % 60} min` : `${m} min`;
+}
+
+function EtaLine({ live }: { live: InstanceLiveStatus }) {
+  const e = live.eta!;
+  if (e.secondsLeft == null) return null;
+  // The box wrote the estimate at e.updatedAt; count down from then.
+  const at = e.updatedAt ? Date.parse(e.updatedAt) : Date.now();
+  const left = Math.max(0, e.secondsLeft - (Date.now() - at) / 1000);
+  const by = e.finishBy ? new Date(e.finishBy).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : null;
+  return (
+    <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-[0.72rem]">
+      <span className="text-text">
+        About <span className="font-semibold text-amber-200">{hm(left)}</span> left
+        {by && <> · done by <span className="font-semibold">{by}</span></>}
+      </span>
+      <span className="text-text-muted">
+        {e.footageDoneS != null && e.footageTotalS ? `${hm(e.footageDoneS)} of ${hm(e.footageTotalS)} of footage` : null}
+        {e.speedX ? ` · ${e.speedX.toFixed(1)}x real time` : " · estimated (not measured yet)"}
+      </span>
+    </div>
+  );
+}
+
+function RetimeBar({ live }: { live: InstanceLiveStatus }) {
+  const r = live.retime!;
+  const total = r.done + r.failed + r.toDo;
+  const pct = total ? Math.round(((r.done + r.failed) / total) * 100) : 100;
+  return (
+    <div className="grid gap-1.5">
+      <div className="flex flex-wrap items-baseline justify-between gap-x-3 text-[0.72rem]">
+        <span className="text-text">
+          Narration re-time: <span className="font-semibold text-emerald-300">{r.done}</span> done
+          {r.failed > 0 && (
+            <>
+              , <span className="font-semibold text-red-300">{r.failed}</span> failed
+            </>
+          )}
+          , <span className="font-semibold">{r.toDo}</span> to go
+        </span>
+      </div>
+      {total > 0 && (
+        <div className="h-1.5 overflow-hidden rounded-full bg-input">
+          <div className="h-full rounded-full bg-violet-400/60" style={{ width: `${pct}%` }} />
         </div>
       )}
     </div>

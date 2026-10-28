@@ -51,6 +51,22 @@ export type InstanceQueue = {
   failed: number;
 };
 
+/** The packager's own estimate of the time left in its current pass, from the footage it has to package. */
+export type InstanceEta = {
+  finishBy: string | null;
+  secondsLeft: number | null;
+  footageLeftS: number | null;
+  footageDoneS: number | null;
+  footageTotalS: number | null;
+  /** Footage packaged per second of wall time; null until enough takes are done to measure it. */
+  speedX: number | null;
+  measured: boolean;
+  updatedAt: string | null;
+};
+
+/** Re-timing the narration of clips already published. */
+export type InstanceRetime = { toDo: number; done: number; failed: number; finished: boolean };
+
 /** Re-encoding the browser previews of clips published before they were 1080p. */
 export type InstancePreviews = {
   toCheck: number;
@@ -76,6 +92,8 @@ export type InstanceLiveStatus = {
   idleSince?: string | null;
   idleStopMin?: number | null;
   queue?: InstanceQueue;
+  eta?: InstanceEta | null;
+  retime?: InstanceRetime | null;
   previews?: InstancePreviews | null;
   /** Takes in hand, one per worker. */
   current?: InstanceCurrent[];
