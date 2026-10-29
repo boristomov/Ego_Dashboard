@@ -260,7 +260,9 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
 
   const items = useMemo<Item[]>(() => {
     if (!doc) return [];
-    return [...(doc.index.clips ?? []).map(fromClip), ...(doc.index.sessions ?? []).map(fromSample)];
+    // Newest recordings first.
+    const newest = (a: Item, b: Item) => (b.start?.getTime() ?? 0) - (a.start?.getTime() ?? 0);
+    return [...(doc.index.clips ?? []).map(fromClip), ...(doc.index.sessions ?? []).map(fromSample)].sort(newest);
   }, [doc]);
 
   const tasks = useMemo(() => [...new Set(items.map((i) => i.title))].sort(), [items]);
@@ -857,6 +859,7 @@ const ItemCard = memo(function ItemCard({
       {playing && item.preview && (
         <VideoPlayerModal
           src={projectFileUrl(doc, item.preview)}
+          fullSrc={main && !item.sample ? projectFileUrl(doc, `${item.prefix}/${main.name}`) : undefined}
           downloadSrc={main ? projectFileUrl(doc, `${item.prefix}/${main.name}`, true) : undefined}
           downloadBytes={main?.bytes ?? 0}
           title={item.title}

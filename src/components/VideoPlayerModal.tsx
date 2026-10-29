@@ -6,6 +6,15 @@ import { useAuth } from "../context/Auth";
 
 const SPEEDS = [1, 1.5, 2] as const;
 const SPEED_KEY = "ego_review_speed";
+const QUALITY_KEY = "ego_play_quality";
+
+function savedQuality(): "full" | "light" {
+  try {
+    return localStorage.getItem(QUALITY_KEY) === "light" ? "light" : "full";
+  } catch {
+    return "full";
+  }
+}
 
 function savedSpeed(): number {
   try {
@@ -18,13 +27,17 @@ function savedSpeed(): number {
 
 export function VideoPlayerModal({
   src,
+  fullSrc,
   downloadSrc,
   downloadBytes = 0,
   title,
   subtitle,
   onClose,
 }: {
+  /** The light browser preview (1080p30). */
   src: string;
+  /** The delivered video itself (1080p60 with the narration), played by default when given. */
+  fullSrc?: string;
   /** Attachment-dispositioned URL used by the Download button (falls back to src). */
   downloadSrc?: string;
   /** File size, charged against the public transfer allowance on download. */
@@ -40,6 +53,20 @@ export function VideoPlayerModal({
   // Review speed, admins only; kept across videos so a review session stays at its pace.
   const [chosenSpeed, setSpeed] = useState(savedSpeed);
   const speed = isAdmin ? chosenSpeed : 1;
+  // Original quality (the delivered 1080p60 file) unless the viewer picked the light preview.
+  const [quality, setQuality] = useState(savedQuality);
+  const playSrc = quality === "full" && fullSrc ? fullSrc : src;
+  const resumeAt = useRef<number | null>(null);
+  const chooseQuality = (q: "full" | "light") => {
+    if (q === quality) return;
+    resumeAt.current = videoRef.current?.currentTime ?? null;
+    setQuality(q);
+    try {
+      localStorage.setItem(QUALITY_KEY, q);
+    } catch {
+      /* private browsing */
+    }
+  };
 
   useEffect(() => {
     if (videoRef.current) videoRef.current.playbackRate = speed;
@@ -96,6 +123,34 @@ export function VideoPlayerModal({
               </div>
             )}
           </div>
+          {fullSrc && (
+            <div
+              role="radiogroup"
+              aria-label="Video quality"
+              className="flex shrink-0 overflow-hidden rounded-md border border-border"
+            >
+              {(
+                [
+                  ["full", "1080p60", "The delivered video: 1920×1080 at 60 fps, with the narration"],
+                  ["light", "Light", "A lighter 1080p30 preview for slow connections"],
+                ] as const
+              ).map(([q, label, hint]) => (
+                <button
+                  key={q}
+                  type="button"
+                  role="radio"
+                  aria-checked={quality === q}
+                  title={hint}
+                  onClick={() => chooseQuality(q)}
+                  className={`px-2 py-1 text-[0.7rem] transition ${
+                    quality === q ? "bg-accent/25 text-accent-hover" : "text-text-muted hover:bg-panel hover:text-text"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
           {isAdmin && (
             <div
               role="radiogroup"
@@ -127,7 +182,7 @@ export function VideoPlayerModal({
               // download so the tab isn't a quota loophole.
               if (!(await requestAccess())) return;
               if (!chargeDownload(downloadBytes)) return;
-              window.open(src, "_blank", "noopener");
+              window.open(playSrc, "_blank", "noopener");
             }}
           >
             <ExternalLink size={13} />
@@ -158,12 +213,16 @@ export function VideoPlayerModal({
         <div className="flex-1 bg-black">
           <video
             ref={videoRef}
-            src={src}
+            src={playSrc}
             controls
             autoPlay
             playsInline
             onLoadedMetadata={(e) => {
               e.currentTarget.playbackRate = speed;
+              if (resumeAt.current != null) {
+                e.currentTarget.currentTime = resumeAt.current;
+                resumeAt.current = null;
+              }
             }}
             className="h-full max-h-[80vh] w-full object-contain"
           />
