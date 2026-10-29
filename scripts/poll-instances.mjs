@@ -29,7 +29,8 @@ const SOURCES = [
   { id: "wirestock-packager", key: "_packager/wirestock/status.json" },
   { id: "wirestock-worker-b", key: "_packager/wirestock/status-b.json" },
   { id: "wirestock-worker-c", key: "_packager/wirestock/status-c.json" },
-  { id: "wirestock-verifier", key: "_packager/wirestock/verify/status.json" },
+  // The verifier runs as several boxes, one per shard of the clips; the card adds them up.
+  { id: "wirestock-verifier", keys: [1, 2, 3, 4].map((i) => `_packager/wirestock/verify/status-${i}.json`) },
 ];
 
 function credentials() {
@@ -134,6 +135,25 @@ export function toLive(id, doc, now = Date.now()) {
   };
 }
 
+/** Several verifier shards' reports as one: counts added, working while any shard works, latest finish. Pure. */
+export function mergeShards(docs, now = Date.now()) {
+  const fresh = (d) => d.updated_at && now - Date.parse(d.updated_at) < STALE_MIN * 60000;
+  const sum = (k) => docs.reduce((a, d) => a + (d[k] || 0), 0);
+  const etas = docs.map((d) => d.eta).filter((e) => e && e.finish_by);
+  const last = etas.sort((a, b) => Date.parse(b.finish_by) - Date.parse(a.finish_by))[0] || null;
+  const working = docs.some((d) => d.state !== "stopped" && fresh(d));
+  return {
+    schema: "wirestock-verify/1",
+    state: working ? "working" : "stopped",
+    updated_at: docs.map((d) => d.updated_at).sort().pop(),
+    started_at: docs.map((d) => d.started_at).sort()[0],
+    note: working ? `${docs.length} verifier boxes` : `done: ${sum("ok")} of ${sum("checked")} clips pass`,
+    to_check: sum("to_check"), checked: sum("checked"), ok: sum("ok"), failed: sum("failed"),
+    failures: docs.flatMap((d) => d.failures || []).slice(-20),
+    eta: working ? last : null,
+  };
+}
+
 async function main() {
   const creds = credentials();
   const s3 = creds ? new S3Client({ region: REGION, credentials: creds }) : null;
@@ -144,6 +164,20 @@ async function main() {
       continue;
     }
     try {
+      if (src.keys) {
+        const docs = [];
+        for (const key of src.keys) {
+          try {
+            const r = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: key }));
+            docs.push(JSON.parse(await r.Body.transformToString()));
+          } catch (e) {
+            if (e?.name !== "NoSuchKey") throw e;
+          }
+        }
+        if (!docs.length) throw Object.assign(new Error("no shard has reported"), { name: "NoSuchKey" });
+        instances.push(toLive(src.id, mergeShards(docs)));
+        continue;
+      }
       const r = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: src.key }));
       instances.push(toLive(src.id, JSON.parse(await r.Body.transformToString())));
     } catch (e) {
