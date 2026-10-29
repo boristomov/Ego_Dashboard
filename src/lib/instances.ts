@@ -21,6 +21,18 @@ export const INSTANCES: InstanceConfig[] = [
       "Started from CloudShell; terminates itself when there is nothing left to package.",
   },
   {
+    id: "wirestock-worker-b",
+    name: "Wirestock worker B",
+    kind: "EC2 us-west-2 · GPU (ZED SDK)",
+    role: "Packages the takes assigned to it in plan.json beside the packager, which takes its results in.",
+  },
+  {
+    id: "wirestock-worker-c",
+    name: "Wirestock worker C",
+    kind: "EC2 us-west-2 · CPU",
+    role: "Packages the takes assigned to it in plan.json beside the packager, which takes its results in.",
+  },
+  {
     id: "wirestock-verifier",
     name: "Wirestock verifier",
     kind: "EC2 us-west-2 · runs on a packager box",

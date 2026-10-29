@@ -27,6 +27,8 @@ const STALE_MIN = 10;
 
 const SOURCES = [
   { id: "wirestock-packager", key: "_packager/wirestock/status.json" },
+  { id: "wirestock-worker-b", key: "_packager/wirestock/status-b.json" },
+  { id: "wirestock-worker-c", key: "_packager/wirestock/status-c.json" },
   { id: "wirestock-verifier", key: "_packager/wirestock/verify/status.json" },
 ];
 
