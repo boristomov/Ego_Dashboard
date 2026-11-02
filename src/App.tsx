@@ -10,6 +10,7 @@ import { AdminPage } from "./pages/AdminPage";
 import { WelcomePage } from "./pages/WelcomePage";
 import { PrivacyPage } from "./pages/PrivacyPage";
 import { TwinPage } from "./pages/TwinPage";
+import { AnnotationsPage } from "./pages/AnnotationsPage";
 import { AccessProvider } from "./context/AccessGate";
 import { AuthProvider, useAuth } from "./context/Auth";
 
@@ -54,6 +55,7 @@ function AppRoutes() {
         {isAdmin && <Route path="/stations" element={<StationsPage />} />}
         {isAdmin && <Route path="/monitoring" element={<MonitoringPage />} />}
         {isAdmin && <Route path="/twin" element={<TwinPage />} />}
+        {isAdmin && <Route path="/annotations" element={<AnnotationsPage />} />}
         {isAdmin && <Route path="/admin" element={<AdminPage />} />}
         {isAdmin && <Route path="/clients" element={<ClientConnectionsPage />} />}
         <Route path="/privacy" element={<PrivacyPage />} />
