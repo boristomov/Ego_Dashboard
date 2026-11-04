@@ -6,6 +6,8 @@ import {
   Clock,
   Download,
   DownloadCloud,
+  Eye,
+  EyeOff,
   FlaskConical,
   HardDrive,
   ImageOff,
@@ -164,10 +166,49 @@ function fmtValue(v: unknown): string {
   return String(v);
 }
 
+/**
+ * "Client view" for screen-sharing on client calls: the browser exactly as a client login shows it.
+ * Mirrors the projects Worker's viewIndex for clients: only the delivery's entries, without the
+ * internal fields (INTERNAL_FIELDS in infra/projects/worker.js), and every admin-only control off.
+ */
+const CLIENT_VIEW_KEY = "egodash:projectClientView";
+const CLIENT_HIDDEN_FIELDS = [
+  "checks", "checks_passed", "sync", "quality_status", "interim", "capture_format", "raw_prefix", "task_as_recorded",
+  "relabel", "in_delivery",
+];
+
+function asClientDoc(doc: ProjectDoc): ProjectDoc {
+  const strip = <T extends object>(list?: T[]) =>
+    list
+      ?.filter((e) => (e as { in_delivery?: boolean }).in_delivery !== false)
+      .map((e) => Object.fromEntries(Object.entries(e).filter(([k]) => !CLIENT_HIDDEN_FIELDS.includes(k))) as T);
+  return { ...doc, admin: false, tasks: undefined, index: { ...doc.index, clips: strip(doc.index.clips), sessions: strip(doc.index.sessions) } };
+}
+
 export function ProjectBrowser({ project, title }: { project: string; title: string }) {
   const { session, isAdmin } = useAuth();
   const [signedIn, setSignedIn] = useState(hasProjectsSession);
-  const [doc, setDoc] = useState<ProjectDoc | null>(null);
+  const [rawDoc, setDoc] = useState<ProjectDoc | null>(null);
+  const [clientView, setClientView] = useState(() => {
+    try {
+      return localStorage.getItem(CLIENT_VIEW_KEY) === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleClientView = () =>
+    setClientView((on) => {
+      try {
+        localStorage.setItem(CLIENT_VIEW_KEY, on ? "0" : "1");
+      } catch {
+        /* storage off: the switch still works for this page */
+      }
+      return !on;
+    });
+  // Everything below renders from `doc`: in client view, the client's version of it.
+  const canSeeClientView = !!rawDoc?.admin;
+  const asClient = clientView && canSeeClientView;
+  const doc = useMemo(() => (rawDoc && asClient ? asClientDoc(rawDoc) : rawDoc), [rawDoc, asClient]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [empty, setEmpty] = useState(false);
@@ -272,14 +313,14 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
     const q = search.trim().toLowerCase();
     return items.filter((i) => {
       if (task && i.title !== task) return false;
-      if (checks === "pass" && i.checksPassed !== true) return false;
-      if (checks === "fail" && i.checksPassed !== false) return false;
-      if (checks === "delivery" && !i.inDelivery) return false;
+      if (!asClient && checks === "pass" && i.checksPassed !== true) return false;
+      if (!asClient && checks === "fail" && i.checksPassed !== false) return false;
+      if (!asClient && checks === "delivery" && !i.inDelivery) return false;
       if (q && !`${i.title} ${i.subtitle} ${i.description ?? ""}`.toLowerCase().includes(q)) return false;
-      if (flags.enabled && !matchesFlagFilter(flagFilter, itemFlagKey(project, i), flags)) return false;
+      if (flags.enabled && !asClient && !matchesFlagFilter(flagFilter, itemFlagKey(project, i), flags)) return false;
       return true;
     });
-  }, [items, search, task, checks, flags, flagFilter, project]);
+  }, [items, search, task, checks, flags, flagFilter, project, asClient]);
 
   const flagKeys = useMemo(() => items.map((i) => itemFlagKey(project, i)), [items, project]);
   const markCounts = useMarkCounts(flagKeys);
@@ -369,6 +410,17 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
                 {picked.length || shown.length}
               </span>
             </button>
+            {canSeeClientView && (
+              <button
+                type="button"
+                className={asClient ? "btn-accent" : "btn"}
+                onClick={toggleClientView}
+                aria-pressed={asClient}
+                title={asClient ? "Showing what the client sees. Click to show checks, flags and admin controls again." : "Show the page as the client sees it: no checks, warnings, flags or admin controls (for screen-sharing)"}
+              >
+                {asClient ? <EyeOff size={13} /> : <Eye size={13} />} Client view
+              </button>
+            )}
             <button type="button" className="btn" onClick={load} disabled={loading}>
               <RefreshCw size={13} className={loading ? "animate-spin" : ""} /> Refresh
             </button>
@@ -415,7 +467,7 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
             {items.some((i) => i.inDelivery) && <option value="delivery">In client delivery</option>}
           </select>
         )}
-        {flags.enabled && (
+        {flags.enabled && !asClient && (
           <select
             className="input-base !w-auto !py-1.5"
             value={flagFilter}
@@ -429,7 +481,7 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
             ))}
           </select>
         )}
-        <FlagsSignInHint />
+        {!asClient && <FlagsSignInHint />}
         <button
           type="button"
           className="btn !py-1.5"
@@ -478,7 +530,7 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
                 key={i.id}
                 item={i}
                 doc={doc}
-                showRecordedAs={isAdmin}
+                showRecordedAs={isAdmin && !asClient}
                 onDeleted={removeItem}
                 onRelabeled={replaceClip}
                 selected={selected.has(i.id)}
@@ -699,7 +751,7 @@ const ItemCard = memo(function ItemCard({
               Client delivery
             </span>
           )}
-          <ReviewChips flagKey={flagKey} />
+          {doc.admin && <ReviewChips flagKey={flagKey} />}
         </div>
         {(!item.sample || !!item.fps) && (
           <div className="absolute right-2 top-2">
@@ -768,9 +820,9 @@ const ItemCard = memo(function ItemCard({
             {showRecordedAs && item.taskAsRecorded && (
               <div className="mt-0.5 text-[0.65rem] text-amber-300">Recorded as “{item.taskAsRecorded}”</div>
             )}
-            <FlagNote flagKey={flagKey} />
+            {doc.admin && <FlagNote flagKey={flagKey} />}
           </div>
-          <ReviewButtons flagKey={flagKey} label={`${item.title} · ${item.subtitle}`} />
+          {doc.admin && <ReviewButtons flagKey={flagKey} label={`${item.title} · ${item.subtitle}`} />}
           {doc.admin && (
             <button
               type="button"
