@@ -417,8 +417,9 @@ export function ProjectBrowser({ project, title }: { project: string; title: str
                 onClick={toggleClientView}
                 aria-pressed={asClient}
                 title={asClient ? "Showing what the client sees. Click to show checks, flags and admin controls again." : "Show the page as the client sees it: no checks, warnings, flags or admin controls (for screen-sharing)"}
+                aria-label={asClient ? "Show admin details" : "Show as the client sees it"}
               >
-                {asClient ? <EyeOff size={13} /> : <Eye size={13} />} Client view
+                {asClient ? <EyeOff size={13} /> : <Eye size={13} />}
               </button>
             )}
             <button type="button" className="btn" onClick={load} disabled={loading}>
