@@ -37,7 +37,7 @@ type Load =
 
 export function TwinPage() {
   const [load, setLoad] = useState<Load>({ state: "loading" });
-  const [handsOff, setHandsOff] = useState(true);
+  const [handsOff, setHandsOff] = useState(false);
   const [frameKey, setFrameKey] = useState(0);
 
   useEffect(() => {
@@ -67,8 +67,12 @@ export function TwinPage() {
             The station UI from the latest ThothAI_FRONTEND main, running against
             a pretend recorder in your browser. Everything works as on a rig:
             staff code (any 4 digits), task search, calibration, mic check,
-            countdown, recording and the take summary. This computer's camera
-            and mic stand in for the rig's; nothing is recorded or uploaded.
+            countdown, recording and the take summary. On-device hand tracking
+            guides both hands into frame, the 🤟 gesture starts and stops a take
+            in gesture mode, and the take stops if the hands leave the frame.
+            The summary shows the narration rate and longest silence (Chrome's
+            speech recognition). This computer's camera and mic stand in for
+            the rig's; nothing is recorded or uploaded.
           </p>
         </div>
         {load.state === "ready" && <CommitBadge info={load.info} />}
@@ -83,7 +87,7 @@ export function TwinPage() {
               type="button"
               onClick={() => setHandsOff((v) => !v)}
               aria-pressed={!handsOff}
-              title="On a rig a take only starts once both hands are in shot"
+              title="Hand tracking: a take starts only with both hands in shot and stops when they leave. Turn off on a computer without a usable camera."
               className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-[0.74rem] transition ${
                 handsOff
                   ? "border-border bg-panel text-text-muted hover:bg-panel-hover"
