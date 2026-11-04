@@ -1,0 +1,1025 @@
+{
+ "about": "Tasks for professional/industrial sites (Wirestock Exhibit A domains), English and Chinese. 2-3 takes per site, then move to the next site. Apply with: node infra/registry-api/import-tasks.mjs infra/registry-api/imports/2026-11-03-professional-site-tasks.json --user <you> --apply",
+ "defaults": {
+  "sites": [
+   "Beijing"
+  ],
+  "state": "active",
+  "environmentIds": [],
+  "targetTakes": 3
+ },
+ "tasks": [
+  {
+   "slug": "pro-kitchen-dice-onions",
+   "name": "Professional kitchen: dicing onions at the prep station",
+   "headline": "Peel and dice onions with a chef's knife at a stainless-steel prep station",
+   "description": "Peel and dice onions with a chef's knife at a stainless-steel prep station. Where: a culinary school or restaurant kitchen with stainless-steel worktops and professional equipment in view. You need: 3–4 onions, a chef's knife, a cutting board, a stainless-steel container (hotel pan) for the diced onion, a bin for peels.",
+   "steps": [
+    "Show the prep station, the onions and the knife, and say what you are going to make.",
+    "Cut the ends off an onion and peel it.",
+    "Halve it and make horizontal and vertical cuts.",
+    "Dice it across and slide the dice into the container with the knife blade.",
+    "Repeat with the other onions, describing each step as you finish it.",
+    "Show the full container, wipe the board, then stop recording."
+   ],
+   "pitfalls": [
+    "The kitchen must look professional: stainless steel and real equipment in frame, not a home kitchen.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Knife work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "专业厨房：在备餐台切洋葱丁",
+     "headline": "在不锈钢备餐台上用厨刀给洋葱去皮并切丁",
+     "description": "在不锈钢备餐台上用厨刀给洋葱去皮并切丁。场所：烹饪学校或餐厅后厨，不锈钢台面，画面里能看到专业厨房设备。所需物品：3–4 个洋葱、厨刀、砧板、一个装洋葱丁的不锈钢方盘、一个放洋葱皮的垃圾桶。",
+     "steps": [
+      "展示备餐台、洋葱和厨刀，说出你要做什么。",
+      "切掉洋葱两头并剥皮。",
+      "对半切开，先横切再竖切。",
+      "横向切成丁，用刀面把洋葱丁推进不锈钢方盘。",
+      "继续切其余的洋葱，每完成一步就说出来。",
+      "展示装满的方盘，擦干净砧板，然后停止录制。"
+     ],
+     "pitfalls": [
+      "厨房必须看起来专业：画面里有不锈钢台面和专业设备，不能是家庭厨房。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "pro-kitchen-veg-mise-en-place",
+   "name": "Professional kitchen: prepping vegetables into hotel pans",
+   "headline": "Wash, peel, slice and portion vegetables into stainless-steel pans for service",
+   "description": "Wash, peel, slice and portion vegetables into stainless-steel pans for service. Where: a culinary school or restaurant kitchen with stainless-steel worktops and professional equipment in view. You need: carrots, cucumbers and peppers, a peeler, a chef's knife, a cutting board, 2–3 stainless-steel pans, cling film or lids.",
+   "steps": [
+    "Show the vegetables, tools and pans and say what you will prepare.",
+    "Wash the vegetables at the prep sink.",
+    "Peel the carrots and slice them into even sticks.",
+    "Slice the cucumber and cut the pepper into strips.",
+    "Put each vegetable into its own pan and cover it.",
+    "Show the finished pans on the shelf or trolley, then stop recording."
+   ],
+   "pitfalls": [
+    "Use real kitchen equipment (prep sink, steel pans, trolley or walk-in) so the site is clearly professional.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "专业厨房：备菜装入不锈钢方盘",
+     "headline": "把蔬菜洗净、去皮、切好，分装进不锈钢方盘备用",
+     "description": "把蔬菜洗净、去皮、切好，分装进不锈钢方盘备用。场所：烹饪学校或餐厅后厨，不锈钢台面，画面里能看到专业厨房设备。所需物品：胡萝卜、黄瓜、彩椒、削皮刀、厨刀、砧板、2–3 个不锈钢方盘、保鲜膜或盖子。",
+     "steps": [
+      "展示蔬菜、工具和方盘，说出你要准备什么。",
+      "在备菜水池把蔬菜洗干净。",
+      "胡萝卜去皮，切成均匀的条。",
+      "黄瓜切片，彩椒切条。",
+      "每种蔬菜分别放进一个方盘并盖好。",
+      "把备好的方盘放到架子或推车上展示，然后停止录制。"
+     ],
+     "pitfalls": [
+      "使用真实的厨房设备（备菜水池、不锈钢方盘、推车或冷库），让场所一看就是专业厨房。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "greenhouse-hoe-weeds-in-a-bed",
+   "name": "Greenhouse: weeding a crop bed with a hand hoe",
+   "headline": "Remove weeds between crop rows inside a greenhouse with a hand hoe and collect them",
+   "description": "Remove weeds between crop rows inside a greenhouse with a hand hoe and collect them. Where: inside a commercial greenhouse, between rows of a clearly visible crop (for example lettuce, tomatoes or strawberries). Not outdoors, not a lawn. You need: a hand hoe or weeding trowel, gardening gloves, a bucket or basket for the weeds.",
+   "steps": [
+    "Show the greenhouse, the crop rows and your tools, and say which crop you are weeding.",
+    "Kneel or crouch at the start of a row.",
+    "Loosen the weeds around the plants with the hoe without touching the crop.",
+    "Pull the loosened weeds out by the root and drop them in the bucket.",
+    "Move along the row and repeat, saying what you just cleared.",
+    "Show the cleared row and the full bucket, then stop recording."
+   ],
+   "pitfalls": [
+    "Use a proper weeding tool, not a stick, and keep the crop clearly visible in frame.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Gardening"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "温室：用小锄头给作物畦除草",
+     "headline": "在温室里用小锄头清除作物行间的杂草并收集起来",
+     "description": "在温室里用小锄头清除作物行间的杂草并收集起来。场所：商业温室内部，在能清楚看出是什么作物的行间（例如生菜、番茄或草莓）。不要在室外，也不要在草坪上。所需物品：小锄头或除草铲、园艺手套、装杂草的桶或筐。",
+     "steps": [
+      "展示温室、作物行和工具，说出你在给什么作物除草。",
+      "在一行的起点蹲下或跪下。",
+      "用锄头把作物周围的杂草松开，不要碰到作物。",
+      "把松动的杂草连根拔出，放进桶里。",
+      "沿着这一行往前走，重复操作，说出刚清理了哪里。",
+      "展示清理干净的一行和装满杂草的桶，然后停止录制。"
+     ],
+     "pitfalls": [
+      "要用正规的除草工具，不能用木棍；作物要一直清楚地出现在画面里。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "greenhouse-transplant-seedlings",
+   "name": "Greenhouse: transplanting seedlings into pots",
+   "headline": "Move seedlings from a seed tray into individual pots at a greenhouse potting bench",
+   "description": "Move seedlings from a seed tray into individual pots at a greenhouse potting bench. Where: a potting bench inside a commercial greenhouse, with crops or seedling racks visible behind. You need: a seed tray of seedlings, 10–12 small pots, potting soil, a trowel or dibber, a watering can, labels.",
+   "steps": [
+    "Show the bench, the seedlings and the pots, and say what you are transplanting.",
+    "Fill the pots with soil using the trowel.",
+    "Make a hole in each pot with the dibber.",
+    "Ease one seedling out of the tray by its leaves and set it in a pot.",
+    "Firm the soil around it, and repeat for the other pots.",
+    "Water the pots, add a label, show the tray of pots, then stop recording."
+   ],
+   "pitfalls": [
+    "Hold seedlings by the leaves, not the stem, and keep both hands over the bench.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Gardening"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "温室：把幼苗移栽到花盆里",
+     "headline": "在温室的育苗台上把育苗盘里的幼苗移栽到单独的花盆中",
+     "description": "在温室的育苗台上把育苗盘里的幼苗移栽到单独的花盆中。场所：商业温室内的育苗操作台，背景能看到作物或育苗架。所需物品：一盘育苗、10–12 个小花盆、营养土、小铲子或打孔器、喷壶、标签。",
+     "steps": [
+      "展示操作台、幼苗和花盆，说出你要移栽什么。",
+      "用小铲子把花盆装满土。",
+      "用打孔器在每个盆里戳一个洞。",
+      "捏住叶子把一棵幼苗从育苗盘里取出，放进花盆。",
+      "把周围的土压实，其余花盆重复操作。",
+      "给花盆浇水、插上标签，展示整盘花盆，然后停止录制。"
+     ],
+     "pitfalls": [
+      "捏叶子，不要捏茎；双手保持在操作台上方。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "workshop-assemble-cabinet-carcass",
+   "name": "Furniture workshop: assembling a cabinet with a drill driver",
+   "headline": "Assemble a cabinet carcass from panels on a workbench with a cordless drill driver",
+   "description": "Assemble a cabinet carcass from panels on a workbench with a cordless drill driver. Where: a furniture factory, woodshop or assembly workshop: workbench, power tools and machinery or stacked panels visible. Not a home. You need: the panels and fittings of a small cabinet, a cordless drill driver with the right bit, screws or cam fittings, clamps, a square.",
+   "steps": [
+    "Show the workshop, the panels and the drill, and say what you are assembling.",
+    "Lay out the panels and fittings on the bench.",
+    "Clamp the side panel to the base and check it with the square.",
+    "Drive the screws with the drill driver.",
+    "Fit the other side and the top the same way, describing each joint as you finish it.",
+    "Stand the carcass up, show it is square, then stop recording."
+   ],
+   "pitfalls": [
+    "Wear safety glasses; keep the drill and both hands on the bench in front of you.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Furniture and artifact assembly"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "家具车间：用电钻组装柜体",
+     "headline": "在工作台上用充电式电钻把板件组装成柜体",
+     "description": "在工作台上用充电式电钻把板件组装成柜体。场所：家具厂、木工房或装配车间：画面里有工作台、电动工具、机器或成摞的板材。不能是家里。所需物品：小柜子的板件和五金件、装好合适批头的充电电钻、螺丝或偏心件、夹具、直角尺。",
+     "steps": [
+      "展示车间、板件和电钻，说出你要组装什么。",
+      "把板件和五金件摆在工作台上。",
+      "把侧板夹到底板上，用直角尺检查。",
+      "用电钻拧紧螺丝。",
+      "用同样的方法装另一侧板和顶板，每装好一个连接就说出来。",
+      "把柜体立起来，展示它是方正的，然后停止录制。"
+     ],
+     "pitfalls": [
+      "戴护目镜；电钻和双手保持在面前的工作台上。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "workshop-fit-handles-and-hinges",
+   "name": "Furniture workshop: fitting hinges and a handle to a door",
+   "headline": "Mark, drill and fit hinges and a handle to a cabinet door on the workbench",
+   "description": "Mark, drill and fit hinges and a handle to a cabinet door on the workbench. Where: a furniture factory, woodshop or assembly workshop with workbench and power tools visible. You need: a cabinet door panel, 2 hinges, a handle with screws, a tape measure, a pencil, a drill driver with drill and screw bits.",
+   "steps": [
+    "Show the door, the hinges, the handle and the tools, and say what you will fit.",
+    "Measure and mark the hinge and handle positions with the pencil.",
+    "Drill the pilot holes at the marks.",
+    "Screw the hinges onto the door.",
+    "Fit the handle and tighten its screws.",
+    "Open and close the hinges to show they move, then stop recording."
+   ],
+   "pitfalls": [
+    "Clamp the door or hold it flat on the bench before drilling.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Furniture and artifact assembly"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "家具车间：给柜门装合页和拉手",
+     "headline": "在工作台上为柜门划线、打孔并装上合页和拉手",
+     "description": "在工作台上为柜门划线、打孔并装上合页和拉手。场所：家具厂、木工房或装配车间，画面里能看到工作台和电动工具。所需物品：一块柜门板、2 个合页、带螺丝的拉手、卷尺、铅笔、配钻头和批头的电钻。",
+     "steps": [
+      "展示柜门、合页、拉手和工具，说出你要装什么。",
+      "用卷尺量好位置，用铅笔标出合页和拉手的位置。",
+      "在标记处打引孔。",
+      "把合页拧到门上。",
+      "装上拉手并拧紧螺丝。",
+      "开合几次合页展示它能活动，然后停止录制。"
+     ],
+     "pitfalls": [
+      "打孔前先把门板夹住或平放在工作台上按稳。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "supermarket-restock-and-face-shelf",
+   "name": "Supermarket: restocking and facing a shelf",
+   "headline": "Restock a supermarket shelf from a crate and face the products to the front",
+   "description": "Restock a supermarket shelf from a crate and face the products to the front. Where: a supermarket aisle or stock room during quiet hours, with shelving and product displays visible. You need: a crate or roll cage of products, a box cutter, the shelf to fill.",
+   "steps": [
+    "Show the aisle, the shelf gap and the crate, and say which product you are restocking.",
+    "Open the outer carton with the box cutter.",
+    "Move the older stock to the front of the shelf.",
+    "Place the new items behind it, labels facing out.",
+    "Pull every item to the shelf edge so the row is neat (facing).",
+    "Flatten the empty carton, show the full shelf, then stop recording."
+   ],
+   "pitfalls": [
+    "Film when the aisle is quiet and keep shoppers' faces out of frame.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Retail and logistics"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "超市：补货和理货",
+     "headline": "从货筐给超市货架补货，并把商品理到最前面摆整齐",
+     "description": "从货筐给超市货架补货，并把商品理到最前面摆整齐。场所：超市货架通道或仓库，客流少的时段，画面里能看到货架和商品陈列。所需物品：一筐或一笼货、开箱刀、需要补货的货架。",
+     "steps": [
+      "展示通道、货架空位和货筐，说出你要补什么商品。",
+      "用开箱刀打开外箱。",
+      "把旧货移到货架最前面。",
+      "把新货放在后面，标签朝外。",
+      "把每件商品拉到货架边缘，排整齐。",
+      "把空纸箱压平，展示补满的货架，然后停止录制。"
+     ],
+     "pitfalls": [
+      "在客流少的时候拍摄，不要拍到顾客的脸。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "supermarket-check-dates-rotate-stock",
+   "name": "Supermarket: checking dates and rotating stock",
+   "headline": "Check best-before dates on a chilled shelf, remove expired items and rotate the stock",
+   "description": "Check best-before dates on a chilled shelf, remove expired items and rotate the stock. Where: a supermarket chilled or dairy aisle, or its stock room. You need: the shelf section to check, a basket for removed items, a price-label gun or marker if used in the store.",
+   "steps": [
+    "Show the chilled shelf and say what you will check.",
+    "Pick up each item and read its date aloud.",
+    "Put expired or damaged items in the basket.",
+    "Move the shortest-dated items to the front.",
+    "Fill gaps from the back stock and face the row.",
+    "Show the basket and the tidy shelf, then stop recording."
+   ],
+   "pitfalls": [
+    "Say the dates and decisions out loud as you go; keep shoppers out of frame.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Retail and logistics"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "超市：检查保质期并轮换货品",
+     "headline": "检查冷柜货架上的保质期，下架过期商品并按日期轮换",
+     "description": "检查冷柜货架上的保质期，下架过期商品并按日期轮换。场所：超市冷柜或乳制品区，或其仓库。所需物品：要检查的货架区、装下架商品的筐、店里使用的标价枪或记号笔。",
+     "steps": [
+      "展示冷柜货架，说出你要检查什么。",
+      "拿起每件商品，把日期念出来。",
+      "把过期或破损的商品放进筐里。",
+      "把日期最近的商品移到最前面。",
+      "从后面的库存补齐空位并理整齐。",
+      "展示下架筐和整理好的货架，然后停止录制。"
+     ],
+     "pitfalls": [
+      "边做边把日期和判断说出来；不要拍到顾客。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "courier-station-sort-parcels-by-code",
+   "name": "Courier station: sorting parcels onto shelves by code",
+   "headline": "Sort incoming parcels by pickup code onto the station's numbered shelves",
+   "description": "Sort incoming parcels by pickup code onto the station's numbered shelves. Where: a working courier/express station or parcel warehouse with numbered shelving. You need: a cart or pile of incoming parcels, the shelving, a handheld scanner or code labels if the station uses them.",
+   "steps": [
+    "Show the station, the shelves and the parcel pile, and say what you will sort.",
+    "Pick up a parcel and read its shelf code aloud.",
+    "Scan it if the station uses a scanner.",
+    "Place it on the matching shelf, label facing out.",
+    "Repeat for the pile, saying each code and shelf.",
+    "Show the empty cart and the filled shelves, then stop recording."
+   ],
+   "pitfalls": [
+    "Turn labels away from the camera or keep them out of focus where names and phone numbers show.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Retail and logistics"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "快递驿站：按取件码分拣上架",
+     "headline": "按取件码把到件包裹分拣放到驿站的编号货架上",
+     "description": "按取件码把到件包裹分拣放到驿站的编号货架上。场所：正在营业的快递驿站或包裹仓库，有编号货架。所需物品：一车或一堆到件包裹、货架、驿站使用的扫码枪或编码标签。",
+     "steps": [
+      "展示驿站、货架和包裹堆，说出你要分拣什么。",
+      "拿起一个包裹，把货架码念出来。",
+      "如果驿站用扫码枪，就扫一下。",
+      "放到对应的货架上，面单朝外。",
+      "把整堆包裹都这样处理，每件都说出编码和货架。",
+      "展示空车和放满的货架，然后停止录制。"
+     ],
+     "pitfalls": [
+      "有姓名和电话的面单不要正对镜头，或保持在焦点外。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "warehouse-pick-and-pack-order",
+   "name": "Warehouse: picking and packing an order into a carton",
+   "headline": "Pick the items of an order from warehouse shelves and pack and tape them in a carton",
+   "description": "Pick the items of an order from warehouse shelves and pack and tape them in a carton. Where: a warehouse, e-commerce fulfilment area or packaging station with racks and a packing table. You need: a printed order or picking list, 3–5 items on the racks, a carton, void fill, a tape gun.",
+   "steps": [
+    "Show the packing station and the order, and read out the items.",
+    "Walk to the racks and pick each item, saying what you took.",
+    "Fold the carton into shape and tape the bottom.",
+    "Place the items in the carton with void fill.",
+    "Close and tape the carton with the tape gun.",
+    "Show the sealed carton with its label, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep both hands and the carton in frame at the packing table.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Retail and logistics"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "仓库：拣货并装箱打包",
+     "headline": "按订单从仓库货架上拣货，装进纸箱并封箱",
+     "description": "按订单从仓库货架上拣货，装进纸箱并封箱。场所：仓库、电商发货区或包装台，有货架和打包台。所需物品：打印好的订单或拣货单、货架上的 3–5 件商品、纸箱、缓冲填充物、胶带枪。",
+     "steps": [
+      "展示打包台和订单，把要拣的商品念出来。",
+      "走到货架前逐件拣货，说出拿了什么。",
+      "把纸箱折好，封好箱底。",
+      "把商品放进箱子，加缓冲填充物。",
+      "合上箱子，用胶带枪封箱。",
+      "展示封好并贴好面单的箱子，然后停止录制。"
+     ],
+     "pitfalls": [
+      "在打包台操作时双手和纸箱都要在画面里。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "electronics-assemble-board-into-enclosure",
+   "name": "Electronics workshop: assembling a board into its enclosure",
+   "headline": "Fit a circuit board into its enclosure, connect it and close the case with screws",
+   "description": "Fit a circuit board into its enclosure, connect it and close the case with screws. Where: an electronics factory line or assembly workshop with an ESD bench, tools and parts bins. You need: a circuit board, its plastic or metal enclosure, cables, small screws, a precision screwdriver or electric screwdriver, an ESD wrist strap.",
+   "steps": [
+    "Show the bench, the board and the enclosure, and say what you will assemble.",
+    "Put on the wrist strap and lay out the parts.",
+    "Seat the board on its standoffs in the enclosure.",
+    "Plug in the cables and route them.",
+    "Fit the lid and drive the screws.",
+    "Show the finished unit, then stop recording."
+   ],
+   "pitfalls": [
+    "Work under good bench light so small parts are sharp; keep the parts tray in frame.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Furniture and artifact assembly"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "电子车间：把电路板装进外壳",
+     "headline": "把电路板装进外壳、接好线并用螺丝合上外壳",
+     "description": "把电路板装进外壳、接好线并用螺丝合上外壳。场所：电子工厂产线或装配车间，有防静电工作台、工具和零件盒。所需物品：电路板、配套的塑料或金属外壳、线缆、小螺丝、精密螺丝刀或电动螺丝刀、防静电手环。",
+     "steps": [
+      "展示工作台、电路板和外壳，说出你要组装什么。",
+      "戴上防静电手环，把零件摆好。",
+      "把电路板放到外壳里的支柱上。",
+      "插好线缆并理好走线。",
+      "盖上外壳，拧紧螺丝。",
+      "展示装好的成品，然后停止录制。"
+     ],
+     "pitfalls": [
+      "在明亮的台灯下操作，让小零件看得清楚；零件盒要在画面里。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "electronics-solder-wires-to-terminal",
+   "name": "Electronics workshop: soldering wires to a terminal board",
+   "headline": "Strip, tin and solder wires to a terminal board at a soldering station",
+   "description": "Strip, tin and solder wires to a terminal board at a soldering station. Where: an electronics workshop or factory bench with a soldering station and fume extraction. You need: a terminal or prototype board, 4–6 wires, wire strippers, a soldering iron, solder, a helping-hands clamp, side cutters.",
+   "steps": [
+    "Show the station, the board and the wires, and say what you will solder.",
+    "Strip the end of each wire.",
+    "Tin the wire ends with solder.",
+    "Clamp the board and solder each wire to its pad.",
+    "Trim the excess wire with the side cutters.",
+    "Tug each wire gently to test it, show the board, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep the iron tip and the joint in frame; use the extractor and safety glasses.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Repairs and tools"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "电子车间：把导线焊到端子板上",
+     "headline": "在焊台上剥线、上锡并把导线焊到端子板上",
+     "description": "在焊台上剥线、上锡并把导线焊到端子板上。场所：电子车间或工厂工位，有焊台和排烟设备。所需物品：端子板或洞洞板、4–6 根导线、剥线钳、电烙铁、焊锡、辅助夹具、斜口钳。",
+     "steps": [
+      "展示焊台、电路板和导线，说出你要焊什么。",
+      "把每根导线的线头剥开。",
+      "给线头上锡。",
+      "夹好板子，把每根线焊到对应的焊盘上。",
+      "用斜口钳剪掉多余的线头。",
+      "轻拉每根线检查是否焊牢，展示板子，然后停止录制。"
+     ],
+     "pitfalls": [
+      "烙铁头和焊点要在画面里；打开排烟设备并戴护目镜。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "auto-shop-remove-and-refit-wheel",
+   "name": "Auto repair shop: removing and refitting a wheel",
+   "headline": "Loosen, remove, inspect and refit a car wheel in a repair shop",
+   "description": "Loosen, remove, inspect and refit a car wheel in a repair shop. Where: a working auto repair shop with a lift or jack, tool trolley and other cars or equipment visible. You need: a car on a lift or jack stands, a lug wrench or impact wrench, a torque wrench.",
+   "steps": [
+    "Show the shop, the car and the tools, and say which wheel you will work on.",
+    "Loosen the wheel nuts.",
+    "Raise the car if needed and remove the nuts and the wheel.",
+    "Inspect the tyre and brake and say what you see.",
+    "Refit the wheel and run the nuts on by hand.",
+    "Torque the nuts in a star pattern, then stop recording."
+   ],
+   "pitfalls": [
+    "Never work under a car held only by a jack; keep the wheel and both hands in frame.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Car care"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "汽修店：拆装车轮",
+     "headline": "在汽修店里松开、拆下、检查并装回一个车轮",
+     "description": "在汽修店里松开、拆下、检查并装回一个车轮。场所：正在营业的汽修店，有举升机或千斤顶、工具车，画面里能看到其他车辆或设备。所需物品：停在举升机或支架上的汽车、轮胎扳手或气动扳手、扭力扳手。",
+     "steps": [
+      "展示修车间、车辆和工具，说出你要处理哪个车轮。",
+      "拧松车轮螺母。",
+      "需要的话把车升起，拆下螺母和车轮。",
+      "检查轮胎和刹车，说出你看到的情况。",
+      "装回车轮，先用手拧上螺母。",
+      "按对角顺序用扭力扳手拧紧，然后停止录制。"
+     ],
+     "pitfalls": [
+      "不要在只靠千斤顶撑着的车下作业；车轮和双手要在画面里。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "auto-shop-replace-air-filter",
+   "name": "Auto repair shop: replacing the engine air filter",
+   "headline": "Open the air box, swap the engine air filter and close it in a repair shop",
+   "description": "Open the air box, swap the engine air filter and close it in a repair shop. Where: a working auto repair shop, bonnet open, tools and shop equipment visible. You need: a car with the bonnet open, a new air filter, a screwdriver or socket set, a rag.",
+   "steps": [
+    "Show the shop, the engine bay and the new filter, and say what you will replace.",
+    "Undo the clips or screws of the air box.",
+    "Lift out the old filter and show how dirty it is.",
+    "Wipe out the air box with the rag.",
+    "Fit the new filter the right way round and close the box.",
+    "Show the closed air box, then stop recording."
+   ],
+   "pitfalls": [
+    "This must be done in a real workshop, not mimed on a parked car.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Car care"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "汽修店：更换空气滤芯",
+     "headline": "在汽修店里打开空滤盒，换上新的空气滤芯并装好",
+     "description": "在汽修店里打开空滤盒，换上新的空气滤芯并装好。场所：正在营业的汽修店，引擎盖打开，画面里能看到工具和店内设备。所需物品：打开引擎盖的汽车、新的空气滤芯、螺丝刀或套筒、抹布。",
+     "steps": [
+      "展示修车间、发动机舱和新滤芯，说出你要更换什么。",
+      "松开空滤盒的卡扣或螺丝。",
+      "取出旧滤芯，展示它有多脏。",
+      "用抹布把空滤盒擦干净。",
+      "按正确方向装上新滤芯并合上空滤盒。",
+      "展示合好的空滤盒，然后停止录制。"
+     ],
+     "pitfalls": [
+      "必须在真实的汽修店里完成，不能在停着的车上做样子。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "ebike-shop-fix-flat-tyre",
+   "name": "E-bike repair shop: fixing a flat tyre",
+   "headline": "Remove the wheel of an e-bike, patch or replace the inner tube and refit it",
+   "description": "Remove the wheel of an e-bike, patch or replace the inner tube and refit it. Where: an e-bike or bicycle repair shop with a work stand, tools and bikes visible. You need: an e-bike with a flat tyre, tyre levers, a new inner tube or patch kit, a pump, spanners.",
+   "steps": [
+    "Show the shop, the bike and the tools, and say what you will repair.",
+    "Remove the wheel from the frame.",
+    "Lever one side of the tyre off and pull out the inner tube.",
+    "Find the puncture, then patch it or take a new tube.",
+    "Fit the tube, seat the tyre and inflate it.",
+    "Refit the wheel, spin it to check, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep the wheel on the stand or bench in front of you so both hands stay in view.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Repairs and tools"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "电动车维修店：补胎",
+     "headline": "拆下电动车车轮，补内胎或换新内胎后装回",
+     "description": "拆下电动车车轮，补内胎或换新内胎后装回。场所：电动车或自行车维修店，画面里有维修架、工具和车辆。所需物品：一辆轮胎没气的电动车、撬胎棒、新内胎或补胎工具、打气筒、扳手。",
+     "steps": [
+      "展示维修店、车辆和工具，说出你要修什么。",
+      "把车轮从车架上拆下来。",
+      "用撬胎棒撬下一边外胎，取出内胎。",
+      "找到扎破的地方，补好或换新内胎。",
+      "装回内胎和外胎，打气。",
+      "装回车轮，转一转检查，然后停止录制。"
+     ],
+     "pitfalls": [
+      "把车轮放在面前的维修架或台面上，让双手一直在画面里。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "appliance-repair-service-desk-fan",
+   "name": "Appliance repair: servicing an electric fan",
+   "headline": "Unplug, open, clean and reassemble an electric fan at a repair bench",
+   "description": "Unplug, open, clean and reassemble an electric fan at a repair bench. Where: an appliance repair shop or workshop bench with tools and appliances visible. You need: an electric fan, a screwdriver, a brush or cloth, a small parts tray.",
+   "steps": [
+    "Show the bench and the fan, unplug it, and say what you will service.",
+    "Remove the front grille and the blade nut.",
+    "Take off the blade and the rear grille, putting the parts in the tray.",
+    "Clean the blade, grilles and motor housing.",
+    "Reassemble the rear grille, the blade and the front grille.",
+    "Plug it in, show it running, then stop recording."
+   ],
+   "pitfalls": [
+    "The fan must be unplugged while it is open; keep the parts tray in frame.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Repairs and tools"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "家电维修：保养电风扇",
+     "headline": "在维修台上断电、拆开、清洁并重新组装一台电风扇",
+     "description": "在维修台上断电、拆开、清洁并重新组装一台电风扇。场所：家电维修店或维修工作台，画面里有工具和家电。所需物品：一台电风扇、螺丝刀、刷子或抹布、小零件盘。",
+     "steps": [
+      "展示维修台和风扇，拔掉电源，说出你要保养什么。",
+      "拆下前网罩和扇叶螺母。",
+      "取下扇叶和后网罩，把零件放进零件盘。",
+      "清洁扇叶、网罩和电机外壳。",
+      "依次装回后网罩、扇叶和前网罩。",
+      "插上电源，展示风扇正常运转，然后停止录制。"
+     ],
+     "pitfalls": [
+      "拆开时风扇必须断电；零件盘要在画面里。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "garment-workshop-machine-sew-seam",
+   "name": "Garment workshop: machine-sewing a seam",
+   "headline": "Pin two fabric pieces and sew them together on an industrial sewing machine",
+   "description": "Pin two fabric pieces and sew them together on an industrial sewing machine. Where: a garment factory or tailoring workshop with industrial sewing machines and fabric visible. You need: two cut fabric pieces, pins, an industrial sewing machine, thread, scissors.",
+   "steps": [
+    "Show the workshop, the machine and the fabric, and say what you will sew.",
+    "Line up the two pieces and pin them along the edge.",
+    "Place the fabric under the presser foot and lower it.",
+    "Sew the seam, guiding the fabric and removing pins as you go.",
+    "Backstitch at the end and cut the threads.",
+    "Open the seam and show it, then stop recording."
+   ],
+   "pitfalls": [
+    "Keep fingers clear of the needle; keep both hands and the needle area in frame.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Sewing and textiles"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "服装车间：用缝纫机车缝合",
+     "headline": "把两块布料用别针固定，在工业缝纫机上车缝在一起",
+     "description": "把两块布料用别针固定，在工业缝纫机上车缝在一起。场所：服装厂或裁缝车间，画面里有工业缝纫机和布料。所需物品：两块裁好的布料、别针、工业缝纫机、线、剪刀。",
+     "steps": [
+      "展示车间、缝纫机和布料，说出你要缝什么。",
+      "把两块布对齐，沿边缘用别针固定。",
+      "把布放到压脚下，放下压脚。",
+      "车缝，一边引导布料一边取下别针。",
+      "在末端回针，剪断线头。",
+      "打开缝份展示缝好的线迹，然后停止录制。"
+     ],
+     "pitfalls": [
+      "手指远离机针；双手和机针区域要在画面里。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "garment-workshop-cut-fabric-from-pattern",
+   "name": "Garment workshop: cutting fabric pieces from a pattern",
+   "headline": "Lay a paper pattern on fabric, mark it and cut the pieces with shears",
+   "description": "Lay a paper pattern on fabric, mark it and cut the pieces with shears. Where: a garment factory or tailoring workshop with a cutting table. You need: fabric, a paper pattern, tailor's chalk, pattern weights or pins, fabric shears.",
+   "steps": [
+    "Show the cutting table, the fabric and the pattern, and say what you will cut.",
+    "Smooth the fabric flat on the table.",
+    "Lay the pattern pieces on it and weigh or pin them down.",
+    "Trace around the pattern with chalk.",
+    "Cut along the lines with the shears.",
+    "Stack the cut pieces and show them, then stop recording."
+   ],
+   "pitfalls": [
+    "Cut on the table, not in the air, so the shears and both hands stay in view.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Sewing and textiles"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "服装车间：按纸样裁布",
+     "headline": "把纸样铺在布料上，划好线后用剪刀裁出衣片",
+     "description": "把纸样铺在布料上，划好线后用剪刀裁出衣片。场所：服装厂或裁缝车间，有裁剪台。所需物品：布料、纸样、划粉、压铁或别针、裁布剪刀。",
+     "steps": [
+      "展示裁剪台、布料和纸样，说出你要裁什么。",
+      "把布料在台面上抚平。",
+      "把纸样铺上去，用压铁或别针固定。",
+      "用划粉沿纸样画线。",
+      "用剪刀沿线裁剪。",
+      "把裁好的衣片叠好展示，然后停止录制。"
+     ],
+     "pitfalls": [
+      "在台面上剪，不要悬空剪，让剪刀和双手一直在画面里。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "lab-weigh-and-prepare-solution",
+   "name": "Lab: weighing a powder and preparing a solution",
+   "headline": "Weigh a powder on a lab balance and dissolve it to make a solution",
+   "description": "Weigh a powder on a lab balance and dissolve it to make a solution. Where: a teaching or research laboratory with a bench, balance and glassware visible. You need: a lab balance, weighing boat, spatula, the powder (e.g. salt), a beaker, a volumetric flask, distilled water, a stirring rod, gloves and goggles.",
+   "steps": [
+    "Show the bench and materials, and say what solution you will make.",
+    "Place the weighing boat on the balance and tare it.",
+    "Weigh out the powder with the spatula, reading the mass aloud.",
+    "Tip the powder into the beaker and add some water.",
+    "Stir until it dissolves, then pour it into the flask and fill to the mark.",
+    "Stopper, mix, label the flask and show it, then stop recording."
+   ],
+   "pitfalls": [
+    "Wear gloves and goggles; read every number you see aloud.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Lab work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "实验室：称量粉末并配制溶液",
+     "headline": "在天平上称量粉末并溶解配制成溶液",
+     "description": "在天平上称量粉末并溶解配制成溶液。场所：教学或科研实验室，画面里有实验台、天平和玻璃器皿。所需物品：天平、称量舟、药匙、粉末试剂（例如食盐）、烧杯、容量瓶、蒸馏水、玻璃棒、手套和护目镜。",
+     "steps": [
+      "展示实验台和材料，说出你要配制什么溶液。",
+      "把称量舟放到天平上并去皮。",
+      "用药匙称取粉末，把读数念出来。",
+      "把粉末倒进烧杯，加一些水。",
+      "搅拌到完全溶解，倒入容量瓶并定容到刻度线。",
+      "塞好瓶塞、摇匀、贴标签并展示，然后停止录制。"
+     ],
+     "pitfalls": [
+      "戴手套和护目镜；看到的每个读数都要念出来。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "lab-pipette-samples-into-tubes",
+   "name": "Lab: pipetting liquid into labelled tubes",
+   "headline": "Transfer measured volumes of liquid into a rack of labelled tubes with a micropipette",
+   "description": "Transfer measured volumes of liquid into a rack of labelled tubes with a micropipette. Where: a teaching or research laboratory bench. You need: a micropipette, tips, a tip waste box, a rack of labelled tubes, a reagent bottle or beaker of coloured water, gloves.",
+   "steps": [
+    "Show the bench, the pipette and the tubes, and say what volume you will transfer.",
+    "Set the volume on the pipette and fit a tip.",
+    "Draw up the liquid from the bottle.",
+    "Dispense it into the first tube and eject the tip.",
+    "Repeat for each tube, saying the tube label as you fill it.",
+    "Cap the tubes, show the rack, then stop recording."
+   ],
+   "pitfalls": [
+    "Coloured water makes the transfers visible; keep the tube rack in front of you.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Lab work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "实验室：用移液枪向标记好的试管加样",
+     "headline": "用微量移液器把定量液体转移到一排标记好的试管中",
+     "description": "用微量移液器把定量液体转移到一排标记好的试管中。场所：教学或科研实验室的实验台。所需物品：微量移液器、枪头、废枪头盒、一架贴好标签的试管、一瓶或一烧杯有颜色的水、手套。",
+     "steps": [
+      "展示实验台、移液器和试管，说出你要转移多少体积。",
+      "在移液器上设好体积，装上枪头。",
+      "从瓶中吸取液体。",
+      "打进第一支试管并退掉枪头。",
+      "每支试管重复操作，加样时说出试管标签。",
+      "盖好试管盖，展示试管架，然后停止录制。"
+     ],
+     "pitfalls": [
+      "用有颜色的水，让每次转移看得清楚；试管架放在面前。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "pro-kitchen-prepare-and-plate-salad",
+   "name": "Professional kitchen: preparing and plating a salad",
+   "headline": "Cut, dress and plate a salad at the prep station and set it on the pass",
+   "description": "Cut, dress and plate a salad at the prep station and set it on the pass. Where: a culinary school or restaurant kitchen with stainless-steel worktops and professional equipment in view. You need: lettuce, tomatoes, cucumber, a chef's knife, a cutting board, a mixing bowl, dressing, two plates.",
+   "steps": [
+    "Show the station and the ingredients, and say what you will plate.",
+    "Wash and tear the lettuce into the bowl.",
+    "Slice the tomatoes and cucumber on the board.",
+    "Add them to the bowl, dress and toss the salad.",
+    "Arrange the salad neatly on the plates.",
+    "Wipe the plate rims, place them on the pass, show them, then stop recording."
+   ],
+   "pitfalls": [
+    "Plate on the steel worktop in front of you so both hands and the plate stay in view.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Culinary work"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "专业厨房：制作并装盘一份沙拉",
+     "headline": "在备餐台切配、调味并装盘一份沙拉，放到出菜口",
+     "description": "在备餐台切配、调味并装盘一份沙拉，放到出菜口。场所：烹饪学校或餐厅后厨，不锈钢台面，画面里能看到专业厨房设备。所需物品：生菜、番茄、黄瓜、厨刀、砧板、拌菜盆、沙拉酱、两个盘子。",
+     "steps": [
+      "展示操作台和食材，说出你要做什么菜。",
+      "把生菜洗净，撕成小块放进盆里。",
+      "在砧板上把番茄和黄瓜切片。",
+      "放进盆里，加酱汁拌匀。",
+      "把沙拉整齐地摆在盘子上。",
+      "擦干净盘边，放到出菜口展示，然后停止录制。"
+     ],
+     "pitfalls": [
+      "在面前的不锈钢台面上装盘，让双手和盘子一直在画面里。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "greenhouse-harvest-and-crate-vegetables",
+   "name": "Greenhouse: harvesting vegetables into crates",
+   "headline": "Pick ripe vegetables from the plants inside a greenhouse and pack them in a harvest crate",
+   "description": "Pick ripe vegetables from the plants inside a greenhouse and pack them in a harvest crate. Where: inside a commercial greenhouse with a clearly visible crop ready to pick (for example tomatoes, cucumbers or peppers). You need: harvest shears or a knife if needed, a harvest crate, gloves.",
+   "steps": [
+    "Show the greenhouse, the crop and the crate, and say what you will harvest.",
+    "Check a plant and say which fruits are ripe.",
+    "Cut or twist off the ripe fruits.",
+    "Lay them in the crate in neat rows.",
+    "Move along the row and repeat, saying how many you picked.",
+    "Show the full crate and the picked row, then stop recording."
+   ],
+   "pitfalls": [
+    "Pick only what the greenhouse staff agree to; keep the plants and the crate in frame.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Gardening"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "温室：采收蔬菜装箱",
+     "headline": "在温室里从植株上采摘成熟的蔬菜，整齐地装进采收箱",
+     "description": "在温室里从植株上采摘成熟的蔬菜，整齐地装进采收箱。场所：商业温室内部，有能清楚辨认、可以采摘的作物（例如番茄、黄瓜或彩椒）。所需物品：需要时用采收剪或刀、采收箱、手套。",
+     "steps": [
+      "展示温室、作物和采收箱，说出你要采收什么。",
+      "检查一株植物，说出哪些果实成熟了。",
+      "把成熟的果实剪下或拧下来。",
+      "在箱子里整齐地排好。",
+      "沿着这一行往前走，重复操作，说出采了多少个。",
+      "展示装满的采收箱和采过的一行，然后停止录制。"
+     ],
+     "pitfalls": [
+      "只采温室工作人员同意采的；植株和采收箱要一直在画面里。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  },
+  {
+   "slug": "workshop-sand-and-finish-board",
+   "name": "Furniture workshop: sanding and finishing a wooden part",
+   "headline": "Sand a wooden part with an orbital sander, clean it and apply a finish at the workbench",
+   "description": "Sand a wooden part with an orbital sander, clean it and apply a finish at the workbench. Where: a furniture factory, woodshop or manufacturing workshop with workbench and power tools visible. You need: a wooden part (shelf, board or chair part), an orbital sander with sandpaper, clamps, a brush or cloth, wood oil or varnish.",
+   "steps": [
+    "Show the workshop, the part and the sander, and say what you will finish.",
+    "Clamp the part to the bench.",
+    "Sand the surface evenly with the orbital sander.",
+    "Switch to finer paper and sand again, then brush off the dust.",
+    "Wipe or brush on the oil or varnish.",
+    "Show the finished surface, then stop recording."
+   ],
+   "pitfalls": [
+    "Wear safety glasses and a dust mask; keep the sander flat and both hands on the bench.",
+    "Narrate every 5–10 seconds: do one action, then say what you just did."
+   ],
+   "targetDurationSec": {
+    "min": 300,
+    "max": 600
+   },
+   "tags": [
+    "Furniture and artifact assembly"
+   ],
+   "i18n": {
+    "zh": {
+     "name": "家具车间：打磨并给木件上油",
+     "headline": "在工作台上用砂光机打磨木件，清理后涂上木蜡油或清漆",
+     "description": "在工作台上用砂光机打磨木件，清理后涂上木蜡油或清漆。场所：家具厂、木工房或生产车间，画面里能看到工作台和电动工具。所需物品：一个木件（层板、木板或椅子部件）、装好砂纸的砂光机、夹具、刷子或抹布、木蜡油或清漆。",
+     "steps": [
+      "展示车间、木件和砂光机，说出你要处理什么。",
+      "把木件夹在工作台上。",
+      "用砂光机把表面均匀打磨一遍。",
+      "换细砂纸再打磨一遍，然后把粉尘刷干净。",
+      "擦上或刷上木蜡油或清漆。",
+      "展示处理好的表面，然后停止录制。"
+     ],
+     "pitfalls": [
+      "戴护目镜和防尘口罩；砂光机保持平放，双手放在工作台上。",
+      "每 5–10 秒说一次：做完一个动作，马上说出刚才做了什么。"
+     ]
+    }
+   }
+  }
+ ]
+}
