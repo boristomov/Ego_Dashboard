@@ -288,7 +288,25 @@ export type StationOperator = {
   kiosk?: { controlEnabled?: boolean; running?: boolean } | null;
   preview?: { lastFrameAgeMs?: number | null } | null;
   remote?: RemoteTarget | null;
+  /** Narration metrics of the latest takes, worked out on the operator device after each take. */
+  narration?: { takes?: NarrationMetrics[] | null } | null;
 };
+
+/** Live narration of one take (ThothAI_FRONTEND station/narration.py). */
+export type NarrationMetrics = {
+  take: string;
+  durationS?: number | null;
+  characters?: number | null;
+  charsPerMin?: number | null;
+  longestSilenceS?: number | null;
+  silencesOver30S?: number | null;
+  computedAt?: string | null;
+};
+
+/** The client's narration bar: at least 80 Chinese characters a minute (target 120), no silence over 30 s. */
+export const NARRATION_MIN_CPM = 80;
+export const NARRATION_TARGET_CPM = 120;
+export const NARRATION_MAX_SILENCE_S = 30;
 
 /** Who is logged in at the back display, and what the station is assigned. */
 export type StationShift = {

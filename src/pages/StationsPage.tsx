@@ -57,6 +57,9 @@ import {
   LOW_RECORDING_HOURS,
   platformLabel,
   relativeAge,
+  NARRATION_MAX_SILENCE_S,
+  NARRATION_MIN_CPM,
+  NARRATION_TARGET_CPM,
   remoteLinks,
   ROLE_LABELS,
   STALE_AFTER_MS,
@@ -69,6 +72,7 @@ import {
   type StationBattery,
   type StationDay,
   type StationDevice,
+  type NarrationMetrics,
   type StationHeartbeat,
   type StationStatus,
   type StationStorage,
@@ -567,6 +571,8 @@ function StationDetail({
 }) {
   const cam = station.camera;
   const lib = station.library;
+  // Narration metrics come from the operator device, keyed by the take's folder name.
+  const narrationByTake = new Map((station.operator?.narration?.takes || []).map((n) => [n.take, n]));
   return (
     <div className="flex flex-col gap-4 border-t border-border p-4">
       {status === "offline" && (
@@ -648,7 +654,7 @@ function StationDetail({
             {lib?.recentTakes?.length ? (
               <ul className="flex max-h-96 flex-col gap-1.5 overflow-y-auto">
                 {lib.recentTakes.map((t) => (
-                  <TakeRow key={t.episodeId} take={t} />
+                  <TakeRow key={t.episodeId} take={t} narration={narrationByTake.get(t.episodeId)} />
                 ))}
               </ul>
             ) : (
@@ -1325,7 +1331,7 @@ function YieldBars({ days }: { days: StationDay[] }) {
   );
 }
 
-function TakeRow({ take }: { take: StationTake }) {
+function TakeRow({ take, narration }: { take: StationTake; narration?: NarrationMetrics }) {
   const audioConcern = take.audio ? !take.audio.ok : false;
   const ok = take.qualityOk && !audioConcern;
   return (
@@ -1350,11 +1356,41 @@ function TakeRow({ take }: { take: StationTake }) {
           {take.audio?.ok && <span className="text-emerald-300/80">audio OK</span>}
         </div>
         {audioConcern && <div className="text-xs text-amber-300">Audio: {take.audio!.summary}</div>}
+        <NarrationLine narration={narration} />
       </div>
       {take.startedAt && (
         <span className="flex-shrink-0 text-xs text-text-dim">{relativeAge(Date.parse(take.startedAt))}</span>
       )}
     </li>
+  );
+}
+
+/**
+ * The take's live narration against the client's bar: characters a minute (min 80, target 120)
+ * and the longest silence (max 30 s). Worked out on the operator device a minute or two after
+ * the take ends, so a fresh take shows "narration pending" until then.
+ */
+function NarrationLine({ narration }: { narration?: NarrationMetrics }) {
+  if (!narration) return <div className="text-xs text-text-dim">narration: pending</div>;
+  const cpm = narration.charsPerMin;
+  const silence = narration.longestSilenceS;
+  const cpmTone =
+    cpm == null ? "text-text-dim" : cpm >= NARRATION_TARGET_CPM ? "text-emerald-300" : cpm >= NARRATION_MIN_CPM ? "text-sky-300" : "text-rose-300";
+  const silenceTone = silence == null ? "text-text-dim" : silence > NARRATION_MAX_SILENCE_S ? "text-rose-300" : "text-emerald-300";
+  return (
+    <div
+      className="flex flex-wrap gap-x-3 text-xs"
+      title={`Narration: ${narration.characters ?? "?"} Chinese characters over ${narration.durationS ?? "?"} s. Client bar: at least ${NARRATION_MIN_CPM} a minute (target ${NARRATION_TARGET_CPM}), no silence over ${NARRATION_MAX_SILENCE_S} s.`}
+    >
+      <span className={cpmTone}>
+        {cpm != null ? `${Math.round(cpm)} chars/min` : "chars/min —"}
+        <span className="text-text-dim"> (min {NARRATION_MIN_CPM})</span>
+      </span>
+      <span className={silenceTone}>
+        {silence != null ? `longest silence ${Math.round(silence)} s` : "silence —"}
+        <span className="text-text-dim"> (max {NARRATION_MAX_SILENCE_S})</span>
+      </span>
+    </div>
   );
 }
 
