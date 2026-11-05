@@ -137,6 +137,18 @@ const USERS: UserRecord[] = [
     allowedData: ["Full platform", "All buckets", "Client connections"],
     registryUser: "jay",
   },
+  {
+    email: "pedro.alves@aithoth.com",
+    salt: "d2bcd355ba47231db3cd79b8441f3f96",
+    passwordHash:
+      "c44480bf2155bb96906b80bb0991c573aaeb3e8b0265b4f994349dd9f1da80a5",
+    iterations: 310000,
+    role: "admin",
+    name: "Pedro Alves",
+    company: "Thoth AI",
+    allowedData: ["Full platform", "All buckets", "Client connections"],
+    registryUser: "pedro",
+  },
 ];
 
 /**
