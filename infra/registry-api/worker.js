@@ -936,8 +936,16 @@ function adminUsers(env) {
       return {};
     }
   };
-  // ADMIN_USERS_EXTRA adds admins without re-entering the existing ones.
-  return { ...parse(env.ADMIN_USERS_EXTRA), ...parse(env.ADMIN_USERS) };
+  // ADMIN_USERS_EXTRA adds admins without re-entering the existing ones, and so
+  // does a secret per person, ADMIN_USER_<NAME> = "<hash>" (name lower-cased):
+  // Cloudflare can't show a secret's value, so adding to a JSON secret means
+  // knowing everyone already in it.
+  const single = {};
+  for (const [k, v] of Object.entries(env)) {
+    const m = /^ADMIN_USER_([A-Z0-9_]+)$/.exec(k);
+    if (m && typeof v === "string" && /^[0-9a-f]{64}$/.test(v.trim())) single[m[1].toLowerCase()] = v.trim();
+  }
+  return { ...single, ...parse(env.ADMIN_USERS_EXTRA), ...parse(env.ADMIN_USERS) };
 }
 
 async function whoami(request, env) {

@@ -212,6 +212,7 @@ node -e '
 | `ADMIN_PROOF_SALT` | var | the `$SALT` above |
 | `ADMIN_USERS` | secret | `{"boris":"<hash>","sara":"<hash>"}` |
 | `ADMIN_USERS_EXTRA` | secret | optional, same shape: more admins without re-entering `ADMIN_USERS` |
+| `ADMIN_USER_<NAME>` | secret | optional, one per person: the bare hash, e.g. `ADMIN_USER_PEDRO` signs in as `pedro`. Adds an admin without knowing what the JSON secrets hold |
 
 Use real names as keys — they become `provenance.updatedBy`, and an audit
 trail that says "admin" for everyone answers none of the questions it exists
